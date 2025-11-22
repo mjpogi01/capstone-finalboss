@@ -62,6 +62,7 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [activeDotIndex, setActiveDotIndex] = useState(0); // 0, 1, or 2 for the 3 dots
   const [dotStartIndex, setDotStartIndex] = useState(0); // Starting index for the sliding window of dots
+  const ratingsLoadedRef = useRef(false); // Track if ratings have been loaded to prevent re-fetching
   const { openSignIn } = useModal();
   // const { addToCart } = useCart(); // Removed unused import
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -93,6 +94,42 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
       return null; // No rating available on error
     }
   };
+
+  // Load ratings asynchronously without blocking the main product load
+  // Only loads ratings once to prevent continuous fetching
+  const loadRatingsAsync = useCallback(async (products) => {
+    // Skip if ratings already loaded
+    if (ratingsLoadedRef.current) {
+      console.log('📊 Ratings already loaded, skipping re-fetch...');
+      return;
+    }
+
+    // Mark as loading to prevent duplicate calls
+    ratingsLoadedRef.current = true;
+
+    try {
+      console.log('📊 Loading ratings for products (one-time load)...');
+      const ratings = {};
+      // Process ratings in batches to avoid overwhelming the API
+      const batchSize = 5;
+      for (let i = 0; i < products.length; i += batchSize) {
+        const batch = products.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(async (product) => {
+            const averageRating = await calculateAverageRating(product.id);
+            ratings[product.id] = averageRating;
+          })
+        );
+        // Update ratings progressively
+        setProductRatings(prev => ({ ...prev, ...ratings }));
+      }
+      console.log('✅ Ratings loaded successfully');
+    } catch (error) {
+      console.error('Error loading ratings:', error);
+      // Reset flag on error to allow retry
+      ratingsLoadedRef.current = false;
+    }
+  }, []); // Empty deps - only load once, ratings are stored in state via setProductRatings
 
   // Add this function to handle opening the modal
   const openProductModal = (product) => {
@@ -189,15 +226,19 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
 
   // Fetch products from API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProducts = async (loadRatings = true) => {
       try {
         setLoading(true);
         setError(null);
         const fetchedProducts = await productService.getAllProducts();
         setProducts(fetchedProducts);
         
-        // Load ratings asynchronously without blocking the UI
-        loadRatingsAsync(fetchedProducts);
+        // Only load ratings on initial fetch, not on polling updates
+        // Ratings don't change frequently enough to warrant constant re-fetching
+        if (loadRatings && !ratingsLoadedRef.current) {
+          ratingsLoadedRef.current = true;
+          loadRatingsAsync(fetchedProducts);
+        }
       } catch (err) {
         console.error('Error fetching products:', err);
         setError('Failed to load products');
@@ -208,40 +249,19 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
       }
     };
 
-    fetchProducts();
+    // Initial fetch with ratings
+    fetchProducts(true);
     
     // Set up real-time polling to refresh products every 30 seconds
-    // This ensures reviews and sold counts update in real-time
+    // This ensures sold counts update in real-time (ratings are loaded separately)
     const pollInterval = setInterval(() => {
-      fetchProducts();
+      fetchProducts(false); // Don't reload ratings on polling
     }, 30000); // Refresh every 30 seconds
     
     return () => {
       clearInterval(pollInterval);
     };
-  }, []);
-
-  // Load ratings asynchronously without blocking the main product load
-  const loadRatingsAsync = async (products) => {
-    try {
-      const ratings = {};
-      // Process ratings in batches to avoid overwhelming the API
-      const batchSize = 5;
-      for (let i = 0; i < products.length; i += batchSize) {
-        const batch = products.slice(i, i + batchSize);
-        await Promise.all(
-          batch.map(async (product) => {
-            const averageRating = await calculateAverageRating(product.id);
-            ratings[product.id] = averageRating;
-          })
-        );
-        // Update ratings progressively
-        setProductRatings(prev => ({ ...prev, ...ratings }));
-      }
-    } catch (error) {
-      console.error('Error loading ratings:', error);
-    }
-  };
+  }, [loadRatingsAsync]);
 
   const filteredProducts = searchQuery.trim()
     ? products.filter(product =>
