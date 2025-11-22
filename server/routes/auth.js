@@ -155,39 +155,61 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    // Get user info for personalized email
-    let userName = null;
-    try {
-      const { data: userData } = await supabase.auth.admin.getUserByEmail(normalizedEmail);
-      if (userData && userData.user) {
-        userName = userData.user.user_metadata?.full_name || 
-                   userData.user.user_metadata?.name ||
-                   userData.user.email?.split('@')[0] || null;
-      }
-    } catch (userError) {
-      console.warn('Could not fetch user info for password reset email:', userError.message);
-    }
-
     // Generate password reset link using Supabase Admin API
     // This generates the token without sending Supabase's default email
     let baseUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
     baseUrl = baseUrl.replace(/\/$/, '');
     const redirectTo = `${baseUrl}/auth/reset-password`;
 
-    // Get user by email first
+    // Get user by email using listUsers (getUserByEmail may not be available)
     let user = null;
+    let userName = null;
     try {
-      const { data: userData, error: getUserError } = await supabase.auth.admin.getUserByEmail(normalizedEmail);
+      // Try getUserByEmail first if available
+      let userData = null;
+      let getUserError = null;
+      
+      if (supabase.auth.admin.getUserByEmail) {
+        const result = await supabase.auth.admin.getUserByEmail(normalizedEmail);
+        userData = result.data;
+        getUserError = result.error;
+      }
+      
+      // If getUserByEmail doesn't exist or failed, fall back to listUsers
       if (getUserError || !userData || !userData.user) {
-        // User doesn't exist - return success anyway (security best practice)
+        // Fallback: use listUsers to find user by email
+        const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (!listError && usersData && usersData.users) {
+          const foundUser = usersData.users.find(
+            u => u.email && u.email.toLowerCase() === normalizedEmail
+          );
+          
+          if (foundUser) {
+            user = foundUser;
+            userName = foundUser.user_metadata?.full_name || 
+                      foundUser.user_metadata?.name ||
+                      foundUser.email?.split('@')[0] || null;
+          }
+        }
+      } else {
+        // getUserByEmail worked
+        user = userData.user;
+        userName = userData.user.user_metadata?.full_name || 
+                   userData.user.user_metadata?.name ||
+                   userData.user.email?.split('@')[0] || null;
+      }
+      
+      // If user still not found, return success anyway (security best practice)
+      if (!user) {
         return res.json({ 
           success: true,
           message: 'If an account exists with this email, a password reset link has been sent.'
         });
       }
-      user = userData.user;
     } catch (userError) {
       // Error fetching user - return success anyway (security best practice)
+      console.warn('Could not fetch user info for password reset:', userError.message);
       return res.json({ 
         success: true,
         message: 'If an account exists with this email, a password reset link has been sent.'
