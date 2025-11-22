@@ -2804,6 +2804,102 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                     <small className="apm-form-help">
                       Add trophy sizes and their corresponding prices and stock quantities. Each size must have a price (e.g., 13" = 500, 16" = 750, 19" = 1000).
                     </small>
+                    
+                    {/* Branch Selection Checkboxes */}
+                    {branches.length > 0 && (
+                      <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <label style={{ display: 'block', fontWeight: 600, color: '#111827', fontSize: '0.875rem', margin: 0 }}>
+                            Select Branches
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allBranchIds = branches.map(b => b.id);
+                              const allSelected = allBranchIds.every(id => selectedBranches.includes(id));
+                              
+                              if (allSelected) {
+                                // Deselect all
+                                setSelectedBranches([]);
+                                setBranchStocks({});
+                              } else {
+                                // Select all
+                                setSelectedBranches(allBranchIds);
+                              }
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#3b82f6',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              textDecoration: 'underline',
+                              padding: '0.25rem 0.5rem',
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            {branches.every(b => selectedBranches.includes(b.id)) ? 'Deselect All' : 'Select All'}
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {branches.map(branch => {
+                            const isSelected = selectedBranches.includes(branch.id);
+                            
+                            return (
+                              <div 
+                                key={branch.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  padding: '0.5rem',
+                                  borderRadius: '4px',
+                                  background: isSelected ? '#eff6ff' : 'transparent',
+                                  transition: 'background-color 0.2s ease'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedBranches(prev => [...prev, branch.id]);
+                                    } else {
+                                      setSelectedBranches(prev => prev.filter(id => id !== branch.id));
+                                    }
+                                  }}
+                                  style={{
+                                    width: '18px',
+                                    height: '18px',
+                                    cursor: 'pointer'
+                                  }}
+                                />
+                                <label
+                                  style={{
+                                    flex: 1,
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    color: '#111827',
+                                    margin: 0,
+                                    userSelect: 'none'
+                                  }}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedBranches(prev => prev.filter(id => id !== branch.id));
+                                    } else {
+                                      setSelectedBranches(prev => [...prev, branch.id]);
+                                    }
+                                  }}
+                                >
+                                  {branch.name}
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : jerseyCategorySelected ? (
