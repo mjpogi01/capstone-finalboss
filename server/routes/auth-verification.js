@@ -265,9 +265,18 @@ router.post('/send-code', async (req, res) => {
     console.log(`📋 Stored code: "${code}" (length: ${code.length})`);
 
     // Send email with verification code (use original email for display, normalized for storage)
+    console.log(`📧 Attempting to send verification email to: ${normalizedEmail}`);
     const emailResult = await emailService.sendVerificationCode(normalizedEmail, code, userName);
 
     if (emailResult.success) {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ VERIFICATION EMAIL SENT SUCCESSFULLY');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`📧 Recipient: ${normalizedEmail}`);
+      console.log(`🆔 Message ID: ${emailResult.messageId || 'N/A'}`);
+      console.log(`⏰ Expires at: ${new Date(expiresAt).toISOString()}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       res.json({
         success: true,
         message: 'Verification code sent to your email',
@@ -275,7 +284,14 @@ router.post('/send-code', async (req, res) => {
       });
     } else {
       // Don't remove code if email failed - allow retry
-      console.warn('⚠️ Email send failed but code is stored:', emailResult.error);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ VERIFICATION EMAIL SEND FAILED');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error(`📧 Recipient: ${normalizedEmail}`);
+      console.error(`❌ Error: ${emailResult.error}`);
+      console.error('⚠️ Code is still stored and can be resent');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       res.status(500).json({
         success: false,
         error: 'Failed to send verification email',
@@ -471,19 +487,35 @@ router.post('/resend-code', async (req, res) => {
              lastSentAt: Date.now() // Track when code was sent
            });
 
-    console.log(`📧 Resent verification code for ${normalizedEmail}: ${code}`);
+    console.log(`📧 Resending verification code for ${normalizedEmail}: ${code}`);
     console.log(`📋 Stored code: "${code}" (length: ${code.length})`);
 
     // Send email with new verification code (use original email for display, normalized for storage)
+    console.log(`📧 Attempting to resend verification email to: ${normalizedEmail}`);
     const emailResult = await emailService.sendVerificationCode(normalizedEmail, code, userName);
 
     if (emailResult.success) {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ VERIFICATION EMAIL RESENT SUCCESSFULLY');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`📧 Recipient: ${normalizedEmail}`);
+      console.log(`🆔 Message ID: ${emailResult.messageId || 'N/A'}`);
+      console.log(`⏰ Expires at: ${new Date(expiresAt).toISOString()}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       res.json({
         success: true,
         message: 'Verification code resent to your email',
         expiresIn: 10 // minutes
       });
     } else {
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ VERIFICATION EMAIL RESEND FAILED');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error(`📧 Recipient: ${normalizedEmail}`);
+      console.error(`❌ Error: ${emailResult.error}`);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       res.status(500).json({
         success: false,
         error: 'Failed to send verification email',

@@ -124,6 +124,18 @@ class EmailService {
           throw resendError;
         }
 
+        // Enhanced success logging
+        const timestamp = new Date().toISOString();
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✅ EMAIL SENT SUCCESSFULLY');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log(`📧 To: ${normalizedOptions.to}`);
+        console.log(`📌 Subject: ${normalizedOptions.subject}`);
+        console.log(`🆔 Message ID: ${data?.id || 'N/A'}`);
+        console.log(`⏰ Timestamp: ${timestamp}`);
+        console.log(`📤 From: ${normalizedOptions.from}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
         return { id: data?.id || null };
       } catch (error) {
         lastError = error;
@@ -804,7 +816,9 @@ class EmailService {
       };
 
       const result = await this._sendEmailWithRetry(mailOptions, 2);
-      console.log('✅ Verification code email sent successfully:', result.id);
+      // Additional confirmation for verification emails
+      console.log(`✅ Verification code email confirmed sent to: ${email}`);
+      console.log(`📝 Code: ${verificationCode} (expires in 10 minutes)`);
       return { success: true, messageId: result.id };
 
     } catch (error) {
