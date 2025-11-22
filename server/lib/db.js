@@ -113,6 +113,19 @@ async function ensureUsersTable() {
     END $$;
   `);
 
+  // Add size_stocks column if it doesn't exist (for per-size stock quantities)
+  await query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'size_stocks'
+      ) THEN
+        ALTER TABLE products ADD COLUMN size_stocks JSONB;
+      END IF;
+    END $$;
+  `);
+
   // Create user_addresses table
   await query(`
     CREATE TABLE IF NOT EXISTS user_addresses (

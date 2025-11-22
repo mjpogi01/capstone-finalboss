@@ -504,6 +504,25 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       insertData.fabric_surcharges = fabricSurchargesValue;
     }
 
+    // Handle size_stocks - per-size stock quantities (for trophies with sizes)
+    let sizeStocksValue = null;
+    if (size_stocks !== undefined && size_stocks !== null) {
+      if (typeof size_stocks === 'string' && size_stocks.trim() !== '') {
+        try {
+          sizeStocksValue = JSON.parse(size_stocks);
+        } catch (e) {
+          console.error('❌ [Products API] Error parsing size_stocks string:', e);
+          sizeStocksValue = null;
+        }
+      } else if (typeof size_stocks === 'object' && size_stocks !== null) {
+        sizeStocksValue = size_stocks;
+      }
+    }
+    if (sizeStocksValue !== null && sizeStocksValue !== undefined) {
+      insertData.size_stocks = sizeStocksValue;
+      console.log('📦 [Products API] size_stocks being saved:', sizeStocksValue);
+    }
+
     console.log('📦 [Products API] Final insert data:', insertData);
     console.log('📦 [Products API] jersey_prices in insertData:', insertData.jersey_prices);
 
