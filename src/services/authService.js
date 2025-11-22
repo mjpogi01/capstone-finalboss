@@ -330,9 +330,7 @@ class AuthService {
   async resetPasswordForEmail(email) {
     try {
       // Use backend endpoint for custom email template
-      const API_URL = process.env.REACT_APP_API_URL || 
-                     (typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':5000') : 'http://localhost:5000');
-      
+      // Use the same API_URL as other methods (imported from config)
       const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
