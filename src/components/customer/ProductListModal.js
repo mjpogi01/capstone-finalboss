@@ -588,6 +588,13 @@ const ProductListModal = ({ isOpen, onClose }) => {
                             {product.sold_quantity !== undefined && product.sold_quantity > 0 && (
                               <span className="stat-item">{product.sold_quantity} sold</span>
                             )}
+                            {/* Show quantity for balls and trophies */}
+                            {(product.category?.toLowerCase() === 'balls' || product.category?.toLowerCase() === 'trophies') && 
+                             product.stock_quantity !== undefined && product.stock_quantity !== null && (
+                              <span className="stat-item">
+                                {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} available
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
