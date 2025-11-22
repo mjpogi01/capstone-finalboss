@@ -693,6 +693,25 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
             trophyPricesValue = {};
           }
         }
+
+        // Load size_stocks if available (for the current branch being edited)
+        if (editingProduct.size_stocks) {
+          try {
+            const stocks = typeof editingProduct.size_stocks === 'string' 
+              ? JSON.parse(editingProduct.size_stocks) 
+              : editingProduct.size_stocks;
+            if (stocks && editingProduct.branch_id) {
+              // Store stocks for this branch
+              setSizeStocks(prev => ({
+                ...prev,
+                [editingProduct.branch_id]: stocks
+              }));
+              console.log(`📦 [AddProductModal] Loaded size_stocks for branch ${editingProduct.branch_id}:`, stocks);
+            }
+          } catch (e) {
+            console.warn('Failed to parse size_stocks:', e);
+          }
+        }
       } else if (isJerseyCategory(editingProduct.category)) {
         const parsedJerseySizes = parseJerseySizes(editingProduct.size);
         setJerseySizes(parsedJerseySizes);
