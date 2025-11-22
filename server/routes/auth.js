@@ -168,46 +168,88 @@ router.post('/reset-password', async (req, res) => {
       console.warn('Could not fetch user info for password reset email:', userError.message);
     }
 
-    // Generate password reset link using Supabase
+    // Generate password reset link using Supabase Admin API
+    // This generates the token without sending Supabase's default email
     let baseUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
     baseUrl = baseUrl.replace(/\/$/, '');
     const redirectTo = `${baseUrl}/auth/reset-password`;
 
-    // Use Supabase to generate the reset token and link
-    // Note: Supabase will send its own email, but we'll send our custom styled one too
-    const { data, error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: redirectTo
-    });
-
-    if (error) {
-      // Don't reveal if user exists - return success anyway
+    // Get user by email first
+    let user = null;
+    try {
+      const { data: userData, error: getUserError } = await supabase.auth.admin.getUserByEmail(normalizedEmail);
+      if (getUserError || !userData || !userData.user) {
+        // User doesn't exist - return success anyway (security best practice)
+        return res.json({ 
+          success: true,
+          message: 'If an account exists with this email, a password reset link has been sent.'
+        });
+      }
+      user = userData.user;
+    } catch (userError) {
+      // Error fetching user - return success anyway (security best practice)
       return res.json({ 
         success: true,
         message: 'If an account exists with this email, a password reset link has been sent.'
       });
     }
 
-    // Send our custom styled email template
-    // The reset link will be in the format: {redirectTo}?token={token}&type=recovery
-    // Since we can't get the exact token, we'll send the redirect URL and instructions
+    // Generate recovery token using Admin API (this doesn't send email)
+    // We'll use generateLink to create the reset link with token
     try {
-      const emailResult = await emailService.sendPasswordResetEmail(
-        normalizedEmail,
-        redirectTo, // Base URL - actual token is handled by Supabase in their email
-        userName
-      );
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email: normalizedEmail,
+        options: {
+          redirectTo: redirectTo
+        }
+      });
 
-      if (emailResult.success) {
-        console.log(`✅ Custom password reset email sent to: ${normalizedEmail}`);
-        console.log(`📧 Email Details:`);
-        console.log(`   - Recipient: ${normalizedEmail}`);
-        console.log(`   - Subject: Reset Your Password - Yohanns`);
-        console.log(`   - Message ID: ${emailResult.messageId}`);
-        console.log(`   - Timestamp: ${new Date().toISOString()}`);
+      if (linkError || !linkData || !linkData.properties || !linkData.properties.action_link) {
+        console.error('Failed to generate recovery link:', linkError);
+        // Fallback: use resetPasswordForEmail but note that it will send Supabase's email
+        console.warn('⚠️ Falling back to resetPasswordForEmail (will send Supabase email)');
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo: redirectTo
+        });
+        
+        if (resetError) {
+          // Still return success for security
+          return res.json({ 
+            success: true,
+            message: 'If an account exists with this email, a password reset link has been sent.'
+          });
+        }
+      } else {
+        // We have the recovery link with token - send only our custom email
+        const resetLink = linkData.properties.action_link;
+        
+        // Send our custom styled email template with the actual reset link
+        const emailResult = await emailService.sendPasswordResetEmail(
+          normalizedEmail,
+          resetLink, // Full link with token
+          userName
+        );
+
+        if (emailResult.success) {
+          console.log(`✅ Custom password reset email sent to: ${normalizedEmail}`);
+          console.log(`📧 Email Details:`);
+          console.log(`   - Recipient: ${normalizedEmail}`);
+          console.log(`   - Subject: Reset Your Password - Yohanns`);
+          console.log(`   - Message ID: ${emailResult.messageId}`);
+          console.log(`   - Timestamp: ${new Date().toISOString()}`);
+          console.log(`   - Reset link generated (Supabase email disabled)`);
+        } else {
+          console.error('⚠️ Failed to send custom password reset email:', emailResult.error);
+        }
       }
-    } catch (emailError) {
-      console.error('⚠️ Failed to send custom password reset email:', emailError.message);
-      // Continue anyway - Supabase's email was sent
+    } catch (tokenError) {
+      console.error('❌ Error generating recovery token:', tokenError);
+      // Fallback: use resetPasswordForEmail
+      console.warn('⚠️ Falling back to resetPasswordForEmail (will send Supabase email)');
+      await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: redirectTo
+      });
     }
     
     // Always return success (security best practice - don't reveal if user exists)
