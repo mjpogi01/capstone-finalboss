@@ -1676,10 +1676,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       });
     }
     // Remove stock quantity when size is removed (for trophies only)
+    // Remove from all branches
     if (isTrophyCategory(formData.category)) {
       setSizeStocks(prev => {
         const updated = { ...prev };
-        delete updated[sizeToRemove];
+        Object.keys(updated).forEach(branchId => {
+          if (updated[branchId] && updated[branchId][sizeToRemove] !== undefined) {
+            delete updated[branchId][sizeToRemove];
+          }
+        });
         return updated;
       });
     }
@@ -2146,20 +2151,28 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         cutTypeSurchargePayload
       });
 
-      // Handle size stocks for trophies only
+      // Handle size stocks for trophies only - nested structure: { branchId: { size: quantity } }
       let sizeStocksValue = null;
-      if (isTrophyProduct && availableSizes.length > 0) {
+      if (isTrophyProduct && availableSizes.length > 0 && selectedBranches.length > 0) {
         const stocksObject = {};
-        availableSizes.forEach(size => {
-          const stock = sizeStocks[size];
-          if (stock !== null && stock !== undefined && !isNaN(parseInt(stock)) && parseInt(stock) >= 0) {
-            stocksObject[size] = parseInt(stock);
+        // Build nested structure: branchId -> size -> quantity
+        selectedBranches.forEach(branchId => {
+          const branchStocks = {};
+          availableSizes.forEach(size => {
+            const stock = sizeStocks[branchId]?.[size];
+            if (stock !== null && stock !== undefined && !isNaN(parseInt(stock)) && parseInt(stock) >= 0) {
+              branchStocks[size] = parseInt(stock);
+            }
+          });
+          // Only add branch if it has at least one size with stock
+          if (Object.keys(branchStocks).length > 0) {
+            stocksObject[branchId.toString()] = branchStocks;
           }
         });
         if (Object.keys(stocksObject).length > 0) {
           sizeStocksValue = stocksObject;
         }
-        console.log('📦 [AddProductModal] Size stocks being saved:', sizeStocksValue);
+        console.log('📦 [AddProductModal] Size stocks being saved (per branch):', sizeStocksValue);
       }
 
       const productData = {
@@ -2178,10 +2191,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         additional_images: additionalImages
       };
 
-      // Add size_stocks if available (we'll need to add this column to the database)
-      if (sizeStocksValue) {
-        productData.size_stocks = JSON.stringify(sizeStocksValue);
-      }
+      // Note: size_stocks is now handled per-branch in the branch processing loop below
+      // We don't set it at the productData level for trophies with sizes
 
       if (sizeSurchargePayload) {
         productData.size_surcharges = JSON.stringify(sizeSurchargePayload);
@@ -2242,6 +2253,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         
         const productPromises = branchEntries.map(async ([branchId, stockQuantity]) => {
           try {
+          // For trophies with sizes, extract the size_stocks for this specific branch
+          let branchSizeStocks = null;
+          if (isTrophyProduct && availableSizes.length > 0 && sizeStocksValue) {
+            const branchStocksData = sizeStocksValue[branchId.toString()];
+            if (branchStocksData && Object.keys(branchStocksData).length > 0) {
+              branchSizeStocks = branchStocksData;
+            }
+          }
+
           const branchProductData = {
             ...productData,
             branch_id: parseInt(branchId),
@@ -2252,7 +2272,13 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               : (stockQuantity ? parseInt(stockQuantity) : null)
           };
 
-            console.log(`📦 [AddProductModal] Processing branch ${branchId} with stock ${stockQuantity}`);
+          // Add branch-specific size_stocks for trophies
+          if (branchSizeStocks) {
+            branchProductData.size_stocks = JSON.stringify(branchSizeStocks);
+            console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks:`, branchSizeStocks);
+          }
+
+            console.log(`📦 [AddProductModal] Processing branch ${branchId} with stock ${stockQuantity || 'size_stocks'}`);
 
           // For edit mode, check if product exists in this branch
           if (isEditMode && branchProducts[branchId]) {
