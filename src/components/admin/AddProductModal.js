@@ -381,6 +381,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   const [jerseyPrices, setJerseyPrices] = useState({ ...DEFAULT_JERSEY_PRICES });
   // Trophy prices: object mapping size to price, e.g., { "14\" (Large)": 1000, "10\" (Medium)": 750 }
   const [trophyPrices, setTrophyPrices] = useState({});
+  // Stock quantities per size for trophies: object mapping size to stock quantity, e.g., { "14\" (Large)": 10, "10\" (Medium)": 5 }
+  const [sizeStocks, setSizeStocks] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mainImage, setMainImage] = useState(null);
@@ -1632,6 +1634,13 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         [value]: ''
       }));
     }
+    // Initialize stock quantity as empty for new size (trophies only)
+    if (isTrophyCategory(formData.category)) {
+      setSizeStocks(prev => ({
+        ...prev,
+        [value]: null
+      }));
+    }
     setNewSizeInput('');
     setSizeInputError('');
   };
@@ -1641,6 +1650,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     // Remove trophy price when size is removed (for trophy category)
     if (isTrophyCategory(formData.category)) {
       setTrophyPrices(prev => {
+        const updated = { ...prev };
+        delete updated[sizeToRemove];
+        return updated;
+      });
+    }
+    // Remove stock quantity when size is removed (for trophies only)
+    if (isTrophyCategory(formData.category)) {
+      setSizeStocks(prev => {
         const updated = { ...prev };
         delete updated[sizeToRemove];
         return updated;
@@ -2109,17 +2126,42 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         cutTypeSurchargePayload
       });
 
+      // Handle size stocks for trophies only
+      let sizeStocksValue = null;
+      if (isTrophyProduct && availableSizes.length > 0) {
+        const stocksObject = {};
+        availableSizes.forEach(size => {
+          const stock = sizeStocks[size];
+          if (stock !== null && stock !== undefined && !isNaN(parseInt(stock)) && parseInt(stock) >= 0) {
+            stocksObject[size] = parseInt(stock);
+          }
+        });
+        if (Object.keys(stocksObject).length > 0) {
+          sizeStocksValue = stocksObject;
+        }
+        console.log('📦 [AddProductModal] Size stocks being saved:', sizeStocksValue);
+      }
+
       const productData = {
         ...formData,
         price: priceValue,
         jersey_prices: jerseyPricesValue,
         trophy_prices: trophyPricesValue,
         size: sizeValue,
-        stock_quantity: formData.stock_quantity ? parseInt(formData.stock_quantity) : null,
+        // For trophies with sizes, don't use the single stock_quantity field
+        // Instead, use size_stocks (we'll add this as a new field)
+        stock_quantity: isTrophyProduct && availableSizes.length > 0 
+          ? null 
+          : (formData.stock_quantity ? parseInt(formData.stock_quantity) : null),
         sold_quantity: formData.sold_quantity ? parseInt(formData.sold_quantity) : 0,
         main_image: mainImage,
         additional_images: additionalImages
       };
+
+      // Add size_stocks if available (we'll need to add this column to the database)
+      if (sizeStocksValue) {
+        productData.size_stocks = JSON.stringify(sizeStocksValue);
+      }
 
       if (sizeSurchargePayload) {
         productData.size_surcharges = JSON.stringify(sizeSurchargePayload);
@@ -2651,6 +2693,22 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                   background: '#ffffff'
                                 }}
                               />
+                              <label style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap', fontWeight: 500, marginLeft: '0.5rem' }}>Stock:</label>
+                              <input
+                                type="number"
+                                value={sizeStocks[size] !== null && sizeStocks[size] !== undefined ? sizeStocks[size] : ''}
+                                onChange={(e) => handleSizeStockChange(size, e.target.value)}
+                                placeholder="0"
+                                min="0"
+                                style={{ 
+                                  width: '100px', 
+                                  padding: '0.5rem', 
+                                  border: '1px solid #d1d5db', 
+                                  borderRadius: '6px', 
+                                  fontSize: '0.875rem',
+                                  background: '#ffffff'
+                                }}
+                              />
                             </div>
                             <button
                               type="button"
@@ -2684,7 +2742,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                       </div>
                     )}
                     <small className="apm-form-help">
-                      Add trophy sizes and their corresponding prices. Each size must have a price (e.g., 13" = 500, 16" = 750, 19" = 1000).
+                      Add trophy sizes and their corresponding prices and stock quantities. Each size must have a price (e.g., 13" = 500, 16" = 750, 19" = 1000).
                     </small>
                   </div>
                 </div>
@@ -3201,7 +3259,9 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               {(!apparelCategorySelected || simpleCategorySelected) && !trophyCategorySelected ? renderSimplePriceSection() : null}
 
               {/* Show stock quantity for balls, medals, trophies, and non-apparel categories */}
-              {(!apparelCategorySelected || simpleCategorySelected || trophyCategorySelected) && (
+              {/* Hide single stock quantity field for balls and trophies when they have sizes (use per-size stocks instead) */}
+              {(!apparelCategorySelected || simpleCategorySelected || trophyCategorySelected) && 
+               !((trophyCategorySelected || ballCategorySelected) && availableSizes.length > 0) && (
                 <div className="apm-section-block">
                   <div className="apm-form-group">
                     <label>Stock Quantity (Optional)</label>
