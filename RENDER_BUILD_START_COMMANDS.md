@@ -300,9 +300,9 @@ Node
 After deployment, verify:
 
 - [ ] Build completes without errors
-- [ ] Health check passes: `https://your-app.onrender.com/health`
-- [ ] Frontend loads: `https://your-app.onrender.com`
-- [ ] API works: `https://your-app.onrender.com/api/products`
+- [ ] Health check passes: `https://yohanns-api.onrender.com/health`
+- [ ] Frontend loads: `https://yohanns-api.onrender.com`
+- [ ] API works: `https://yohanns-api.onrender.com/api/products`
 - [ ] No "build folder not found" errors in logs
 - [ ] Port is set correctly (Render sets automatically)
 

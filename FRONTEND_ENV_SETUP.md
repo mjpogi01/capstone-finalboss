@@ -18,11 +18,11 @@ REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here
 
 ### **Backend API URL (REQUIRED)**
 ```
-REACT_APP_API_URL=https://your-backend.onrender.com
+REACT_APP_API_URL=https://yohanns-api.onrender.com
 ```
 
 **Example:**
-- If your backend is on Render: `https://your-api.onrender.com`
+- Your backend URL: `https://yohanns-api.onrender.com`
 - If your backend is on another service: `https://api.yourdomain.com`
 
 ---
@@ -63,7 +63,7 @@ REACT_APP_SUPABASE_URL=https://kjqcswjljgavigyfzauj.supabase.co
 REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # Backend API
-REACT_APP_API_URL=https://your-backend.onrender.com
+REACT_APP_API_URL=https://yohanns-api.onrender.com
 ```
 
 ---
@@ -80,7 +80,7 @@ REACT_APP_API_URL=https://your-backend.onrender.com
 ## 🔍 Verification
 
 After deployment, check browser console:
-- Should see: `🔗 API URL: https://your-backend.onrender.com`
+- Should see: `🔗 API URL: https://yohanns-api.onrender.com`
 - Should see: `📱 Mobile Device: false/true`
 - No errors about missing Supabase configuration
 

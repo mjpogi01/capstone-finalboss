@@ -55,9 +55,9 @@ GROQ_API_KEY=your-groq-api-key
 
 ### **Step 5: Verify**
 
-✅ Health check: `https://your-app.onrender.com/health`
-✅ API test: `https://your-app.onrender.com/api/products`
-✅ Frontend: `https://your-app.onrender.com`
+✅ Health check: `https://yohanns-api.onrender.com/health`
+✅ API test: `https://yohanns-api.onrender.com/api/products`
+✅ Frontend: `https://yohanns-api.onrender.com`
 
 ---
 

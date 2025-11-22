@@ -77,7 +77,7 @@ CLIENT_URL=https://your-frontend-domain.com
 ```
 
 **Examples:**
-- If your frontend is on Render: `https://your-app.onrender.com`
+- If your frontend is on Render: `https://yohanns-api.onrender.com`
 - If your frontend is on Hostinger: `https://yourdomain.com`
 - If your frontend is on Vercel: `https://your-app.vercel.app`
 
@@ -145,11 +145,11 @@ GROQ_API_KEY=your-groq-api-key
 After deployment, verify your setup:
 
 ### ✅ **Check 1: Backend Health**
-Visit: `https://your-backend.onrender.com/health`
+Visit: `https://yohanns-api.onrender.com/health`
 - Should return: `{"ok":true}`
 
 ### ✅ **Check 2: API Endpoints**
-Visit: `https://your-backend.onrender.com/api/products`
+Visit: `https://yohanns-api.onrender.com/api/products`
 - Should return product data (not errors)
 
 ### ✅ **Check 3: Check Logs**

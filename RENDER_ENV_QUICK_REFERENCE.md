@@ -70,7 +70,7 @@ GROQ_API_KEY=your-groq-api-key
 1. ✅ Click **Save Changes**
 2. ✅ Wait for automatic deployment (2-5 minutes)
 3. ✅ Check logs for errors
-4. ✅ Test: `https://your-backend.onrender.com/health`
+4. ✅ Test: `https://yohanns-api.onrender.com/health`
 
 ---
 
