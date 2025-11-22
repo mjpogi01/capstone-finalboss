@@ -217,30 +217,70 @@ router.post('/reset-password', async (req, res) => {
       
       // If user still not found, return success anyway (security best practice)
       if (!user) {
+        console.log('⚠️ User not found for password reset');
         return res.json({ 
           success: true,
           message: 'If an account exists with this email, a password reset link has been sent.'
         });
       }
 
+      // Debug: Log user info to check OAuth status
+      console.log('👤 User found:', {
+        id: user.id,
+        email: user.email,
+        identities: user.identities,
+        app_metadata: user.app_metadata,
+        user_metadata: user.user_metadata
+      });
+
       // Check if user signed up with OAuth (Google, etc.) - they don't have passwords
-      const isOAuthUser = user.identities && user.identities.some(
-        identity => identity.provider !== 'email'
-      );
+      // OAuth users have identities array with provider info
+      const hasOAuthIdentity = user.identities && Array.isArray(user.identities) && 
+        user.identities.some(identity => {
+          const provider = identity.provider || identity.identity_provider;
+          return provider && provider !== 'email';
+        });
+      
+      // Also check app_metadata for provider info (some Supabase versions store it there)
+      const hasOAuthMetadata = user.app_metadata && 
+        (user.app_metadata.provider === 'google' || 
+         user.app_metadata.providers?.includes('google') ||
+         user.app_metadata.providers?.includes('oauth'));
+      
+      const isOAuthUser = hasOAuthIdentity || hasOAuthMetadata;
       
       if (isOAuthUser) {
-        const providers = user.identities
-          .filter(id => id.provider !== 'email')
-          .map(id => id.provider.charAt(0).toUpperCase() + id.provider.slice(1))
-          .join(' or ');
+        // Extract provider names from identities
+        let providers = [];
+        if (user.identities && Array.isArray(user.identities)) {
+          providers = user.identities
+            .map(id => {
+              const provider = id.provider || id.identity_provider;
+              return provider && provider !== 'email' ? provider : null;
+            })
+            .filter(Boolean)
+            .map(p => p.charAt(0).toUpperCase() + p.slice(1));
+        }
         
-        console.log(`⚠️ OAuth user detected (${providers}) - cannot reset password`);
+        // Fallback to app_metadata if no identities
+        if (providers.length === 0 && user.app_metadata?.provider) {
+          providers = [user.app_metadata.provider.charAt(0).toUpperCase() + user.app_metadata.provider.slice(1)];
+        }
+        
+        const providerText = providers.length > 0 ? providers.join(' or ') : 'OAuth';
+        
+        console.log(`⚠️ OAuth user detected (${providerText}) - cannot reset password`);
+        console.log('   User identities:', JSON.stringify(user.identities, null, 2));
+        console.log('   App metadata:', JSON.stringify(user.app_metadata, null, 2));
+        
         return res.status(400).json({
           success: false,
-          error: `This account was created using ${providers} sign-in. Please sign in with ${providers} instead. Password reset is not available for OAuth accounts.`,
+          error: `This account was created using ${providerText} sign-in. Please sign in with ${providerText} instead. Password reset is not available for OAuth accounts.`,
           code: 'OAUTH_USER'
         });
       }
+      
+      console.log('✅ User is email-based (not OAuth) - proceeding with password reset');
     } catch (userError) {
       // Error fetching user - return success anyway (security best practice)
       console.warn('Could not fetch user info for password reset:', userError.message);
