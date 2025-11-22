@@ -331,7 +331,13 @@ class AuthService {
     try {
       // Use backend endpoint for custom email template
       // Use the same API_URL as other methods (imported from config)
-      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+      const url = `${API_URL}/api/auth/reset-password`;
+      console.log('🔔 Frontend: Calling password reset endpoint');
+      console.log('📡 URL:', url);
+      console.log('📧 Email:', email);
+      console.log('🔗 API_URL:', API_URL);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,14 +345,23 @@ class AuthService {
         body: JSON.stringify({ email })
       });
 
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response ok:', response.ok);
+      
       const data = await response.json();
+      console.log('📥 Response data:', data);
 
       if (!response.ok) {
+        console.error('❌ Response not OK:', data);
         throw new Error(data.error || 'Failed to send password reset email');
       }
 
+      console.log('✅ Password reset request successful');
       return { success: true, data };
     } catch (error) {
+      console.error('❌ Frontend error in resetPasswordForEmail:', error);
+      console.error('   Error message:', error.message);
+      console.error('   Error stack:', error.stack);
       throw new Error(error.message || 'Network error occurred');
     }
   }

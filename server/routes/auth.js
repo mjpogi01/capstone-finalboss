@@ -121,8 +121,13 @@ router.post('/login', async (req, res) => {
 
 // Password reset endpoint with custom email template
 router.post('/reset-password', async (req, res) => {
+  console.log('🔔 Password reset endpoint called');
+  console.log('📥 Request body:', req.body);
+  console.log('📥 Request headers:', req.headers);
+  
   try {
     const { email } = req.body;
+    console.log('📧 Email received:', email);
 
     if (!email) {
       return res.status(400).json({ 
