@@ -8,6 +8,7 @@ import Sidebar from '../../components/admin/Sidebar';
 import '../admin/AdminDashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { getAPI_URL } from '../../config/api';
 import './Accounts.css';
 import './admin-shared.css';
 
@@ -99,7 +100,7 @@ const Accounts = () => {
       if (currentIsOwner) {
         try {
           console.log('🔵 Attempting to fetch admin accounts...');
-          const adminResponse = await fetch(`http://localhost:4000/api/admin/users?t=${Date.now()}`, {
+          const adminResponse = await fetch(`${getAPI_URL()}/api/admin/users?t=${Date.now()}`, {
             headers: {
               ...headers,
               'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -139,7 +140,7 @@ const Accounts = () => {
           searchParams.append('search', customerSearchTerm);
         }
         
-        const customerResponse = await fetch(`http://localhost:4000/api/admin/customers?${searchParams.toString()}`, {
+        const customerResponse = await fetch(`${getAPI_URL()}/api/admin/customers?${searchParams.toString()}`, {
           headers: {
             ...headers,
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -182,7 +183,7 @@ const Accounts = () => {
       // Fetch artist accounts
       try {
         console.log('🎨 Attempting to fetch artist accounts...');
-        const artistResponse = await fetch(`http://localhost:4000/api/admin/artists?t=${Date.now()}`, {
+        const artistResponse = await fetch(`${getAPI_URL()}/api/admin/artists?t=${Date.now()}`, {
           headers: {
             ...headers,
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -237,7 +238,7 @@ const Accounts = () => {
         }
 
         console.log('📤 Sending delete request for admin ID:', adminId);
-        const response = await fetch(`http://localhost:4000/api/delete/user/${adminId}`, {
+        const response = await fetch(`${getAPI_URL()}/api/delete/user/${adminId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
@@ -296,7 +297,7 @@ const Accounts = () => {
         }
 
         console.log('📤 Sending delete request for customer ID:', customerId);
-        const response = await fetch(`http://localhost:4000/api/delete/user/${customerId}`, {
+        const response = await fetch(`${getAPI_URL()}/api/delete/user/${customerId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
@@ -355,7 +356,7 @@ const Accounts = () => {
         }
 
         console.log('📤 Sending delete request for artist ID:', artistId);
-        const response = await fetch(`http://localhost:4000/api/admin/artists/${artistId}`, {
+        const response = await fetch(`${getAPI_URL()}/api/admin/artists/${artistId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
@@ -431,7 +432,7 @@ const Accounts = () => {
 
       console.log('🔑 Session found, access token length:', session.access_token?.length);
 
-      const response = await fetch(`http://localhost:4000/api/admin/artists/${editingArtist.id}`, {
+      const response = await fetch(`${getAPI_URL()}/api/admin/artists/${editingArtist.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -501,7 +502,7 @@ const Accounts = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:4000/api/admin/artists/${artist.id}/toggle-status`, {
+      const response = await fetch(`${getAPI_URL()}/api/admin/artists/${artist.id}/toggle-status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -574,7 +575,7 @@ const Accounts = () => {
             searchParams.append('search', customerSearchTerm);
           }
           
-          const customerResponse = await fetch(`http://localhost:4000/api/admin/customers?${searchParams.toString()}`, {
+          const customerResponse = await fetch(`${getAPI_URL()}/api/admin/customers?${searchParams.toString()}`, {
             headers: {
               ...headers,
               'Cache-Control': 'no-cache, no-store, must-revalidate',
