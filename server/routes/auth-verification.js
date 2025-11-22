@@ -94,11 +94,11 @@ router.post('/validate-email', async (req, res) => {
       // Continue with validation even if check fails
     }
 
-    // Comprehensive email validation with SMTP verification
+    // Comprehensive email validation (SMTP verification disabled - using Resend for sending)
     // For /validate-email endpoint (used during signup), be STRICT
     const validationResult = await validateEmail(normalizedEmail, {
       checkDomain: true,
-      verifyEmail: true, // Enable SMTP verification to check if email actually exists
+      verifyEmail: false, // Disabled - we verify via email code instead (faster, more reliable)
       allowDisposable: false
     });
 
@@ -180,10 +180,10 @@ router.post('/send-code', async (req, res) => {
       // Continue with validation even if check fails
     }
 
-    // Comprehensive email validation with SMTP verification
+    // Comprehensive email validation (SMTP verification disabled - using Resend for sending)
     const validationResult = await validateEmail(normalizedEmail, {
       checkDomain: true,
-      verifyEmail: true, // Enable SMTP verification to check if email actually exists
+      verifyEmail: false, // Disabled - we verify via email code instead (faster, more reliable)
       allowDisposable: false
     });
 
