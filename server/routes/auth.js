@@ -119,6 +119,16 @@ router.post('/login', async (req, res) => {
   });
 });
 
+// Test endpoint to verify route is working
+router.get('/reset-password/test', (req, res) => {
+  console.log('✅ Password reset test endpoint reached');
+  res.json({ 
+    success: true, 
+    message: 'Password reset endpoint is accessible',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Password reset endpoint with custom email template
 router.post('/reset-password', async (req, res) => {
   console.log('🔔 Password reset endpoint called');
