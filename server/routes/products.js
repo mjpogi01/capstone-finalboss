@@ -632,7 +632,8 @@ router.put('/:id', async (req, res) => {
       additional_images, 
       stock_quantity, 
       sold_quantity,
-      branch_id 
+      branch_id,
+      size_stocks
     } = req.body;
 
     const soldQuantityValue = sold_quantity === '' || sold_quantity === null || sold_quantity === undefined ? 0 : parseInt(sold_quantity);
@@ -759,6 +760,28 @@ router.put('/:id', async (req, res) => {
       updateData.fabric_surcharges = fabricSurchargesValue;
     } else if (req.body.hasOwnProperty('fabric_surcharges') && req.body.fabric_surcharges === null) {
       updateData.fabric_surcharges = null;
+    }
+
+    // Handle size_stocks - per-size stock quantities (for trophies with sizes)
+    let sizeStocksValue = null;
+    if (size_stocks !== undefined && size_stocks !== null) {
+      if (typeof size_stocks === 'string' && size_stocks.trim() !== '') {
+        try {
+          sizeStocksValue = JSON.parse(size_stocks);
+        } catch (e) {
+          console.error('❌ [Products API] Error parsing size_stocks string:', e);
+          sizeStocksValue = null;
+        }
+      } else if (typeof size_stocks === 'object' && size_stocks !== null) {
+        sizeStocksValue = size_stocks;
+      }
+    }
+    if (sizeStocksValue !== null && sizeStocksValue !== undefined) {
+      updateData.size_stocks = sizeStocksValue;
+      console.log('📦 [Products API] size_stocks being updated:', sizeStocksValue);
+    } else if (req.body.hasOwnProperty('size_stocks') && req.body.size_stocks === null) {
+      // Explicitly set to null if the request wants to clear it
+      updateData.size_stocks = null;
     }
 
     console.log('📦 [Products API] Final update data:', updateData);
