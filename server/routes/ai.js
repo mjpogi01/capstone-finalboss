@@ -1099,7 +1099,8 @@ router.post('/analytics', async (req, res, next) => {
       'Do not prefix bullet items with apostrophes or other decorative characters.',
       'Always explain what the numbers mean for the business, highlight noteworthy changes, and suggest potential follow-up actions.',
       'Unless the user explicitly requests cancelled orders, treat them as excluded from revenue and order counts (status values "cancelled" / "canceled"); do not sum their total_amount.',
-      'If the user specifically asks about cancelled orders, centre the analysis on cancellation metrics (counts, rates, branch comparisons) and avoid mixing in unrelated revenue totals unless the user also asks for them.',
+      'If the user specifically asks about cancelled orders (e.g., "total sales of cancelled orders", "revenue from cancelled orders"), the current dataset excludes these orders. You MUST generate a SAFE SELECT query wrapped in <SQL>...</SQL> to fetch cancelled order data from the orders table. Do not just say you need to query - actually provide the SQL query wrapped in <SQL>...</SQL>.',
+      'When analyzing cancelled orders, focus on cancellation metrics (counts, rates, total amounts, branch comparisons).',
       'Branch information is stored in orders.pickup_location (text); there is no branch_id column in orders. Use pickup_location (or join to the branches table by name) when aggregating by branch.',
       'When analyzing top product groups, use the standardized categories returned by the dataset (Basketball Jerseys, Volleyball Jerseys, Hoodies, Uniforms, T-shirts, Long Sleeves, Custom Jerseys, Sports Balls, Trophies, Medals) and discuss them explicitly rather than inventing new groupings.',
       'When analyzing product stocks, focus on on-hand inventory items (balls, trophies, medals) that have stock_quantity. Identify low stock levels, products that may need restocking, stock distribution across branches, and provide actionable inventory management recommendations. Products with stock_quantity at or below reorder_level should be flagged as needing attention.',
@@ -1174,14 +1175,22 @@ router.post('/analytics', async (req, res, next) => {
       // Check if the question requires data that might not be in the current dataset
       const questionText = (lastMessage?.content || rawQuestion || '').toLowerCase();
       const requiresLocationData = /(province|city|location|address|where|batangas|calaca|balayan|mindoro)/i.test(questionText);
-      const requiresDifferentData = requiresLocationData && 
-        (!dataset.rows[0] || (!dataset.rows[0].province && !dataset.rows[0].city && !dataset.rows[0].delivery_address));
+      const requiresCancelledOrdersData = /(cancel|cancelled|canceled).*(order|sales|revenue|total|amount)|(order|sales|revenue|total|amount).*(cancel|cancelled|canceled)|total.*sales.*cancel|sales.*of.*cancel/i.test(questionText);
+      const hasLocationDataInDataset = dataset.rows[0] && (dataset.rows[0].province || dataset.rows[0].city || dataset.rows[0].delivery_address);
+      const requiresDifferentData = (requiresLocationData && !hasLocationDataInDataset) || requiresCancelledOrdersData;
 
       if (requiresDifferentData) {
         // Question needs different data - allow SQL generation
+        let dataTypeHint = '';
+        if (requiresCancelledOrdersData) {
+          dataTypeHint = 'The provided dataset excludes cancelled orders by default. Generate a SAFE SELECT query to fetch cancelled order data from the orders table. ';
+        } else if (requiresLocationData) {
+          dataTypeHint = 'Location-based questions require querying user_addresses table and/or orders.delivery_address JSONB field. ';
+        }
+        
         datasetAnalysisConversation.push({
           role: 'system',
-          content: 'The provided dataset does not contain the information needed to answer this question. Generate a SAFE SELECT query wrapped in <SQL>...</SQL> to fetch the required data. The dataset context is provided for reference, but you should query the database directly for location/customer data.'
+          content: `The provided dataset does not contain the information needed to answer this question. ${dataTypeHint}Generate a SAFE SELECT query wrapped in <SQL>...</SQL> to fetch the required data. The dataset context is provided for reference, but you should query the database directly.`
         });
       } else {
         // Dataset should have the needed data

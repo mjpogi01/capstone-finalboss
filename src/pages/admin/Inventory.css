@@ -464,6 +464,7 @@ body.sidebar-collapsed .filter-controls,
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
+  z-index: 1; /* Base layer for table container */
 }
 
 /* Ensure table container handles overflow properly on smaller laptops */
@@ -670,6 +671,8 @@ body.sidebar-collapsed .inventory-table,
 .inventory-table tbody tr {
   border-bottom: 1px solid #f1f5f9;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1; /* Base layer for table rows */
 }
 
 /* Alternating row backgrounds */
@@ -826,6 +829,318 @@ body.sidebar-collapsed .inventory-table,
   transform: scale(1.05);
 }
 
+/* Stock Info with Size Stocks */
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.size-stocks-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.size-stock-item {
+  padding: 2px 6px;
+  background-color: #f1f5f9;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.size-stock-more {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Stock Dropdown Overlay - Professional Design */
+.stock-dropdown-container {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.stock-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.stock-dropdown-trigger:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.stock-dropdown-trigger.active {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.stock-chevron {
+  font-size: 0.7rem;
+  color: #64748b;
+  transition: transform 0.2s ease;
+  margin-left: 0.25rem;
+}
+
+.stock-dropdown-trigger.active .stock-chevron {
+  color: #3b82f6;
+}
+
+.stock-dropdown-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 99999 !important; /* Highest z-index to appear above everything */
+  min-width: 280px;
+  max-width: min(320px, calc(100vw - 2rem));
+  width: max-content;
+  animation: stockDropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  pointer-events: auto !important;
+  margin: 0;
+  /* Prevent dropdown from causing layout shifts */
+  will-change: transform, opacity;
+}
+
+/* Portal version - fixed positioning, appears above everything */
+.stock-dropdown-portal {
+  position: fixed !important;
+  transform: none !important;
+  z-index: 999999 !important; /* Even higher for portal */
+}
+
+/* Ensure table cell doesn't expand when dropdown opens */
+.inventory-table .product-stock-cell {
+  overflow: visible !important;
+  position: relative;
+  /* Keep cell width fixed */
+  width: 7% !important;
+  min-width: 70px !important;
+  max-width: 90px !important;
+}
+
+/* Ensure dropdown stays within viewport on small screens */
+@media (max-width: 1024px) {
+  .stock-dropdown-overlay {
+    max-width: min(300px, calc(100vw - 1rem));
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  /* If dropdown would overflow, adjust position */
+  .product-stock-cell:last-child .stock-dropdown-overlay {
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+}
+
+/* Ensure dropdown container has proper positioning context */
+.stock-dropdown-container {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  z-index: 1; /* Base layer for container */
+}
+
+/* Ensure dropdown appears above table rows and all other elements */
+.product-stock-cell {
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+  /* Prevent dropdown from affecting table layout */
+  vertical-align: middle;
+}
+
+/* Ensure dropdown trigger button is clickable */
+.stock-dropdown-trigger {
+  position: relative;
+  z-index: 2; /* Above table cell */
+  white-space: nowrap;
+}
+
+@keyframes stockDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.stock-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.stock-dropdown-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stock-dropdown-close {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.stock-dropdown-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.stock-dropdown-content {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.625rem;
+}
+
+.stock-dropdown-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stock-dropdown-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.stock-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.stock-dropdown-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.stock-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  margin-bottom: 0.375rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.stock-dropdown-item:last-of-type {
+  margin-bottom: 0;
+}
+
+.stock-dropdown-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateX(2px);
+}
+
+.stock-size-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  flex: 1;
+}
+
+.stock-size-quantity {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  min-width: 45px;
+  text-align: center;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.stock-size-quantity.in-stock {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.stock-size-quantity.low-stock {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stock-size-quantity.out-of-stock {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.stock-dropdown-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  margin-top: 0.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-top: 2px solid #e2e8f0;
+  border-radius: 0 0 12px 12px;
+}
+
+.stock-total-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stock-total-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
 /* Sold Count */
 .product-sold-cell {
   width: auto;
@@ -902,6 +1217,11 @@ body.sidebar-collapsed .inventory-table,
   border-color: #3b82f6;
 }
 
+.sizes-dropdown-toggle.active {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
 .sizes-dropdown-toggle:focus {
   outline: none;
   border-color: #3b82f6;
@@ -917,6 +1237,11 @@ body.sidebar-collapsed .inventory-table,
   font-size: 0.7rem;
   color: #64748b;
   transition: transform 0.2s ease;
+  margin-left: 0.25rem;
+}
+
+.sizes-dropdown-toggle.active .sizes-chevron {
+  color: #3b82f6;
 }
 
 /* Dropdown Content */
@@ -935,6 +1260,140 @@ body.sidebar-collapsed .inventory-table,
   max-width: 300px;
   width: max-content;
   animation: dropdownFadeIn 0.2s ease;
+}
+
+/* Sizes Dropdown Overlay - Professional Design (similar to stock dropdown) */
+.sizes-dropdown-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 99999 !important;
+  min-width: 280px;
+  max-width: min(320px, calc(100vw - 2rem));
+  width: max-content;
+  animation: sizesDropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  pointer-events: auto !important;
+  margin: 0;
+  will-change: transform, opacity;
+}
+
+/* Portal version - fixed positioning, appears above everything */
+.sizes-dropdown-portal {
+  position: fixed !important;
+  transform: none !important;
+  z-index: 999999 !important;
+}
+
+@keyframes sizesDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.sizes-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sizes-dropdown-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sizes-dropdown-close {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.sizes-dropdown-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Updated sizes dropdown content for portal */
+.sizes-dropdown-overlay .sizes-dropdown-content {
+  position: static;
+  top: auto;
+  left: auto;
+  margin-top: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.625rem;
+}
+
+.sizes-dropdown-overlay .sizes-dropdown-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sizes-dropdown-overlay .sizes-dropdown-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.sizes-dropdown-overlay .sizes-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.sizes-dropdown-overlay .sizes-dropdown-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.sizes-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 0.875rem;
+  margin-bottom: 0.375rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.sizes-dropdown-item:last-of-type {
+  margin-bottom: 0;
+}
+
+.sizes-dropdown-overlay .sizes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sizes-dropdown-overlay .size-item {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
 }
 
 /* Ensure dropdown appears above other elements */
@@ -1904,6 +2363,34 @@ body.sidebar-collapsed .floating-add-btn {
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
   }
+
+  /* Mobile stock dropdown adjustments */
+  .stock-dropdown-overlay {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    min-width: 260px;
+    max-width: calc(100vw - 2rem);
+    width: max-content;
+  }
+
+  .stock-dropdown-content {
+    max-height: 300px;
+  }
+
+  .stock-dropdown-item {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .stock-size-label {
+    font-size: 0.8125rem;
+  }
+
+  .stock-size-quantity {
+    font-size: 0.8125rem;
+    padding: 0.2rem 0.625rem;
+    min-width: 45px;
+  }
 }
 
 /* Mobile Small (320px - 480px) */
@@ -1967,6 +2454,52 @@ body.sidebar-collapsed .floating-add-btn {
   
   .floating-add-btn svg {
     font-size: 1.125rem;
+  }
+
+  /* Small mobile stock dropdown adjustments */
+  .stock-dropdown-overlay {
+    min-width: 240px;
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .stock-dropdown-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .stock-dropdown-title {
+    font-size: 0.8125rem;
+  }
+
+  .stock-dropdown-content {
+    padding: 0.625rem;
+    max-height: 250px;
+  }
+
+  .stock-dropdown-item {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .stock-size-label {
+    font-size: 0.75rem;
+  }
+
+  .stock-size-quantity {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    min-width: 40px;
+  }
+
+  .stock-dropdown-footer {
+    padding: 0.875rem 1rem;
+  }
+
+  .stock-total-label {
+    font-size: 0.8125rem;
+  }
+
+  .stock-total-value {
+    font-size: 0.9375rem;
   }
 }
 

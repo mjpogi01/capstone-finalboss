@@ -1103,6 +1103,182 @@ function resolveCustomerEmail(order) {
   return null;
 }
 
+// Get lightweight dashboard summary (only essential metrics for fast loading)
+router.get('/dashboard-summary', async (req, res) => {
+  try {
+    const { branch_id } = req.query;
+    console.log('📊 Fetching dashboard summary (lightweight)...');
+
+    let branchContext;
+    try {
+      branchContext = await resolveBranchContext(req.user);
+      
+      // For owners: if branch_id is provided in query, create branch context for that branch
+      if (req.user?.role === 'owner' && branch_id) {
+        const branchId = parseInt(branch_id, 10);
+        if (!Number.isNaN(branchId)) {
+          try {
+            const { data: branchData, error: branchError } = await supabase
+              .from('branches')
+              .select('id, name')
+              .eq('id', branchId)
+              .single();
+            
+            if (!branchError && branchData) {
+              branchContext = {
+                branchId: branchData.id,
+                branchName: branchData.name,
+                normalizedName: normalizeBranchValue(branchData.name)
+              };
+            }
+          } catch (err) {
+            console.warn('⚠️ Error resolving branch for owner:', err.message);
+          }
+        }
+      }
+    } catch (branchError) {
+      console.error('❌ Error resolving branch context:', branchError);
+      return handleAnalyticsError(res, branchError, 'Failed to resolve branch context');
+    }
+
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfCurrentMonthIso = startOfCurrentMonth.toISOString();
+
+    const summaryFilter = buildBranchFilterClause(branchContext, 1);
+    const customersFilter = buildBranchFilterClause(branchContext, 1);
+
+    // Check if DATABASE_URL is configured
+    if (!process.env.DATABASE_URL) {
+      // Use Supabase client fallback - but only fetch what we need
+      try {
+        let ordersQuery = supabase
+          .from('orders')
+          .select('total_amount, status, user_id')
+          .lt('created_at', startOfCurrentMonthIso);
+        
+        if (branchContext?.branchName) {
+          ordersQuery = ordersQuery.ilike('pickup_location', `%${branchContext.branchName}%`);
+        }
+        
+        const { data: orders, error: ordersError } = await ordersQuery;
+        
+        if (ordersError) {
+          throw ordersError;
+        }
+        
+        // Filter out cancelled orders
+        const validOrders = (orders || []).filter(order => {
+          const status = (order.status || '').toLowerCase();
+          return status !== 'cancelled' && status !== 'canceled';
+        });
+        
+        // Calculate summary metrics
+        const totalRevenue = validOrders.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0);
+        const totalOrders = validOrders.length;
+        const customerSet = new Set();
+        validOrders.forEach(order => {
+          if (order.user_id) {
+            customerSet.add(order.user_id);
+          }
+        });
+        const totalCustomers = customerSet.size;
+        
+        return res.json({
+          success: true,
+          data: {
+            summary: {
+              totalRevenue,
+              totalOrders,
+              totalCustomers,
+              averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+            }
+          }
+        });
+      } catch (fallbackError) {
+        console.error('❌ Supabase client fallback error:', fallbackError);
+        return res.json({
+          success: true,
+          data: {
+            summary: {
+              totalRevenue: 0,
+              totalOrders: 0,
+              totalCustomers: 0,
+              averageOrderValue: 0
+            }
+          }
+        });
+      }
+    }
+
+    // Use optimized SQL queries for summary only
+    const summaryQueryPromise = executeSql(
+      `
+        SELECT 
+          COUNT(*)::bigint AS total_orders,
+          COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+        FROM orders
+        WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
+          AND created_at < $1
+        ${summaryFilter.clause}
+      `,
+      [startOfCurrentMonthIso, ...summaryFilter.params]
+    );
+
+    const uniqueCustomersPromise = executeSql(
+      `
+        SELECT COUNT(DISTINCT user_id)::bigint AS total_customers
+        FROM orders
+        WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
+          AND created_at < $1
+        ${customersFilter.clause}
+      `,
+      [startOfCurrentMonthIso, ...customersFilter.params]
+    );
+
+    let summaryResult, customersResult;
+    
+    try {
+      [summaryResult, customersResult] = await Promise.all([
+        summaryQueryPromise,
+        uniqueCustomersPromise
+      ]);
+    } catch (sqlError) {
+      console.error('❌ SQL query execution error:', sqlError);
+      return res.json({
+        success: true,
+        data: {
+          summary: {
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalCustomers: 0,
+            averageOrderValue: 0
+          }
+        }
+      });
+    }
+
+    const totalOrders = Number(summaryResult?.rows?.[0]?.total_orders) || 0;
+    const totalRevenue = Number(summaryResult?.rows?.[0]?.total_revenue) || 0;
+    const totalCustomers = Number(customersResult?.rows?.[0]?.total_customers) || 0;
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalRevenue,
+          totalOrders,
+          totalCustomers,
+          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Dashboard summary error:', error);
+    return handleAnalyticsError(res, error, 'Failed to fetch dashboard summary');
+  }
+});
+
 // Get analytics dashboard data
 router.get('/dashboard', async (req, res) => {
   try {

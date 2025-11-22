@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import './RecentOrders.css';
 import orderService from '../../services/orderService';
 
 const RecentOrders = () => {
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +14,9 @@ const RecentOrders = () => {
   const [showAll, setShowAll] = useState(false);
   const INITIAL_DISPLAY_COUNT = 5;
   const filterContainerRef = useRef(null);
+  
+  // Check if we're on the orders page
+  const isOnOrdersPage = location.pathname.includes('/orders');
 
   // Close dropdown when clicking outside - improved approach
   useEffect(() => {
@@ -40,25 +45,40 @@ const RecentOrders = () => {
   }, [showFilterDropdown]);
 
   useEffect(() => {
+    // Only fetch orders if we're on the orders page
+    if (!isOnOrdersPage) {
+      return;
+    }
+    
     fetchRecentOrders(true);
     
     // Refresh orders every 30 seconds to keep data up to date (silently, without loading spinner)
     const refreshInterval = setInterval(() => {
-      fetchRecentOrders(false);
+      // Only refresh if still on orders page
+      if (isOnOrdersPage) {
+        fetchRecentOrders(false);
+      }
     }, 30000);
     
     // Cleanup interval on unmount
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [isOnOrdersPage]);
 
   const fetchRecentOrders = async (showLoading = true) => {
+    // Only fetch orders if we're on the orders page
+    if (!isOnOrdersPage) {
+      return;
+    }
+    
     try {
       if (showLoading) {
         setLoading(true);
       }
       const response = await orderService.getAllOrders({
-        limit: 100,
-        dateSort: 'desc'
+        limit: 50, // Reduced from 100 to 50 for better performance
+        dateSort: 'desc',
+        includeUserData: true, // Recent orders widget needs user data for display
+        includeStats: false // Skip stats - not needed for recent orders widget
       });
       
       if (response && response.orders && Array.isArray(response.orders)) {

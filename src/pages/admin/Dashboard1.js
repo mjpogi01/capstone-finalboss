@@ -8,7 +8,7 @@ import {
 } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 import ReactEChartsCore from 'echarts-for-react/lib/core';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard1.css';
 import './Analytics.css';
 import orderService from '../../services/orderService';
@@ -21,18 +21,8 @@ import {
   faUsers,
   faShoppingCart,
   faChartLine,
-  faSearch,
-  faFilter,
   faPlus,
   faBox,
-  faUser,
-  faFileAlt,
-  faCog,
-  faChevronUp,
-  faChevronDown,
-  faEdit,
-  faBoxOpen,
-  faTrash,
   faTimes,
   faBuilding,
   faStore,
@@ -41,7 +31,9 @@ import {
   faEyeSlash,
   faComments,
   faClipboardList,
-  faEnvelope
+  faEnvelope,
+  faChevronUp,
+  faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 import { authFetch } from '../../services/apiClient';
 import { useAuth } from '../../contexts/AuthContext';
@@ -58,20 +50,25 @@ echarts.use([
   const Dashboard1 = () => {
   const { user, hasAdminAccess } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isOwner = user?.user_metadata?.role === 'owner';
   const isAdmin = user?.user_metadata?.role === 'admin';
   const adminBranchId = isAdmin ? user?.user_metadata?.branch_id : null;
   const canAccessEmailMarketing = hasAdminAccess();
   
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showStockSearch, setShowStockSearch] = useState(false);
-  const [stockFilters, setStockFilters] = useState({
+  // Check if we're on the orders page
+  const isOnOrdersPage = location.pathname.includes('/orders');
+  
+  const [searchTerm] = useState('');
+  const [stockFilters] = useState({
     category: '',
     status: ''
   });
   const [showStockFilters, setShowStockFilters] = useState(false);
-  const [showAllStockItems, setShowAllStockItems] = useState(false);
-  const [stockItemsLoading, setStockItemsLoading] = useState(true);
+  const [showAllStockItems] = useState(false);
+  const [stockItemsLoading, setStockItemsLoading] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [restockingItem, setRestockingItem] = useState(null);
   const [restockQuantity, setRestockQuantity] = useState('');
@@ -95,9 +92,6 @@ echarts.use([
   
   // Refs to store chart instances for resizing
   const chartRefs = useRef({});
-
-  // Current time state
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Global values visibility - controls all values in dashboard
   // Load from localStorage on mount, default to false (hidden)
@@ -137,14 +131,6 @@ echarts.use([
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Update time every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   // Resize charts when tabs change or window resizes
   useEffect(() => {
@@ -192,18 +178,16 @@ echarts.use([
     customersTrend: '+0%',
     ordersTrend: '+0%'
   });
-  const [loadingStats, setLoadingStats] = useState(true);
 
 
   const [stockItems, setStockItems] = useState([]);
 
   const [orders, setOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersSearchTerm, setOrdersSearchTerm] = useState('');
   const [showOrdersSearch, setShowOrdersSearch] = useState(false);
   const [ordersFilterStatus, setOrdersFilterStatus] = useState('all');
   const [showOrdersFilterDropdown, setShowOrdersFilterDropdown] = useState(false);
-  const [showAllOrders, setShowAllOrders] = useState(false);
+  const [showAllOrders] = useState(false);
   const INITIAL_DISPLAY_COUNT = 5;
 
   const getStockStatusColor = (status) => {
@@ -215,30 +199,6 @@ echarts.use([
     return colors[status] || '#6b7280';
   };
 
-  const getProgressPercentage = (quantity, reorderLevel) => {
-    if (quantity === 0) return 0;
-    const max = reorderLevel * 5;
-    return Math.min((quantity / max) * 100, 100);
-  };
-
-
-  const formatCategory = (category) => {
-    if (!category) return '';
-    // Format category names for display: "t-shirts" -> "T-Shirts", "long sleeves" -> "Long Sleeves"
-    return category
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  const handleEdit = (item) => {
-    setEditingItem({ ...item });
-  };
-
-  const handleRestock = (item) => {
-    setRestockingItem(item);
-    setRestockQuantity('');
-  };
 
   const handleRestockSubmit = async () => {
     if (!restockQuantity || parseInt(restockQuantity) <= 0) {
@@ -373,15 +333,6 @@ echarts.use([
     }
   };
 
-  const handleAddStock = () => {
-    setShowAddStockModal(true);
-    setNewStockItem({
-      name: '',
-      category: '',
-      stockQuantity: '',
-      reorderLevel: ''
-    });
-  };
 
   const handleQuickAddProduct = () => {
     setShowAddProductModal(true);
@@ -519,10 +470,6 @@ echarts.use([
   });
 
   const INITIAL_STOCK_DISPLAY = 5;
-  const displayedStockItems = showAllStockItems 
-    ? filteredStockItems 
-    : filteredStockItems.slice(0, INITIAL_STOCK_DISPLAY);
-  const hasMoreStockItems = filteredStockItems.length > INITIAL_STOCK_DISPLAY && !showAllStockItems;
 
   // Filter low stock items to only show on-hand products (balls, trophies, medals)
   // These are the only products that can be prepared and bought on-branch
@@ -852,16 +799,16 @@ echarts.use([
     try {
       setLoadingStats(true);
       
-      // Build query parameters
+      // Use lightweight dashboard-summary endpoint for faster loading
       // For owners: use selectedBranchId if not 'all'
       // For admins: DON'T pass branch_id - the backend automatically filters by their branch_id from user metadata
-      let url = `${API_URL}/api/analytics/dashboard`;
+      let url = `${API_URL}/api/analytics/dashboard-summary`;
       if (isOwner && selectedBranchId && selectedBranchId !== 'all') {
         url += `?branch_id=${encodeURIComponent(selectedBranchId)}`;
       }
       // Admins: backend automatically filters by req.user.branch_id via resolveBranchContext
       
-      console.log('📊 Fetching dashboard metrics:', {
+      console.log('📊 Fetching dashboard summary (lightweight):', {
         isOwner,
         isAdmin,
         selectedBranchId,
@@ -869,11 +816,11 @@ echarts.use([
         url
       });
       
-      // Fetch analytics data from API
+      // Fetch summary data from lightweight API
       const response = await authFetch(url);
       const result = await response.json();
       
-      console.log('📊 Dashboard metrics response:', result);
+      console.log('📊 Dashboard summary response:', result);
       
       if (result.success && result.data) {
         const data = result.data;
@@ -916,9 +863,12 @@ echarts.use([
       }
       
       // Build filters for orders
+      // Reduce limit for dashboard to improve performance
       const filters = {
-        limit: 100,
-        dateSort: 'desc'
+        limit: 50, // Reduced from 100 to 50 for better performance
+        dateSort: 'desc',
+        includeUserData: true, // Dashboard needs user data for display
+        includeStats: false // Skip stats on dashboard - not needed for recent orders
       };
       
       // For owners: if a specific branch is selected, filter by branch name
@@ -960,16 +910,24 @@ echarts.use([
     }, [isOwner, selectedBranchId, branches]);
 
   useEffect(() => {
+    // Only fetch orders if we're on the orders page
+    if (!isOnOrdersPage) {
+      return;
+    }
+    
     fetchRecentOrders(true);
     
     // Refresh orders every 30 seconds to keep data up to date (silently, without loading spinner)
     const refreshInterval = setInterval(() => {
-      fetchRecentOrders(false);
+      // Only refresh if still on orders page
+      if (isOnOrdersPage) {
+        fetchRecentOrders(false);
+      }
     }, 30000);
     
     // Cleanup interval on unmount
     return () => clearInterval(refreshInterval);
-  }, [fetchRecentOrders]); // Refetch when branch selection changes
+  }, [fetchRecentOrders, isOnOrdersPage]); // Refetch when branch selection changes or page changes
 
   const getProductName = (order) => {
     const orderItems = order.order_items || order.orderItems || order.items || [];
@@ -1064,32 +1022,6 @@ echarts.use([
     return 'orange';
   };
 
-  const handleOrdersSearch = (e) => {
-    setOrdersSearchTerm(e.target.value);
-    setShowOrdersFilterDropdown(false);
-  };
-
-  const handleOrdersSearchToggle = () => {
-    setShowOrdersSearch(!showOrdersSearch);
-    if (!showOrdersSearch) {
-      setShowOrdersFilterDropdown(false);
-    }
-    if (showOrdersSearch) {
-      setOrdersSearchTerm('');
-    }
-  };
-
-  const handleOrdersFilterToggle = () => {
-    setShowOrdersFilterDropdown(!showOrdersFilterDropdown);
-    if (!showOrdersFilterDropdown) {
-      setShowOrdersSearch(false);
-    }
-  };
-
-  const handleOrdersFilterSelect = (status) => {
-    setOrdersFilterStatus(status);
-    setShowOrdersFilterDropdown(false);
-  };
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = !ordersSearchTerm || 

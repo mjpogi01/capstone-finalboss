@@ -119,7 +119,7 @@ const useViewportWidth = (defaultWidth = 1440) => {
 };
 
 const Analytics = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const isOwner = user?.user_metadata?.role === 'owner';
   
   const [analyticsData, setAnalyticsData] = useState({
@@ -245,6 +245,11 @@ const Analytics = () => {
 
 
   useEffect(() => {
+    // Wait for auth to stabilize before making API requests
+    if (authLoading || !user) {
+      return;
+    }
+
     fetchAnalyticsData();
 
     const runDeferredFetches = () => {
@@ -272,7 +277,7 @@ const Analytics = () => {
         window.clearTimeout(timeoutId);
       }
     };
-  }, []);
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (rawData) {
@@ -460,6 +465,44 @@ const Analytics = () => {
     }
   };
 
+  // Extract year information from query text
+  const extractYearsFromQuery = (queryText) => {
+    if (!queryText || typeof queryText !== 'string') {
+      return null;
+    }
+
+    // Match 4-digit years (1900-2099)
+    const yearPattern = /\b(19\d{2}|20[0-9]{2})\b/g;
+    const years = [];
+    let match;
+
+    while ((match = yearPattern.exec(queryText)) !== null) {
+      const year = parseInt(match[1], 10);
+      if (year >= 1900 && year <= 2099) {
+        years.push(year);
+      }
+    }
+
+    if (years.length === 0) {
+      return null;
+    }
+
+    // If multiple years found, use range
+    if (years.length >= 2) {
+      const sortedYears = [...new Set(years)].sort((a, b) => a - b);
+      return {
+        yearStart: sortedYears[0],
+        yearEnd: sortedYears[sortedYears.length - 1]
+      };
+    }
+
+    // Single year - set both start and end to the same year
+    return {
+      yearStart: years[0],
+      yearEnd: years[0]
+    };
+  };
+
   const handleSendNexusMessage = (messageText) => {
     if (!nexusContext.chartId && !nexusContext.isGeneralConversation) {
       return;
@@ -473,6 +516,19 @@ const Analytics = () => {
     const resolvedChartId = resolveChartIdFromText(trimmed) || nexusContext.chartId;
     const useGeneralConversation = nexusContext.isGeneralConversation && !resolvedChartId;
 
+    // Extract year information from the query
+    const extractedYears = extractYearsFromQuery(trimmed);
+    
+    // Update filters with extracted year information
+    let updatedFilters = { ...(nexusContext.filters || filters || {}) };
+    if (extractedYears) {
+      updatedFilters = {
+        ...updatedFilters,
+        yearStart: extractedYears.yearStart.toString(),
+        yearEnd: extractedYears.yearEnd.toString()
+      };
+    }
+
     const userMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -485,7 +541,8 @@ const Analytics = () => {
     setNexusContext((prev) => ({
       ...prev,
       chartId: resolvedChartId || null,
-      isGeneralConversation: useGeneralConversation
+      isGeneralConversation: useGeneralConversation,
+      filters: updatedFilters
     }));
 
     const chartRange = nexusContext.range || salesForecastRange;
@@ -494,7 +551,7 @@ const Analytics = () => {
     fetchNexusResponse(
       resolvedChartId || null,
       nextConversation,
-      nexusContext.filters,
+      updatedFilters,
       useGeneralConversation,
       {
         range: chartRange,
@@ -756,7 +813,7 @@ const Analytics = () => {
       return;
     }
 
-    const appliedFilters = context.filters || filters;
+    let appliedFilters = context.filters || filters;
     const rangeContext = context.range || salesForecastRange;
     const defaultPrompt =
       chartId === 'salesForecast'
@@ -767,6 +824,16 @@ const Analytics = () => {
     const initialPrompt = typeof context.question === 'string' && context.question.trim().length > 0
       ? context.question.trim()
       : defaultPrompt;
+
+    // Extract year information from the initial prompt/question
+    const extractedYears = extractYearsFromQuery(initialPrompt);
+    if (extractedYears) {
+      appliedFilters = {
+        ...appliedFilters,
+        yearStart: extractedYears.yearStart.toString(),
+        yearEnd: extractedYears.yearEnd.toString()
+      };
+    }
 
     const initialUserMessage = {
       id: `user-${Date.now()}`,

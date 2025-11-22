@@ -227,6 +227,9 @@ async function calculateProductReviewStats(productIds) {
 // Get all products
 router.get('/', async (req, res) => {
   try {
+    // Check if 'all' query parameter is set to skip deduplication (for inventory management)
+    const includeAllBranches = req.query.all === 'true' || req.query.all === '1';
+    
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -255,9 +258,14 @@ router.get('/', async (req, res) => {
       };
     });
 
+    // If includeAllBranches is true, return all products without deduplication (for inventory)
+    if (includeAllBranches) {
+      return res.json(transformedData);
+    }
+
     // Deduplicate products by name and category for customer-facing display
     // Group products with the same name and category, keeping the one with:
-    // 1. Highest stock_quantity (if available)
+    // 1. Highest stock_quantity (if available) or highest total size_stocks
     // 2. Most recent created_at
     // 3. First one found if both are equal
     const productMap = new Map();
@@ -274,9 +282,30 @@ router.get('/', async (req, res) => {
         const existing = productMap.get(key);
         const current = product;
         
-        // Prefer product with higher stock_quantity (if both have it)
-        const existingStock = existing.stock_quantity || 0;
-        const currentStock = current.stock_quantity || 0;
+        // Calculate stock values (including size_stocks for trophies)
+        const getStockValue = (prod) => {
+          if (prod.stock_quantity !== null && prod.stock_quantity !== undefined) {
+            return prod.stock_quantity;
+          }
+          // For products with size_stocks, sum all size quantities
+          if (prod.size_stocks) {
+            let sizeStocks = prod.size_stocks;
+            if (typeof sizeStocks === 'string') {
+              try {
+                sizeStocks = JSON.parse(sizeStocks);
+              } catch (e) {
+                return 0;
+              }
+            }
+            if (sizeStocks && typeof sizeStocks === 'object') {
+              return Object.values(sizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+            }
+          }
+          return 0;
+        };
+        
+        const existingStock = getStockValue(existing);
+        const currentStock = getStockValue(current);
         
         if (currentStock > existingStock) {
           productMap.set(key, current);
@@ -521,10 +550,14 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
     }
     if (sizeStocksValue !== null && sizeStocksValue !== undefined) {
       insertData.size_stocks = sizeStocksValue;
-      console.log('📦 [Products API] size_stocks being saved:', sizeStocksValue);
+      console.log('📦 [Products API] size_stocks being saved:', JSON.stringify(sizeStocksValue, null, 2));
+      console.log('📦 [Products API] size_stocks type:', typeof sizeStocksValue, Array.isArray(sizeStocksValue) ? '(array)' : '(object)');
+    } else {
+      console.log('📦 [Products API] No size_stocks to save (value is null/undefined)');
     }
 
-    console.log('📦 [Products API] Final insert data:', insertData);
+    console.log('📦 [Products API] Final insert data:', JSON.stringify(insertData, null, 2));
+    console.log('📦 [Products API] size_stocks in insertData:', insertData.size_stocks);
     console.log('📦 [Products API] jersey_prices in insertData:', insertData.jersey_prices);
 
     // Check if product with same name, category, and branch_id already exists
@@ -588,6 +621,37 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
         console.error('❌ Error inserting product:', insertError);
       } else {
         console.log('✅ [Products API] Product created successfully in branch', insertData.branch_id);
+      }
+    }
+
+    // If error is specifically about missing size_stocks column in schema cache, retry without it
+    if (error && error.message?.includes("Could not find the 'size_stocks' column") && error.message?.includes('schema cache')) {
+      console.warn('⚠️ [Products API] size_stocks column not found in schema cache, retrying without it');
+      const insertDataWithoutSizeStocks = { ...insertData };
+      delete insertDataWithoutSizeStocks.size_stocks;
+      
+      if (existingProduct) {
+        const { data: updateData, error: updateError } = await supabase
+          .from('products')
+          .update({
+            ...insertDataWithoutSizeStocks,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProduct.id)
+          .select('*')
+          .single();
+        
+        data = updateData;
+        error = updateError;
+      } else {
+        const { data: insertResult, error: insertError } = await supabase
+          .from('products')
+          .insert(insertDataWithoutSizeStocks)
+          .select('*')
+          .single();
+        
+        data = insertResult;
+        error = insertError;
       }
     }
 
@@ -727,7 +791,9 @@ router.put('/:id', async (req, res) => {
       description,
       main_image,
       additional_images: additional_images || [],
-      stock_quantity: stock_quantity ? parseInt(stock_quantity) : 0,
+      stock_quantity: (stock_quantity !== null && stock_quantity !== undefined && stock_quantity !== '') 
+        ? parseInt(stock_quantity) 
+        : 0,  // Overwrite to 0 if not provided (don't append)
       sold_quantity: soldQuantityValue,
       branch_id: branch_id ? parseInt(branch_id) : 1,
       updated_at: new Date().toISOString()
@@ -778,13 +844,18 @@ router.put('/:id', async (req, res) => {
     }
     if (sizeStocksValue !== null && sizeStocksValue !== undefined) {
       updateData.size_stocks = sizeStocksValue;
-      console.log('📦 [Products API] size_stocks being updated:', sizeStocksValue);
+      console.log('📦 [Products API] size_stocks being updated:', JSON.stringify(sizeStocksValue, null, 2));
+      console.log('📦 [Products API] size_stocks type:', typeof sizeStocksValue, Array.isArray(sizeStocksValue) ? '(array)' : '(object)');
     } else if (req.body.hasOwnProperty('size_stocks') && req.body.size_stocks === null) {
       // Explicitly set to null if the request wants to clear it
       updateData.size_stocks = null;
+      console.log('📦 [Products API] Clearing size_stocks (setting to null)');
+    } else {
+      console.log('📦 [Products API] No size_stocks to update (value is null/undefined)');
     }
 
-    console.log('📦 [Products API] Final update data:', updateData);
+    console.log('📦 [Products API] Final update data:', JSON.stringify(updateData, null, 2));
+    console.log('📦 [Products API] size_stocks in updateData:', updateData.size_stocks);
     console.log('📦 [Products API] jersey_prices in updateData:', updateData.jersey_prices);
     
     console.log('📦 [Products API] About to update in Supabase with data:', JSON.stringify(updateData, null, 2));
@@ -796,6 +867,27 @@ router.put('/:id', async (req, res) => {
       .eq('id', id)
       .select('*')
       .single();
+
+    // If error is specifically about missing size_stocks column in schema cache, retry without it
+    if (error && error.message?.includes("Could not find the 'size_stocks' column") && error.message?.includes('schema cache')) {
+      console.warn('⚠️ [Products API] size_stocks column not found in schema cache, retrying update without it');
+      const updateDataWithoutSizeStocks = { ...updateData };
+      delete updateDataWithoutSizeStocks.size_stocks;
+      
+      const { data: retryData, error: retryError } = await supabase
+        .from('products')
+        .update(updateDataWithoutSizeStocks)
+        .eq('id', id)
+        .select('*')
+        .single();
+      
+      if (retryError) {
+        error = retryError;
+      } else {
+        data = retryData;
+        error = null;
+      }
+    }
 
     if (error) {
       console.error('❌ Supabase update error:', error);

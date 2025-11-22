@@ -17,7 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { showLoginSuccess, showLogoutSuccess, showWelcome, showError } = useNotification();
-  const isInitialSessionRef = useRef(true);
+  const isInitialLoadRef = useRef(true);
+  const isProcessingSignOutRef = useRef(false);
 
   useEffect(() => {
     // Get initial session
@@ -25,22 +26,31 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // Only set user if email is confirmed
-          if (session.user.email_confirmed_at || session.user.confirmed_at) {
+          // Check if email is confirmed
+          const isEmailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
+          
+          if (isEmailConfirmed) {
             setUser(session.user);
-            // Mark that we've loaded the initial session
-            isInitialSessionRef.current = true;
           } else {
-            // Email not confirmed - sign out to prevent unverified access
-            console.log('⚠️ User email not confirmed, signing out');
-            await supabase.auth.signOut();
+            // Email not confirmed - set flag to prevent cascade and clear user
+            console.log('⚠️ User email not confirmed during initial load');
+            isProcessingSignOutRef.current = true;
             setUser(null);
+            // Don't call signOut() here to prevent cascade - just clear user state
+            // The session will expire naturally or be cleared on next auth check
           }
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
+        setUser(null);
       } finally {
-        setIsLoading(false);
+        // Mark initial load as complete after a brief delay to let any auth events settle
+        setTimeout(() => {
+          isInitialLoadRef.current = false;
+          setIsLoading(false);
+        }, 100);
       }
     };
 
@@ -49,20 +59,37 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Skip processing during initial load to prevent race condition
+        if (isInitialLoadRef.current) {
+          console.log('🔐 Auth state changed during initial load, skipping:', event);
+          return;
+        }
+
         console.log('🔐 Auth state changed:', event, session?.user?.email, session?.user?.id);
         
+        // Helper function to check email confirmation
+        const isEmailConfirmed = (user) => {
+          return !!(user?.email_confirmed_at || user?.confirmed_at);
+        };
+
+        // Handle SIGNED_IN event
         if (event === 'SIGNED_IN' && session?.user) {
           // Check if email is confirmed before allowing authentication
-          const isEmailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
-          
-          if (!isEmailConfirmed) {
+          if (!isEmailConfirmed(session.user)) {
             console.log('⚠️ User signed in but email not confirmed, signing out');
+            // Set flag to prevent cascade
+            isProcessingSignOutRef.current = true;
             // Sign out immediately if email is not confirmed
             await supabase.auth.signOut();
             setUser(null);
             setIsLoading(false);
+            // Reset flag after a delay
+            setTimeout(() => {
+              isProcessingSignOutRef.current = false;
+            }, 500);
             return;
           }
+          
           // Check if manual login flag is set (user manually logged in via form or OAuth)
           const manualLogin = localStorage.getItem('manualLogin');
           
@@ -116,9 +143,24 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem(lastLoginKey, Date.now().toString());
           }
           
-          // Mark that initial session is loaded (for future tab switches)
-          isInitialSessionRef.current = false;
-        } else if (event === 'SIGNED_OUT') {
+          // Set user state (email is already confirmed at this point)
+          setUser(session.user);
+          setIsLoading(false);
+        } 
+        // Handle SIGNED_OUT event
+        else if (event === 'SIGNED_OUT') {
+          // Skip if we're processing a sign-out we initiated (to prevent cascade)
+          if (isProcessingSignOutRef.current) {
+            console.log('🔐 Sign-out event from our own action, skipping notification');
+            setUser(null);
+            setIsLoading(false);
+            // Reset flag after a delay
+            setTimeout(() => {
+              isProcessingSignOutRef.current = false;
+            }, 500);
+            return;
+          }
+          
           // Check if silent logout flag is set (for terms disagreement)
           // This flag is set when user disagrees with terms during signup
           const silentLogout = localStorage.getItem('silentLogout');
@@ -141,23 +183,26 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('manualLogout');
           }
           
+          // Clear user state
+          setUser(null);
+          setIsLoading(false);
           // Note: We don't remove lastLoginTime here to track returning users
         }
-        
-        // Only set user if session exists AND email is confirmed
-        if (session?.user) {
-          const isEmailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
-          if (isEmailConfirmed) {
+        // Handle other events (TOKEN_REFRESHED, USER_UPDATED, etc.)
+        else if (session?.user) {
+          // For other events, only set user if email is confirmed
+          if (isEmailConfirmed(session.user)) {
             setUser(session.user);
           } else {
-            // Email not confirmed - don't set user
-            console.log('⚠️ Session exists but email not confirmed, not setting user');
             setUser(null);
           }
-        } else {
+          setIsLoading(false);
+        } 
+        // No session
+        else {
           setUser(null);
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 

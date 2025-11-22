@@ -16,6 +16,7 @@ import './EarningsChart.css';
 import '../../pages/admin/Analytics.css';
 import { API_URL } from '../../config/api';
 import { authFetch } from '../../services/apiClient';
+import { useAuth } from '../../contexts/AuthContext';
 
 echarts.use([
   GridComponent,
@@ -27,6 +28,7 @@ echarts.use([
 ]);
 
 const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onToggleValues }) => {
+  const { user, isLoading: authLoading } = useAuth();
   const [salesTrends, setSalesTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const chartInstanceRef = useRef(null);
@@ -46,6 +48,11 @@ const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onTogg
 
   // Fetch daily sales trends
   useEffect(() => {
+    // Wait for auth to stabilize before making API requests
+    if (authLoading || !user) {
+      return;
+    }
+
     const fetchSalesTrends = async () => {
       try {
         setLoading(true);
@@ -72,7 +79,7 @@ const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onTogg
     };
 
     fetchSalesTrends();
-  }, [selectedBranchId]);
+  }, [selectedBranchId, authLoading, user]);
 
   // Resize chart when visibility changes or window resizes
   useEffect(() => {

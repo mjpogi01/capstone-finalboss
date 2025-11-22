@@ -30,7 +30,6 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaUsers,
-  FaCamera,
   FaSearch,
   FaUpload,
   FaDownload
@@ -57,7 +56,6 @@ const Orders = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [uploadingDesigns, setUploadingDesigns] = useState({});
   const [notifications, setNotifications] = useState([]);
-  const loadingNotificationRef = React.useRef(null);
   const updatingOrdersRef = React.useRef(new Set());
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [orderApprovalStatus, setOrderApprovalStatus] = useState({}); // Track approval status per order
@@ -90,6 +88,10 @@ const Orders = () => {
     status: 'loading', // 'loading' | 'success' | 'error'
     artistName: null 
   }); // Track artist assignment loading
+  
+  // Ref to track if fetch is in progress and prevent duplicate requests
+  const isFetchingRef = React.useRef(false);
+  const abortControllerRef = React.useRef(null);
   
   // Reset "view all" when switching expanded order
   useEffect(() => {
@@ -217,20 +219,61 @@ const Orders = () => {
   });
   const isMetricsFiltered = Boolean(filters.pickupBranch || filters.status || filters.searchTerm);
 
+  // Debounce filter changes to prevent rapid re-fetching
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [filters.pickupBranch, filters.status, filters.searchTerm]);
+
+  // Create stable filter keys for dependency array
+  const filterKey = React.useMemo(() => 
+    `${debouncedFilters.pickupBranch || ''}_${debouncedFilters.status || ''}`,
+    [debouncedFilters.pickupBranch, debouncedFilters.status]
+  );
+
   // Fetch orders from API
   useEffect(() => {
+    // Prevent duplicate fetches
+    if (isFetchingRef.current) {
+      console.log('📦 [Orders Component] Fetch already in progress, skipping duplicate request');
+      return;
+    }
+
+    // Cancel any previous fetch
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this fetch
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    isFetchingRef.current = true;
+
     const fetchOrders = async () => {
       try {
         // First, load page 1 with a smaller limit for fast initial display
+        // Skip user data and stats on initial load for better performance
         const initialLimit = 20;
         setLoading(true);
         
         console.log('📦 [Orders Component] Loading first page with limit:', initialLimit);
         const firstPageResponse = await orderService.getAllOrders({
-          ...filters,
+          ...debouncedFilters,
           page: 1,
-          limit: initialLimit
+          limit: initialLimit,
+          includeUserData: false, // Skip user data on initial load - fetch when order is expanded
+          includeStats: true // Keep stats for dashboard display
         });
+
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          console.log('📦 [Orders Component] Request aborted');
+          return;
+        }
         
         console.log('📦 [Orders Component] First page API Response:', firstPageResponse);
         console.log('📦 [Orders Component] First page orders returned:', firstPageResponse.orders?.length);
@@ -238,6 +281,12 @@ const Orders = () => {
         
         // Add null check for response.orders
         if (firstPageResponse && firstPageResponse.orders && Array.isArray(firstPageResponse.orders)) {
+          // Check again if request was aborted before updating state
+          if (abortController.signal.aborted) {
+            console.log('📦 [Orders Component] Request aborted before state update');
+            return;
+          }
+          
           const formattedOrders = firstPageResponse.orders.map(order => orderService.formatOrderForDisplay(order));
           console.log('📦 [Orders Component] First page formatted orders:', formattedOrders.length);
           
@@ -260,13 +309,16 @@ const Orders = () => {
               setIsLoadingMore(true);
               
               // Load next few pages in parallel for faster loading
+              // Skip user data on background pages too for better performance
               const pagePromises = [];
               for (let page = 2; page <= pagesToLoad + 1; page++) {
                 pagePromises.push(
                   orderService.getAllOrders({
-                    ...filters,
+                    ...debouncedFilters,
                     page: page,
-                    limit: initialLimit
+                    limit: initialLimit,
+                    includeUserData: false, // Skip user data on background pages
+                    includeStats: false // Skip stats on background pages
                   }).then(pageResponse => {
                     if (pageResponse && pageResponse.orders && Array.isArray(pageResponse.orders)) {
                       const formattedPageOrders = pageResponse.orders.map(order => orderService.formatOrderForDisplay(order));
@@ -283,6 +335,12 @@ const Orders = () => {
               
               // Wait for all pages to load in parallel
               Promise.all(pagePromises).then(allPageResults => {
+                // Check if request was aborted before updating state
+                if (abortController.signal.aborted) {
+                  console.log('📦 [Orders Component] Background pages request aborted');
+                  return;
+                }
+                
                 const remainingPages = allPageResults.flat();
                 
                 // Append remaining orders to the first page
@@ -305,6 +363,11 @@ const Orders = () => {
                 
                 setIsLoadingMore(false);
                 console.log('📦 [Orders Component] Finished loading background pages');
+              }).catch(error => {
+                if (!abortController.signal.aborted) {
+                  console.error('Error loading background pages:', error);
+                }
+                setIsLoadingMore(false);
               });
             }
           }
@@ -357,26 +420,68 @@ const Orders = () => {
         });
         setLoading(false);
         setIsLoadingMore(false);
+      } finally {
+        // Clear fetching flag
+        isFetchingRef.current = false;
+        if (abortControllerRef.current === abortController) {
+          abortControllerRef.current = null;
+        }
       }
     };
 
     fetchOrders();
-  }, [filters.pickupBranch, filters.status, refreshKey]);
 
-  // Fetch assigned artist when order is expanded
+    // Cleanup function to cancel fetch if component unmounts or dependencies change
+    return () => {
+      if (abortControllerRef.current === abortController) {
+        abortController.abort();
+        abortControllerRef.current = null;
+      }
+      isFetchingRef.current = false;
+    };
+  }, [filterKey, refreshKey, debouncedFilters]);
+
+  // Fetch full order details (with user data and artist) when order is expanded
   useEffect(() => {
-    const fetchArtist = async () => {
+    const fetchOrderDetails = async () => {
       if (expandedOrder) {
         try {
+          // Fetch full order details with user data
+          const orderWithDetails = await orderService.getOrderById(expandedOrder);
+          
+          // Update the order in the list with full details (including user data)
+          if (orderWithDetails) {
+            setOrders(prevOrders => 
+              prevOrders.map(order => 
+                order.id === expandedOrder 
+                  ? orderService.formatOrderForDisplay(orderWithDetails)
+                  : order
+              )
+            );
+            setFilteredOrders(prevOrders => 
+              prevOrders.map(order => 
+                order.id === expandedOrder 
+                  ? orderService.formatOrderForDisplay(orderWithDetails)
+                  : order
+              )
+            );
+          }
+          
+          // Also fetch artist info
           const orderWithArtist = await orderService.getOrderWithArtist(expandedOrder);
           if (orderWithArtist.assignedArtist) {
             setAssignedArtists(prev => ({
               ...prev,
               [expandedOrder]: orderWithArtist.assignedArtist
             }));
+          } else {
+            setAssignedArtists(prev => ({
+              ...prev,
+              [expandedOrder]: null
+            }));
           }
         } catch (error) {
-          console.log('No artist assigned to order:', expandedOrder);
+          console.log('Error fetching order details:', error);
           setAssignedArtists(prev => ({
             ...prev,
             [expandedOrder]: null
@@ -385,7 +490,7 @@ const Orders = () => {
       }
     };
 
-    fetchArtist();
+    fetchOrderDetails();
   }, [expandedOrder]);
 
   // Apply filters and sorting
@@ -395,11 +500,17 @@ const Orders = () => {
 
     // Search filter
     if (filters.searchTerm) {
-      filtered = filtered.filter(order => 
-        order.orderNumber.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        order.customerName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        order.customerEmail.toLowerCase().includes(filters.searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(order => {
+        const searchTerm = filters.searchTerm.toLowerCase();
+        const matchesOrderNumber = order.orderNumber.toLowerCase().includes(searchTerm);
+        const matchesCustomerName = order.customerName.toLowerCase().includes(searchTerm);
+        // Only search by email if email data is available (order has been expanded)
+        const matchesEmail = order.customerEmail && 
+                            order.customerEmail !== 'N/A' && 
+                            order.customerEmail.toLowerCase().includes(searchTerm);
+        
+        return matchesOrderNumber || matchesCustomerName || matchesEmail;
+      });
     }
 
     // Pickup branch filter
@@ -1296,7 +1407,7 @@ const Orders = () => {
                 
                 <div className="yh-orders-table-cell yh-orders-cell-customer">
                   <div className="yh-orders-customer-name">{order.customerName}</div>
-                  <div className="yh-orders-customer-email">{order.customerEmail || 'N/A'}</div>
+                  {/* Email removed from list view - only shown when order is expanded for better performance */}
                 </div>
                 
                 <div className="yh-orders-table-cell yh-orders-cell-items">
@@ -1705,25 +1816,6 @@ const Orders = () => {
                         return apparelTypeMap[apparelType] || 'Custom Design';
                       };
 
-                      // Helper function to check if an item is a ball or trophy
-                      const isBallOrTrophyItem = (item) => {
-                        const category = (item.category || item.product_type || '').toString().toLowerCase().trim();
-                        const name = (item.name || '').toString().toLowerCase().trim();
-                        
-                        if (category === 'balls' || category === 'trophies') {
-                          return true;
-                        }
-                        
-                        if (name.includes('ball') && !name.includes('basketball') && !name.includes('volleyball') && !name.includes('jersey')) {
-                          return true;
-                        }
-                        
-                        if (name.includes('trophy') || name.includes('trophie')) {
-                          return true;
-                        }
-                        
-                        return false;
-                      };
 
                       // Get first design image as product image
                       const designImage = item.design_images && item.design_images.length > 0 
@@ -1848,7 +1940,6 @@ const Orders = () => {
                               const serverKey = (order.orderNumber || order.id);
                               const fetched = serverRevisionNotes?.[serverKey] || [];
                               // Only use server-fetched notes for this order
-                              const sources = [];
                               const notes = Array.isArray(fetched) ? fetched : [];
                               // Normalize, dedupe, sort
                               const seen = new Set();
@@ -2895,7 +2986,7 @@ const Orders = () => {
                             return { ...prev, [key]: [optimistic, ...existing] };
                           });
                         } catch (_) {}
-                        const result = await res.json().catch(() => ({}));
+                        await res.json().catch(() => ({}));
                         setRevisionDialog({ show: false, notes: '', orderId: null, submitting: false });
                         setRefreshKey(prev => prev + 1);
                         setExpandedOrder(null);

@@ -300,10 +300,15 @@ router.get('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res)
       pickupBranch,
       status,
       page = 1,
-      limit = 100
+      limit = 100,
+      includeUserData = 'true', // Default to true for backward compatibility, but can be set to 'false' to skip
+      includeStats = 'true' // Default to true for backward compatibility, but can be set to 'false' to skip
     } = req.query;
 
-    console.log(`📦 [Orders API] Fetching orders - page: ${page}, limit: ${limit}, branch: ${pickupBranch}, status: ${status}`);
+    const shouldIncludeUserData = includeUserData === 'true' || includeUserData === true;
+    const shouldIncludeStats = includeStats === 'true' || includeStats === true;
+
+    console.log(`📦 [Orders API] Fetching orders - page: ${page}, limit: ${limit}, branch: ${pickupBranch}, status: ${status}, includeUserData: ${shouldIncludeUserData}, includeStats: ${shouldIncludeStats}`);
 
     let branchContext = null;
     if (req.user.role === 'admin') {
@@ -311,10 +316,10 @@ router.get('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res)
     }
 
     // Check if any filter is applied
-    // Build Supabase query
+    // Build Supabase query - select only needed columns for better performance
     let query = supabase
       .from('orders')
-      .select('*');
+      .select('id, order_number, user_id, status, shipping_method, pickup_location, delivery_address, order_notes, subtotal_amount, shipping_cost, total_amount, total_items, order_items, created_at, updated_at, pickup_branch_id, order_type');
 
     // Apply filters
     if (pickupBranch) {
@@ -380,120 +385,177 @@ router.get('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res)
 
     const resolvedTotal = typeof totalCount === 'number' ? totalCount : filteredOrders.length;
 
-    const buildStatsQuery = (applyFilters = true) => {
-      let statsQuery = supabase
-        .from('orders')
-        .select('id', { count: 'exact', head: true });
-
-      if (applyFilters && pickupBranch) {
-        statsQuery = statsQuery.eq('pickup_location', pickupBranch);
-      }
-
-      if (applyFilters) {
-        statsQuery = applyBranchFilter(statsQuery, branchContext);
-      }
-      return statsQuery;
+    // Stats calculation - only fetch if requested (reduces load significantly)
+    let stats = {
+      total: 0,
+      delivered: 0,
+      deliveredOverall: 0,
+      deliveredTotalsByBranch: {},
+      inProgress: 0,
+      pending: 0
     };
 
-    const getCountForStatuses = async (statuses, applyFilters = true) => {
-      let statsQuery = buildStatsQuery(applyFilters);
-      if (Array.isArray(statuses) && statuses.length > 0) {
-        if (statuses.length === 1) {
-          statsQuery = statsQuery.eq('status', statuses[0]);
-        } else {
-          statsQuery = statsQuery.in('status', statuses);
+    if (shouldIncludeStats) {
+      // Optimized stats calculation - fetch all stats in parallel but more efficiently
+      const buildStatsQuery = (applyFilters = true) => {
+        let statsQuery = supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true });
+
+        if (applyFilters && pickupBranch) {
+          statsQuery = statsQuery.eq('pickup_location', pickupBranch);
         }
-      }
 
-      const { count, error: statsError } = await statsQuery;
-      if (statsError) {
-        throw new Error(`Supabase error: ${statsError.message}`);
-      }
-      return count || 0;
-    };
+        if (applyFilters) {
+          statsQuery = applyBranchFilter(statsQuery, branchContext);
+        }
+        return statsQuery;
+      };
 
-    const [statsTotal, deliveredCount, inProgressCount, pendingCount, deliveredOverallCount] = await Promise.all([
-      getCountForStatuses(),
-      getCountForStatuses(['picked_up_delivered']),
-      getCountForStatuses(['layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing']),
-      getCountForStatuses(['pending']),
-      getCountForStatuses(['picked_up_delivered'], false)
-    ]);
-
-    let deliveredTotalsByBranch = {};
-    try {
-      const branchTotalsQuery = buildStatsQuery(false)
-        .eq('status', 'picked_up_delivered')
-        .select('pickup_location, count:id', { head: false })
-        .group('pickup_location');
-
-      const { data: branchTotalsData, error: branchTotalsError } = await branchTotalsQuery;
-      if (!branchTotalsError && Array.isArray(branchTotalsData)) {
-        deliveredTotalsByBranch = branchTotalsData.reduce((acc, row) => {
-          if (row.pickup_location) {
-            acc[row.pickup_location] = row.count || 0;
+      const getCountForStatuses = async (statuses, applyFilters = true) => {
+        let statsQuery = buildStatsQuery(applyFilters);
+        if (Array.isArray(statuses) && statuses.length > 0) {
+          if (statuses.length === 1) {
+            statsQuery = statsQuery.eq('status', statuses[0]);
+          } else {
+            statsQuery = statsQuery.in('status', statuses);
           }
-          return acc;
-        }, {});
-      } else if (branchTotalsError) {
-        console.warn('Unable to fetch delivered totals by branch:', branchTotalsError.message);
+        }
+
+        const { count, error: statsError } = await statsQuery;
+        if (statsError) {
+          // Don't throw - return 0 to prevent blocking the main query
+          console.warn('Stats query error:', statsError.message);
+          return 0;
+        }
+        return count || 0;
+      };
+
+      // Fetch stats in parallel (optimized - all queries run simultaneously)
+      const [statsTotal, deliveredCount, inProgressCount, pendingCount, deliveredOverallCount] = await Promise.all([
+        getCountForStatuses(),
+        getCountForStatuses(['picked_up_delivered']),
+        getCountForStatuses(['layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing']),
+        getCountForStatuses(['pending']),
+        getCountForStatuses(['picked_up_delivered'], false)
+      ]);
+
+      let deliveredTotalsByBranch = {};
+      try {
+        const branchTotalsQuery = buildStatsQuery(false)
+          .eq('status', 'picked_up_delivered')
+          .select('pickup_location, count:id', { head: false })
+          .group('pickup_location');
+
+        const { data: branchTotalsData, error: branchTotalsError } = await branchTotalsQuery;
+        if (!branchTotalsError && Array.isArray(branchTotalsData)) {
+          deliveredTotalsByBranch = branchTotalsData.reduce((acc, row) => {
+            if (row.pickup_location) {
+              acc[row.pickup_location] = row.count || 0;
+            }
+            return acc;
+          }, {});
+        } else if (branchTotalsError) {
+          console.warn('Unable to fetch delivered totals by branch:', branchTotalsError.message);
+        }
+      } catch (branchTotalsException) {
+        console.warn('Failed to compute delivered totals by branch:', branchTotalsException.message);
       }
-    } catch (branchTotalsException) {
-      console.warn('Failed to compute delivered totals by branch:', branchTotalsException.message);
+
+      stats = {
+        total: statsTotal || 0,
+        delivered: deliveredCount || 0,
+        deliveredOverall: deliveredOverallCount || deliveredCount || 0,
+        deliveredTotalsByBranch,
+        inProgress: inProgressCount || 0,
+        pending: pendingCount || 0
+      };
     }
 
     console.log(`📦 [Orders API] Returning ${filteredOrders?.length} orders, total: ${resolvedTotal}`);
 
-    // Get unique user IDs from orders
+    // Get unique user IDs from orders (only fetch users that are actually in the current page)
     const userIds = [...new Set(filteredOrders.map(order => order.user_id).filter(Boolean))];
     
-    // Fetch user data for all unique user IDs with pagination
+    // Fetch user data ONLY for users in the current orders page (optimized) - only if requested
     let userData = {};
-    if (userIds.length > 0) {
+    if (shouldIncludeUserData && userIds.length > 0) {
       try {
-        // Fetch all users by paginating through all pages
-        let allUsers = [];
-        let page = 1;
-        const perPage = 1000;
-        let hasMore = true;
+        // Step 1: Fetch names from user_profiles table (fast)
+        const { data: userProfiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('user_id, full_name, first_name, last_name')
+          .in('user_id', userIds);
         
-        while (hasMore) {
-          const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers({
-            page,
-            perPage
+        // Build initial userData map with names from user_profiles
+        if (!profilesError && userProfiles) {
+          userProfiles.forEach(profile => {
+            const fullName = profile.full_name || 
+              (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : 
+               profile.first_name || profile.last_name || null);
+            
+            userData[profile.user_id] = {
+              email: null, // Will be filled from auth.users
+              full_name: fullName
+            };
           });
-          
-          if (usersError) {
-            console.error(`Supabase error fetching users (page ${page}):`, usersError);
-            break;
-          }
-          
-          const users = usersData?.users || (Array.isArray(usersData) ? usersData : []);
-          
-          if (users && Array.isArray(users) && users.length > 0) {
-            allUsers = allUsers.concat(users);
-            hasMore = users.length === perPage;
-            page++;
-          } else {
-            hasMore = false;
-          }
         }
         
-        console.log(`📧 Fetched ${allUsers.length} total users for order email lookup`);
-        
-        // Build userData map from all fetched users
-        allUsers.forEach(user => {
-          const firstName = user.user_metadata?.first_name || user.raw_user_meta_data?.first_name || '';
-          const lastName = user.user_metadata?.last_name || user.raw_user_meta_data?.last_name || '';
-          const fullName = user.user_metadata?.full_name || user.raw_user_meta_data?.full_name || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
-          
-          userData[user.id] = {
-            email: user.email,
-            full_name: fullName || null
-          };
+        // Step 2: Fetch emails from auth.users (required - emails are not in user_profiles)
+        // Initialize all userIds in userData first (even if they don't have a profile)
+        userIds.forEach(userId => {
+          if (!userData[userId]) {
+            userData[userId] = { email: null, full_name: null };
+          }
         });
         
-        console.log(`📧 Found user data for ${Object.keys(userData).length} users`);
+        // Fetch in batches to avoid overwhelming the API
+        const batchSize = 50;
+        for (let i = 0; i < userIds.length; i += batchSize) {
+          const batch = userIds.slice(i, i + batchSize);
+          
+          const authPromises = batch.map(async (userId) => {
+            try {
+              const { data: user, error } = await supabase.auth.admin.getUserById(userId);
+              if (!error && user?.user) {
+                const userObj = user.user;
+                const email = userObj.email || 'N/A';
+                
+                // Ensure userData entry exists
+                if (!userData[userId]) {
+                  userData[userId] = { email, full_name: null };
+                } else {
+                  userData[userId].email = email;
+                }
+                
+                // If we don't have a name from user_profiles, try to get it from auth metadata
+                if (!userData[userId].full_name) {
+                  const firstName = userObj.user_metadata?.first_name || '';
+                  const lastName = userObj.user_metadata?.last_name || '';
+                  const fullName = userObj.user_metadata?.full_name || 
+                    (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
+                  
+                  userData[userId].full_name = fullName || null;
+                }
+              } else {
+                // If user not found, set default values
+                if (userData[userId]) {
+                  userData[userId].email = userData[userId].email || 'N/A';
+                }
+              }
+            } catch (err) {
+              // Silently fail for individual users, but ensure email is set
+              console.warn(`Could not fetch user ${userId}:`, err.message);
+              if (userData[userId]) {
+                userData[userId].email = userData[userId].email || 'N/A';
+              }
+            }
+          });
+          
+          await Promise.all(authPromises);
+        }
+        
+        console.log(`📧 Fetched user data for ${Object.keys(userData).length}/${userIds.length} users (optimized)`);
       } catch (error) {
         console.warn('Could not fetch user data:', error.message);
       }
@@ -505,25 +567,42 @@ router.get('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res)
       let customerName = 'Unknown Customer';
       let customerEmail = 'N/A';
       
-      // For all orders, prioritize user account information
-      const user = userData[order.user_id];
-      if (user?.email) {
-        customerEmail = user.email;
-      }
-      if (user?.full_name) {
-        customerName = user.full_name;
-      } else if (order.delivery_address?.receiver) {
-        customerName = order.delivery_address.receiver;
-      }
-      
-      // For custom design orders, if no user name is available, fall back to client info
-      if (order.order_type === 'custom_design' && order.order_items && order.order_items.length > 0 && !user?.full_name) {
-        const firstItem = order.order_items[0];
-        if (firstItem.client_name) {
-          customerName = firstItem.client_name;
+      // For all orders, prioritize user account information (only if user data was fetched)
+      if (shouldIncludeUserData) {
+        const user = userData[order.user_id];
+        if (user?.email) {
+          customerEmail = user.email;
         }
-        if (firstItem.client_email) {
-          customerEmail = firstItem.client_email;
+        if (user?.full_name) {
+          customerName = user.full_name;
+        } else if (order.delivery_address?.receiver) {
+          customerName = order.delivery_address.receiver;
+        }
+        
+        // For custom design orders, if no user name is available, fall back to client info
+        if (order.order_type === 'custom_design' && order.order_items && order.order_items.length > 0 && !user?.full_name) {
+          const firstItem = order.order_items[0];
+          if (firstItem.client_name) {
+            customerName = firstItem.client_name;
+          }
+          if (firstItem.client_email) {
+            customerEmail = firstItem.client_email;
+          }
+        }
+      } else {
+        // If user data not fetched, use delivery address or order items as fallback
+        if (order.delivery_address?.receiver) {
+          customerName = order.delivery_address.receiver;
+        }
+        // For custom design orders, try to get client info from order items
+        if (order.order_type === 'custom_design' && order.order_items && order.order_items.length > 0) {
+          const firstItem = order.order_items[0];
+          if (firstItem.client_name) {
+            customerName = firstItem.client_name;
+          }
+          if (firstItem.client_email) {
+            customerEmail = firstItem.client_email;
+          }
         }
       }
       
@@ -542,14 +621,7 @@ router.get('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res)
         total: resolvedTotal || 0,
         totalPages: Math.max(1, Math.ceil((resolvedTotal || 0) / enforcedLimit))
       },
-      stats: {
-        total: statsTotal || 0,
-        delivered: deliveredCount || 0,
-        deliveredOverall: deliveredOverallCount || deliveredCount || 0,
-        deliveredTotalsByBranch,
-        inProgress: inProgressCount || 0,
-        pending: pendingCount || 0
-      }
+      stats: stats
     });
 
   } catch (error) {

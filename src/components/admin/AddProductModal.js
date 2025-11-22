@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import './AddProductModal.css';
 
 const isTrophyCategory = (category) => typeof category === 'string' && category.toLowerCase() === 'trophies';
@@ -392,7 +390,6 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   const [uploadingSlot, setUploadingSlot] = useState(null);
   const [uploadingAdditionalIndex, setUploadingAdditionalIndex] = useState(null);
   const [branches, setBranches] = useState([]);
-  const [loadingBranches, setLoadingBranches] = useState(true);
   const [availableSizes, setAvailableSizes] = useState([]);
   const [newSizeInput, setNewSizeInput] = useState('');
   const [sizeInputError, setSizeInputError] = useState('');
@@ -405,10 +402,6 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   const [newJerseySizeInput, setNewJerseySizeInput] = useState({
     shirts: { adults: '', kids: '' },
     shorts: { adults: '', kids: '' }
-  });
-  const [collapsedGroups, setCollapsedGroups] = useState({
-    'adults': false,
-    'kids': false
   });
   const [activeJerseyTab, setActiveJerseyTab] = useState('adults');
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
@@ -477,7 +470,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     };
 
     loadCustomCategories();
-  }, []);
+  }, [predefinedCategories]);
 
   const handleAddCategory = () => {
     const trimmedCategory = newCategoryInput.trim();
@@ -556,7 +549,9 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           const mainBranch = branchesData.find(branch => branch.is_main_manufacturing);
           if (mainBranch && !isEditMode) {
             // Only set default branch for non-simple categories (apparel, etc.)
-            const isSimpleCategory = ballCategorySelected || medalCategorySelected;
+            const ballCategory = isBallCategory(formData.category);
+            const medalCategory = isMedalCategory(formData.category);
+            const isSimpleCategory = ballCategory || medalCategory;
             if (!isSimpleCategory) {
               setFormData(prev => ({ ...prev, branch_id: mainBranch.id }));
             }
@@ -567,12 +562,12 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       } catch (fetchError) {
         console.error('Error fetching branches:', fetchError);
       } finally {
-        setLoadingBranches(false);
+        // Loading branches complete
       }
     };
 
     fetchBranches();
-  }, [isEditMode]);
+  }, [isEditMode, formData.category]);
 
   // Fetch current stocks per branch when in edit mode
   useEffect(() => {
@@ -581,66 +576,102 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         try {
           const branchProductsMap = {};
           // Fetch products with same name and category from all branches
-          const allProductsResponse = await fetch('http://localhost:4000/api/products');
+          // Use ?all=true to get all products from all branches (no deduplication)
+          const allProductsResponse = await fetch('http://localhost:4000/api/products?all=true');
           if (allProductsResponse.ok) {
             const allProducts = await allProductsResponse.json();
-            const matchingProducts = allProducts.filter(p => 
-              p.name === formData.name && 
-              p.category === formData.category &&
-              p.stock_quantity !== null &&
-              p.stock_quantity !== undefined
-            );
+            // For trophies, include products with size_stocks even if stock_quantity is null
+            const isTrophy = isTrophyCategory(formData.category);
+            const matchingProducts = allProducts.filter(p => {
+              const nameMatch = p.name === formData.name && p.category === formData.category;
+              // Include ALL products with matching name and category, regardless of stock value
+              // This ensures we get all branch products, including those with 0 or null stock
+              return nameMatch;
+            });
+            
+            console.log('📦 [AddProductModal] Found matching products for editing:', matchingProducts.length);
             
             matchingProducts.forEach(product => {
               if (product.branch_id) {
                 branchProductsMap[product.branch_id] = {
-                  stock_quantity: product.stock_quantity || 0,
+                  stock_quantity: product.stock_quantity !== null && product.stock_quantity !== undefined ? product.stock_quantity : 0,
                   id: product.id,
-                  size_stocks: product.size_stocks || null
+                  size_stocks: product.size_stocks || null,
+                  name: product.name,
+                  category: product.category
                 };
+                console.log(`📦 [AddProductModal] Found product in branch ${product.branch_id}: id=${product.id}, stock=${product.stock_quantity}, size_stocks=`, product.size_stocks);
               }
             });
             
             setBranchProducts(branchProductsMap);
-            // Initialize selected branches with branches that have stocks or size_stocks
-            const branchesWithStocks = Object.keys(branchProductsMap);
-            setSelectedBranches(branchesWithStocks.map(id => parseInt(id)));
+            // Initialize selected branches with ALL branches that have this product
+            const branchesWithProduct = Object.keys(branchProductsMap);
+            setSelectedBranches(branchesWithProduct.map(id => parseInt(id)));
+            console.log('📦 [AddProductModal] Selected branches:', branchesWithProduct);
             
             // For trophies with sizes, load size_stocks per branch
-            if (isTrophyCategory(formData.category) && parsedSizes.length > 0) {
-              const loadedSizeStocks = {};
-              Object.keys(branchProductsMap).forEach(branchId => {
-                const product = branchProductsMap[branchId];
-                if (product.size_stocks) {
-                  try {
-                    const stocks = typeof product.size_stocks === 'string' 
-                      ? JSON.parse(product.size_stocks) 
-                      : product.size_stocks;
-                    if (stocks && typeof stocks === 'object') {
-                      loadedSizeStocks[branchId] = stocks;
+            if (isTrophy) {
+              // Parse sizes from the first matching product to check if sizes exist
+              const firstProduct = matchingProducts.find(p => p.size);
+              const parsedSizes = firstProduct ? parseAvailableSizes(firstProduct.size) : [];
+              
+              if (parsedSizes.length > 0) {
+                const loadedSizeStocks = {};
+                Object.keys(branchProductsMap).forEach(branchId => {
+                  const product = branchProductsMap[branchId];
+                  if (product.size_stocks) {
+                    try {
+                      const stocks = typeof product.size_stocks === 'string' 
+                        ? JSON.parse(product.size_stocks) 
+                        : product.size_stocks;
+                      if (stocks && typeof stocks === 'object') {
+                        loadedSizeStocks[branchId] = stocks;
+                        console.log(`📦 [AddProductModal] Loaded size_stocks for branch ${branchId}:`, stocks);
+                      }
+                    } catch (e) {
+                      console.warn(`Failed to parse size_stocks for branch ${branchId}:`, e);
                     }
-                  } catch (e) {
-                    console.warn(`Failed to parse size_stocks for branch ${branchId}:`, e);
+                  } else {
+                    // Initialize empty size_stocks for branches that don't have it yet
+                    const emptyStocks = {};
+                    parsedSizes.forEach(size => {
+                      emptyStocks[size] = 0;
+                    });
+                    loadedSizeStocks[branchId] = emptyStocks;
+                    console.log(`📦 [AddProductModal] Initialized empty size_stocks for branch ${branchId}`);
                   }
-                }
-              });
-              if (Object.keys(loadedSizeStocks).length > 0) {
+                });
+                // Always set sizeStocks, even if some branches have empty stocks
                 setSizeStocks(loadedSizeStocks);
                 console.log('📦 [AddProductModal] Loaded size_stocks for all branches:', loadedSizeStocks);
               }
-            } else {
+            }
+            
+            // For non-trophy products, initialize branchStocks with current stocks
+            if (!isTrophy) {
               // Initialize branchStocks with current stocks (for non-trophy products)
+              // Include 0 values so they're displayed correctly
               const initialStocks = {};
               Object.keys(branchProductsMap).forEach(branchId => {
-                initialStocks[branchId] = branchProductsMap[branchId].stock_quantity;
+                const stockQty = branchProductsMap[branchId].stock_quantity;
+                // Set the exact value from DB, including 0 (don't default to 0 if it's null/undefined in DB)
+                if (stockQty !== null && stockQty !== undefined) {
+                  initialStocks[branchId] = stockQty;
+                } else {
+                  // If DB has null/undefined, set to 0 for display
+                  initialStocks[branchId] = 0;
+                }
               });
               setBranchStocks(initialStocks);
+              console.log('📦 [AddProductModal] Loaded branchStocks:', initialStocks);
             }
+            
             // Set the stock quantity if all selected branches have the same stock
-            if (branchesWithStocks.length > 0) {
-              const stockValues = branchesWithStocks.map(id => branchProductsMap[id].stock_quantity);
-              const allSameStock = stockValues.every(val => val === stockValues[0]);
-              if (allSameStock) {
+            if (branchesWithProduct.length > 0 && !isTrophy) {
+              const stockValues = branchesWithProduct.map(id => branchProductsMap[id].stock_quantity);
+              const allSameStock = stockValues.length > 0 && stockValues.every(val => val === stockValues[0]);
+              if (allSameStock && stockValues[0] !== null && stockValues[0] !== undefined) {
                 setBranchStockQuantity(stockValues[0]?.toString() || '');
               }
             }
@@ -657,6 +688,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       setBranchStocks({});
       setSelectedBranches([]);
       setBranchStockQuantity('');
+      setSizeStocks({});
     }
   }, [isEditMode, editingProduct, formData.name, formData.category]);
 
@@ -852,7 +884,6 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   const medalCategorySelected = isMedalCategory(formData.category);
   const simpleCategorySelected = ballCategorySelected || medalCategorySelected || trophyCategorySelected; // Categories that need branch stock selection
   const jerseyCategorySelected = isJerseyCategory(formData.category);
-  const showMultipleSizes = trophyCategorySelected || jerseyCategorySelected;
   const apparelCategorySelected = isApparelCategory(formData.category);
 
   const renderSizeSurchargeGroup = (
@@ -1495,22 +1526,17 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       if (!updated[branchId]) {
         updated[branchId] = {};
       }
-      updated[branchId][size] = stockQuantity === '' ? null : parseInt(stockQuantity) || 0;
+      // Overwrite the value - if empty string, set to null, otherwise parse as integer (including 0)
+      if (stockQuantity === '' || stockQuantity === null) {
+        updated[branchId][size] = null;
+      } else {
+        const parsed = parseInt(stockQuantity);
+        updated[branchId][size] = isNaN(parsed) ? 0 : parsed;  // Overwrite, don't append
+      }
       return updated;
     });
   };
 
-  // Remove trophy price when size is removed
-  const handleRemoveTrophySize = (sizeToRemove) => {
-    setAvailableSizes(prev => prev.filter(size => size !== sizeToRemove));
-    setTrophyPrices(prev => {
-      const updated = { ...prev };
-      delete updated[sizeToRemove];
-      return updated;
-    });
-    clearSizeSurchargeForSize(sizeToRemove, 'general');
-    setSizeInputError('');
-  };
 
   const handleSizeSelect = (size) => {
     setFormData(prev => ({
@@ -1839,12 +1865,6 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     }
   };
 
-  const toggleGroupCollapse = (groupKey) => {
-    setCollapsedGroups(prev => ({
-      ...prev,
-      [groupKey]: !prev[groupKey]
-    }));
-  };
 
   const handleSelectAllSizes = (type, ageGroup, sizesArray) => {
     // Toggle between selecting all and unselecting all
@@ -2270,7 +2290,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       // For trophies with sizes, check if branches are selected
       const shouldProcessBranches = shouldUseBranchStocks && (
         (isTrophyProduct && availableSizes.length > 0 && hasSelectedBranches) ||
-        (!isTrophyProduct || availableSizes.length === 0) && hasBranchStocks
+        ((!isTrophyProduct || availableSizes.length === 0) && hasBranchStocks)
       );
       
       if (shouldProcessBranches) {
@@ -2282,12 +2302,17 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           branchEntries = selectedBranches.map(branchId => [branchId.toString(), null]);
           console.log('📦 [AddProductModal] Processing trophy with sizes for branches:', selectedBranches);
         } else {
-          // For simple categories or trophies without sizes, use branchStocks
-          branchEntries = Object.entries(branchStocks).filter(([branchId, stockQuantity]) => {
-            // Only process branches that have a stock quantity set (not null, undefined, or empty string)
-            return stockQuantity !== null && stockQuantity !== undefined && stockQuantity !== '';
+          // For simple categories or trophies without sizes, use ALL selected branches
+          // This ensures all selected branches are updated, even if stock is 0
+          branchEntries = selectedBranches.map(branchId => {
+            const stockQty = branchStocks[branchId];
+            // Use stock from branchStocks if available, otherwise use 0
+            const stockValue = (stockQty !== null && stockQty !== undefined && stockQty !== '') 
+              ? stockQty 
+              : 0;
+            return [branchId.toString(), stockValue];
           });
-          console.log('📦 [AddProductModal] Processing branch stocks:', branchEntries);
+          console.log('📦 [AddProductModal] Processing branch stocks for all selected branches:', branchEntries);
         }
         
         console.log('📦 [AddProductModal] Total branches to process:', branchEntries.length);
@@ -2298,6 +2323,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         
         const productPromises = branchEntries.map(async ([branchId, stockQuantity]) => {
           try {
+          // Get fresh session token for each request to avoid expiration issues
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError || !currentSession || !currentSession.access_token) {
+            console.error(`❌ [AddProductModal] No valid session for branch ${branchId}:`, sessionError);
+            throw new Error('Session expired. Please refresh your browser and log in again.');
+          }
+
           // For trophies with sizes, extract the size_stocks for this specific branch
           let branchSizeStocks = null;
           if (isTrophyProduct && availableSizes.length > 0 && sizeStocksValue) {
@@ -2311,67 +2344,115 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
             ...productData,
             branch_id: parseInt(branchId),
             // For trophies with sizes, stock_quantity is null (using size_stocks instead)
-            // For other categories, use the stockQuantity from branchStocks
+            // For other categories, use the stockQuantity from branchStocks (including 0)
             stock_quantity: (isTrophyProduct && availableSizes.length > 0) 
               ? null 
-              : (stockQuantity ? parseInt(stockQuantity) : null)
+              : (stockQuantity !== null && stockQuantity !== undefined && stockQuantity !== '') 
+                ? parseInt(stockQuantity) 
+                : 0  // Default to 0 if not set (overwrite, don't append)
           };
 
           // Add branch-specific size_stocks for trophies
+          // Send as object, not string - JSON.stringify will handle it correctly
           if (branchSizeStocks) {
-            branchProductData.size_stocks = JSON.stringify(branchSizeStocks);
+            branchProductData.size_stocks = branchSizeStocks;
             console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks:`, branchSizeStocks);
+            console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks type:`, typeof branchSizeStocks);
           }
 
             console.log(`📦 [AddProductModal] Processing branch ${branchId} with stock ${stockQuantity || 'size_stocks'}`);
 
-          // For edit mode, check if product exists in this branch
-          if (isEditMode && branchProducts[branchId]) {
-            // Update existing product in this branch
-            const existingProductId = branchProducts[branchId].id;
-              console.log(`📦 [AddProductModal] Updating existing product ${existingProductId} in branch ${branchId}`);
-            const url = `http://localhost:4000/api/products/${existingProductId}`;
-            const response = await fetch(url, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-              },
-              body: JSON.stringify(branchProductData)
-            });
-
+          // Helper function to handle response with better error handling
+          const handleResponse = async (response, branchId, action) => {
             if (!response.ok) {
-              const errorData = await response.json();
-                console.error(`❌ [AddProductModal] Failed to update product in branch ${branchId}:`, errorData);
-              throw new Error(errorData.error || `Failed to update product in branch ${branchId}`);
+              let errorData;
+              try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                  errorData = await response.json();
+                } else {
+                  const text = await response.text();
+                  errorData = { error: text || `Failed to ${action} product in branch ${branchId}` };
+                }
+              } catch (parseError) {
+                console.error(`❌ [AddProductModal] Error parsing error response:`, parseError);
+                errorData = { error: `Failed to ${action} product in branch ${branchId}. Status: ${response.status}` };
+              }
+              
+              // If 401, provide helpful error message
+              if (response.status === 401) {
+                throw new Error(errorData.error || 'Session expired. Please refresh your browser and log in again.');
+              }
+              
+              console.error(`❌ [AddProductModal] Failed to ${action} product in branch ${branchId}:`, errorData);
+              throw new Error(errorData.error || `Failed to ${action} product in branch ${branchId}`);
             }
+            
+            try {
+              return await response.json();
+            } catch (parseError) {
+              console.error(`❌ [AddProductModal] Error parsing success response:`, parseError);
+              throw new Error(`Failed to parse response from ${action} product in branch ${branchId}`);
+            }
+          };
 
-              const result = await response.json();
+          // For edit mode, check if product exists in this branch
+          if (isEditMode) {
+            // First, try to find existing product in this branch
+            const existingProduct = branchProducts[branchId];
+            
+            if (existingProduct && existingProduct.id) {
+              // Update existing product in this branch
+              const existingProductId = existingProduct.id;
+              console.log(`📦 [AddProductModal] Updating existing product ${existingProductId} in branch ${branchId} with stock: ${branchProductData.stock_quantity}, size_stocks:`, branchProductData.size_stocks);
+              const url = `http://localhost:4000/api/products/${existingProductId}`;
+              const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${currentSession.access_token}`
+                },
+                body: JSON.stringify(branchProductData)
+              });
+
+              const result = await handleResponse(response, branchId, 'update');
               console.log(`✅ [AddProductModal] Successfully updated product in branch ${branchId}`);
               return result;
+            } else {
+              // Product doesn't exist in this branch yet, but we're in edit mode
+              // Check if there's a product with same name/category in this branch
+              console.log(`⚠️ [AddProductModal] No existing product found in branch ${branchId}, but in edit mode. Creating new product.`);
+              const url = 'http://localhost:4000/api/products';
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${currentSession.access_token}`
+                },
+                body: JSON.stringify(branchProductData)
+              });
+
+              const result = await handleResponse(response, branchId, 'create');
+              console.log(`✅ [AddProductModal] Successfully created product in branch ${branchId}:`, result.id);
+              return result;
+            }
           } else {
             // Create new product for this branch
-              console.log(`📦 [AddProductModal] Creating new product in branch ${branchId}`);
+            console.log(`📦 [AddProductModal] Creating new product in branch ${branchId}`);
             const url = 'http://localhost:4000/api/products';
             const response = await fetch(url, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
+                'Authorization': `Bearer ${currentSession.access_token}`
               },
               body: JSON.stringify(branchProductData)
             });
 
-            if (!response.ok) {
-              const errorData = await response.json();
-                console.error(`❌ [AddProductModal] Failed to create product in branch ${branchId}:`, errorData);
-              throw new Error(errorData.error || `Failed to create product in branch ${branchId}`);
-            }
-
-              const result = await response.json();
-              console.log(`✅ [AddProductModal] Successfully created product in branch ${branchId}:`, result.id);
-              return result;
-            }
+            const result = await handleResponse(response, branchId, 'create');
+            console.log(`✅ [AddProductModal] Successfully created product in branch ${branchId}:`, result.id);
+            return result;
+          }
           } catch (error) {
             console.error(`❌ [AddProductModal] Error processing branch ${branchId}:`, error);
             throw error;
@@ -2901,6 +2982,24 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                     const branch = branches.find(b => b.id === branchId);
                                     if (!branch) return null;
                                     const stockValue = sizeStocks[branchId]?.[size];
+                                    // Get current stock from DB for this branch and size
+                                    const currentSizeStockFromDB = branchProducts[branchId]?.size_stocks;
+                                    let currentStockForSize = null;
+                                    if (currentSizeStockFromDB) {
+                                      try {
+                                        const parsed = typeof currentSizeStockFromDB === 'string' 
+                                          ? JSON.parse(currentSizeStockFromDB) 
+                                          : currentSizeStockFromDB;
+                                        if (parsed && typeof parsed === 'object') {
+                                          currentStockForSize = parsed[size] !== null && parsed[size] !== undefined ? parsed[size] : null;
+                                        }
+                                      } catch (e) {
+                                        // Ignore parse errors
+                                      }
+                                    }
+                                    const placeholderValue = currentStockForSize !== null && currentStockForSize !== undefined 
+                                      ? currentStockForSize.toString() 
+                                      : '0';
                                     return (
                                       <div key={branchId} style={{ 
                                         display: 'flex', 
@@ -2918,7 +3017,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                           type="number"
                                           value={stockValue !== null && stockValue !== undefined ? stockValue : ''}
                                           onChange={(e) => handleSizeStockChange(branchId, size, e.target.value)}
-                                          placeholder="0"
+                                          placeholder={placeholderValue}
                                           min="0"
                                           style={{ 
                                             flex: '1 1 auto',
@@ -3642,14 +3741,16 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {branches.map(branch => {
-                            const currentStockFromDB = branchProducts[branch.id]?.stock_quantity || 0;
-                            const newStock = branchStocks[branch.id];
-                            // Display new stock if set, otherwise show current stock from DB
-                            const displayStock = newStock !== undefined && newStock !== '' ? newStock : currentStockFromDB;
+                            const currentStockFromDB = branchProducts[branch.id]?.stock_quantity;
+                            // Get the stock value - prefer branchStocks if it exists (even if 0), otherwise use DB value
+                            const stockInState = branchStocks[branch.id];
+                            const hasStockInState = stockInState !== undefined && stockInState !== null && stockInState !== '';
+                            const displayStock = hasStockInState ? stockInState : (currentStockFromDB !== null && currentStockFromDB !== undefined ? currentStockFromDB : 0);
                             const isSelected = selectedBranches.includes(branch.id);
                             const isHovered = hoveredBranchId === branch.id;
                             const isAddingStock = addingStockBranchId === branch.id;
-                            const branchStock = branchStocks[branch.id] || '';
+                            // For input field: use stockInState if it exists (including 0), otherwise use currentStockFromDB, otherwise empty string
+                            const branchStock = hasStockInState ? stockInState : (currentStockFromDB !== null && currentStockFromDB !== undefined ? currentStockFromDB : '');
                             
                             return (
                               <div 
@@ -3721,7 +3822,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                       });
                                     } else {
                                       setSelectedBranches(prev => [...prev, branch.id]);
-                                      if (branchStockQuantity) {
+                                      // When selecting a branch in edit mode, use existing stock if available
+                                      const existingStock = branchProducts[branch.id]?.stock_quantity;
+                                      if (existingStock !== null && existingStock !== undefined) {
+                                        setBranchStocks(prev => ({
+                                          ...prev,
+                                          [branch.id]: existingStock
+                                        }));
+                                      } else if (branchStockQuantity) {
                                         const stockValue = parseInt(branchStockQuantity) || 0;
                                         setBranchStocks(prev => ({
                                           ...prev,
@@ -3737,22 +3845,59 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                       (Main Manufacturing)
                                     </span>
                                   )}
-                                  {displayStock > 0 && (
-                                    <span style={{ marginLeft: '0.5rem', color: newStock !== undefined && newStock !== '' ? '#3b82f6' : '#059669', fontSize: '0.75rem', fontWeight: 500 }}>
-                                      - Stock: {displayStock}
-                                      {currentStockFromDB > 0 && newStock !== undefined && newStock !== '' && newStock !== currentStockFromDB && (
-                                        <span style={{ color: '#6b7280', marginLeft: '0.25rem' }}>
-                                          (was {currentStockFromDB})
-                                        </span>
-                                      )}
-                                    </span>
-                                  )}
-                                  {displayStock === 0 && newStock === 0 && currentStockFromDB === 0 && (
-                                    <span style={{ marginLeft: '0.5rem', color: '#9ca3af', fontSize: '0.75rem', fontStyle: 'italic' }}>
-                                      - No stock
-                                    </span>
-                                  )}
                                 </label>
+                                
+                                {/* Show stock input field when branch is selected (especially in edit mode) */}
+                                {isSelected && (
+                                  <input
+                                    type="number"
+                                    value={branchStock !== '' && branchStock !== null && branchStock !== undefined ? branchStock : ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      // When user clears the input, set to empty string (not 0)
+                                      if (value === '' || value === null) {
+                                        setBranchStocks(prev => ({
+                                          ...prev,
+                                          [branch.id]: ''
+                                        }));
+                                      } else {
+                                        // Parse and set the exact value entered (overwrite, don't append)
+                                        const stockValue = value === '' ? '' : (parseInt(value) || 0);
+                                        setBranchStocks(prev => ({
+                                          ...prev,
+                                          [branch.id]: stockValue
+                                        }));
+                                      }
+                                    }}
+                                    placeholder={currentStockFromDB !== null && currentStockFromDB !== undefined ? currentStockFromDB.toString() : '0'}
+                                    min="0"
+                                    style={{
+                                      width: '80px',
+                                      padding: '0.25rem 0.5rem',
+                                      border: '1px solid #d1d5db',
+                                      borderRadius: '4px',
+                                      fontSize: '0.875rem',
+                                      textAlign: 'right'
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                )}
+                                
+                                {/* Show stock display when branch is not selected */}
+                                {!isSelected && (
+                                  <>
+                                    {(displayStock > 0 || (displayStock === 0 && currentStockFromDB !== null && currentStockFromDB !== undefined)) && (
+                                      <span style={{ marginLeft: '0.5rem', color: displayStock > 0 ? '#059669' : '#9ca3af', fontSize: '0.75rem', fontWeight: displayStock > 0 ? 500 : 400 }}>
+                                        - Stock: {displayStock}
+                                      </span>
+                                    )}
+                                    {displayStock === 0 && (currentStockFromDB === null || currentStockFromDB === undefined) && (
+                                      <span style={{ marginLeft: '0.5rem', color: '#9ca3af', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                                        - No stock
+                                      </span>
+                                    )}
+                                  </>
+                                )}
                                 
                                 {/* Add button appears on hover */}
                                 {isHovered && !isAddingStock && (

@@ -19,11 +19,38 @@ class OrderService {
       } else {
         params.append('limit', 100);
       }
+      // Performance optimization: allow skipping user data and stats
+      if (filters.includeUserData !== undefined) {
+        params.append('includeUserData', filters.includeUserData);
+      }
+      if (filters.includeStats !== undefined) {
+        params.append('includeStats', filters.includeStats);
+      }
 
       const response = await authFetch(`${API_URL}/api/orders?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error details from response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // Response might not be JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        
+        const httpError = new Error(errorMessage);
+        httpError.status = response.status;
+        httpError.isHttpError = true;
+        
+        // Mark auth errors specifically
+        if (response.status === 401) {
+          httpError.isAuthError = true;
+          httpError.message = 'Session expired. Please refresh your browser and log in again.';
+        }
+        
+        throw httpError;
       }
 
       const data = await response.json();
@@ -37,10 +64,25 @@ class OrderService {
 
       return data;
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('❌ [OrderService.getAllOrders] Error fetching orders:', error);
+      console.error('❌ [OrderService.getAllOrders] Error details:', {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+        isAuthError: error.isAuthError,
+        isNetworkError: error.isNetworkError,
+        isHttpError: error.isHttpError,
+        stack: error.stack
+      });
+      
+      // Check for authentication errors (should not fall back to mock data)
+      if (error.isAuthError || (error.status === 401)) {
+        console.error('❌ [OrderService.getAllOrders] Authentication error - throwing error instead of using fallback');
+        throw error;
+      }
       
       // Check for network/connection errors
-      if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('network'))) {
+      if (error.isNetworkError || (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')))) {
         const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
         const errorMessage = isProduction 
           ? `Network error: Unable to connect to backend server at ${API_URL}. Please check if the backend service is running.`
@@ -50,8 +92,21 @@ class OrderService {
         throw networkError;
       }
       
-      // Fallback to mock data if API fails (only for non-network errors)
-      console.warn('⚠️ Backend unavailable, using fallback data');
+      // Check for server errors (500, 502, 503, etc.) - these should throw, not use fallback
+      if (error.status && error.status >= 500) {
+        console.error(`❌ [OrderService.getAllOrders] Server error (${error.status}) - throwing error instead of using fallback`);
+        throw new Error(`Server error (${error.status}): ${error.message || 'Internal server error. Please try again later.'}`);
+      }
+      
+      // Only fallback to mock data for client errors (4xx) that aren't auth errors
+      // This is a last resort and should ideally not happen in production
+      if (error.status && error.status >= 400 && error.status < 500) {
+        console.warn(`⚠️ [OrderService.getAllOrders] Client error (${error.status}): ${error.message}`);
+        console.warn('⚠️ [OrderService.getAllOrders] Using fallback data as last resort');
+      } else {
+        console.warn('⚠️ [OrderService.getAllOrders] Unknown error, using fallback data');
+      }
+      
       return {
         orders: this.getMockOrders(),
         pagination: {
@@ -116,7 +171,7 @@ class OrderService {
       if (allOrders && allOrders.length > 0) {
         allOrders.forEach(order => {
           console.log(`  - Order ${order.order_number}: user_id=${order.user_id} (type: ${typeof order.user_id}), status=${order.status}`);
-          console.log(`    Match? ${order.user_id === userId} (strict), ${order.user_id == userId} (loose)`);
+          console.log(`    Match? ${order.user_id === userId} (strict), ${order.user_id === userId} (loose)`);
         });
       } else {
         console.log('  No orders found in database at all!');
