@@ -17,11 +17,42 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we have the hash in the URL (Supabase adds it)
-    const hash = window.location.hash;
-    if (!hash || !hash.includes('access_token')) {
-      setError('Invalid or expired reset link. Please request a new password reset.');
-    }
+    // Handle Supabase password reset token
+    // Supabase adds the recovery token to the URL hash
+    const checkRecoverySession = async () => {
+      try {
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        // Check if we have a recovery token in the URL hash
+        const hash = window.location.hash;
+        const hashParams = new URLSearchParams(hash.substring(1)); // Remove the #
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
+        
+        // If we have a recovery token but no session, Supabase needs to process it
+        if (accessToken && type === 'recovery') {
+          // Supabase will automatically process this when we call getSession
+          // The session should be established now
+          const { data: { session: recoverySession }, error: recoveryError } = await supabase.auth.getSession();
+          
+          if (recoveryError || !recoverySession) {
+            console.error('Recovery session error:', recoveryError);
+            setError('Invalid or expired reset link. Please request a new password reset.');
+          }
+          // If we have a session, we're good to proceed
+        } else if (!session && !accessToken) {
+          // No token and no session - invalid link
+          setError('Invalid or expired reset link. Please request a new password reset.');
+        }
+        // If we have a session, we're good (user might have already been authenticated)
+      } catch (err) {
+        console.error('Error checking recovery session:', err);
+        setError('Invalid or expired reset link. Please request a new password reset.');
+      }
+    };
+
+    checkRecoverySession();
   }, []);
 
   const validatePassword = (pwd) => {
