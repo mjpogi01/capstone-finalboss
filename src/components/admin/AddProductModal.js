@@ -381,7 +381,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   const [jerseyPrices, setJerseyPrices] = useState({ ...DEFAULT_JERSEY_PRICES });
   // Trophy prices: object mapping size to price, e.g., { "14\" (Large)": 1000, "10\" (Medium)": 750 }
   const [trophyPrices, setTrophyPrices] = useState({});
-  // Stock quantities per size for trophies: object mapping size to stock quantity, e.g., { "14\" (Large)": 10, "10\" (Medium)": 5 }
+  // Stock quantities per size per branch for trophies: object mapping branch_id to size to stock quantity
+  // e.g., { "1": { "14\" (Large)": 10, "10\" (Medium)": 5 }, "2": { "14\" (Large)": 8, "10\" (Medium)": 3 } }
   const [sizeStocks, setSizeStocks] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1442,12 +1443,16 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     }));
   };
 
-  // Handle stock quantity change for a specific size (trophies only)
-  const handleSizeStockChange = (size, stockQuantity) => {
-    setSizeStocks(prev => ({
-      ...prev,
-      [size]: stockQuantity === '' ? null : parseInt(stockQuantity) || 0
-    }));
+  // Handle stock quantity change for a specific size and branch (trophies only)
+  const handleSizeStockChange = (branchId, size, stockQuantity) => {
+    setSizeStocks(prev => {
+      const updated = { ...prev };
+      if (!updated[branchId]) {
+        updated[branchId] = {};
+      }
+      updated[branchId][size] = stockQuantity === '' ? null : parseInt(stockQuantity) || 0;
+      return updated;
+    });
   };
 
   // Remove trophy price when size is removed
@@ -1643,11 +1648,18 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       }));
     }
     // Initialize stock quantity as empty for new size (trophies only)
+    // Initialize for all selected branches
     if (isTrophyCategory(formData.category)) {
-      setSizeStocks(prev => ({
-        ...prev,
-        [value]: null
-      }));
+      setSizeStocks(prev => {
+        const updated = { ...prev };
+        selectedBranches.forEach(branchId => {
+          if (!updated[branchId]) {
+            updated[branchId] = {};
+          }
+          updated[branchId][value] = null;
+        });
+        return updated;
+      });
     }
     setNewSizeInput('');
     setSizeInputError('');
@@ -2792,32 +2804,69 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                   boxSizing: 'border-box'
                                 }}
                               />
-                              <label style={{ 
-                                fontSize: '0.75rem', 
-                                color: '#6b7280', 
-                                whiteSpace: 'nowrap', 
-                                fontWeight: 500,
-                                flex: '0 0 auto'
-                              }}>Stock:</label>
-                              <input
-                                type="number"
-                                value={sizeStocks[size] !== null && sizeStocks[size] !== undefined ? sizeStocks[size] : ''}
-                                onChange={(e) => handleSizeStockChange(size, e.target.value)}
-                                placeholder="0"
-                                min="0"
-                                style={{ 
-                                  flex: '1 1 100px',
-                                  minWidth: '80px',
-                                  maxWidth: '150px',
-                                  padding: '0.5rem', 
-                                  border: '1px solid #d1d5db', 
-                                  borderRadius: '6px', 
-                                  fontSize: '0.875rem',
-                                  background: '#ffffff',
-                                  boxSizing: 'border-box'
-                                }}
-                              />
                             </div>
+                            {/* Stock inputs per branch for this size */}
+                            {selectedBranches.length > 0 && (
+                              <div style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                gap: '0.5rem',
+                                marginTop: '0.5rem',
+                                paddingTop: '0.75rem',
+                                borderTop: '1px solid #e5e7eb'
+                              }}>
+                                <label style={{ 
+                                  fontSize: '0.75rem', 
+                                  color: '#6b7280', 
+                                  fontWeight: 600,
+                                  marginBottom: '0.25rem'
+                                }}>Stock per Branch:</label>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  flexDirection: 'column',
+                                  gap: '0.5rem'
+                                }}>
+                                  {selectedBranches.map(branchId => {
+                                    const branch = branches.find(b => b.id === branchId);
+                                    if (!branch) return null;
+                                    const stockValue = sizeStocks[branchId]?.[size];
+                                    return (
+                                      <div key={branchId} style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '0.5rem'
+                                      }}>
+                                        <label style={{ 
+                                          fontSize: '0.75rem', 
+                                          color: '#6b7280', 
+                                          whiteSpace: 'nowrap',
+                                          minWidth: '120px',
+                                          fontWeight: 500
+                                        }}>{branch.name}:</label>
+                                        <input
+                                          type="number"
+                                          value={stockValue !== null && stockValue !== undefined ? stockValue : ''}
+                                          onChange={(e) => handleSizeStockChange(branchId, size, e.target.value)}
+                                          placeholder="0"
+                                          min="0"
+                                          style={{ 
+                                            flex: '1 1 auto',
+                                            minWidth: '80px',
+                                            maxWidth: '150px',
+                                            padding: '0.5rem', 
+                                            border: '1px solid #d1d5db', 
+                                            borderRadius: '6px', 
+                                            fontSize: '0.875rem',
+                                            background: '#ffffff',
+                                            boxSizing: 'border-box'
+                                          }}
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
