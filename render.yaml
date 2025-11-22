@@ -7,8 +7,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 4000
+      # Note: PORT is automatically set by Render, no need to specify
     healthCheckPath: /health
 
 
