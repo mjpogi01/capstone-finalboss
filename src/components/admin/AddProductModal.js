@@ -2644,7 +2644,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               {trophyCategorySelected ? (
                 <div className="apm-section-block">
                   <div className="apm-form-group">
-                    <label>Available Sizes</label>
+                    <label>Stocks/Sizes</label>
                     <div className="apm-available-sizes-input">
                       <input
                         type="text"
