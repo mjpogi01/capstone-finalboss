@@ -200,15 +200,27 @@ router.post('/send-code', async (req, res) => {
       console.log(`⚠️ Email validation warnings for ${normalizedEmail}:`, validationResult.warnings);
     }
 
-    // Check if email service is configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.warn('⚠️ Email service not configured - verification codes will not be sent');
+    // Check if email service (Resend) is configured
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('⚠️ Email service not configured - RESEND_API_KEY not set. Verification codes will not be sent.');
       // Return success anyway (for development/testing)
       return res.json({
         success: true,
         message: 'Verification code would be sent to your email (email service not configured)',
         expiresIn: 10,
-        warning: 'Email service not configured'
+        warning: 'Email service not configured - RESEND_API_KEY is required'
+      });
+    }
+
+    // Check if from email is configured
+    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    if (!fromEmail) {
+      console.warn('⚠️ Email service not fully configured - RESEND_FROM_EMAIL/EMAIL_FROM not set. Verification codes will not be sent.');
+      return res.json({
+        success: true,
+        message: 'Verification code would be sent to your email (email service not configured)',
+        expiresIn: 10,
+        warning: 'Email service not configured - RESEND_FROM_EMAIL is required'
       });
     }
 
