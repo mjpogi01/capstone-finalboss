@@ -222,6 +222,25 @@ router.post('/reset-password', async (req, res) => {
           message: 'If an account exists with this email, a password reset link has been sent.'
         });
       }
+
+      // Check if user signed up with OAuth (Google, etc.) - they don't have passwords
+      const isOAuthUser = user.identities && user.identities.some(
+        identity => identity.provider !== 'email'
+      );
+      
+      if (isOAuthUser) {
+        const providers = user.identities
+          .filter(id => id.provider !== 'email')
+          .map(id => id.provider.charAt(0).toUpperCase() + id.provider.slice(1))
+          .join(' or ');
+        
+        console.log(`⚠️ OAuth user detected (${providers}) - cannot reset password`);
+        return res.status(400).json({
+          success: false,
+          error: `This account was created using ${providers} sign-in. Please sign in with ${providers} instead. Password reset is not available for OAuth accounts.`,
+          code: 'OAUTH_USER'
+        });
+      }
     } catch (userError) {
       // Error fetching user - return success anyway (security best practice)
       console.warn('Could not fetch user info for password reset:', userError.message);

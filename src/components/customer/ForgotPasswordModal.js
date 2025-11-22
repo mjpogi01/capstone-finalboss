@@ -36,7 +36,12 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '' }) => {
       setSuccess(true);
       setError('');
     } catch (err) {
-      setError(err.message || 'Failed to send password reset email. Please try again.');
+      // Check if it's an OAuth user error
+      if (err.message && err.message.includes('OAuth')) {
+        setError(err.message);
+      } else {
+        setError(err.message || 'Failed to send password reset email. Please try again.');
+      }
       setSuccess(false);
     } finally {
       setIsLoading(false);
