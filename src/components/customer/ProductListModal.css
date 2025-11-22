@@ -1059,7 +1059,7 @@ input.category-checkbox[type="checkbox"]:checked {
 /* Product Stats - Copied from Homepage */
 .product-card-info .product-stats {
   display: flex !important;
-  justify-content: flex-start !important;
+  justify-content: space-between !important;
   align-items: center !important;
   margin-bottom: 4px !important;
   gap: 8px !important;
@@ -1071,6 +1071,18 @@ input.category-checkbox[type="checkbox"]:checked {
   white-space: nowrap !important;
   flex-direction: row !important;
   overflow: visible !important;
+}
+
+.product-stats-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+}
+
+.stat-right {
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
 }
 
 .product-card-info .product-stats .stat-item {
@@ -1377,7 +1389,7 @@ input.category-checkbox[type="checkbox"]:checked {
   .product-card-info .product-stats {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: flex-start !important;
+    justify-content: space-between !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
@@ -1429,7 +1441,7 @@ input.category-checkbox[type="checkbox"]:checked {
   .product-card-info .product-stats {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: flex-start !important;
+    justify-content: space-between !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;

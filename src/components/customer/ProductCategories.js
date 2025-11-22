@@ -481,22 +481,24 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
                       })()}
                     </div>
                     <div className="sportswear-product-stats">
-                      {(product.average_rating > 0 || productRatings[product.id]) && (
-                        <span className="sportswear-stat-item">
-                          <span className="rating-number">
-                            {product.average_rating > 0 ? product.average_rating : (productRatings[product.id] || 0)}
+                      <div className="sportswear-stats-left">
+                        {(product.average_rating > 0 || productRatings[product.id]) && (
+                          <span className="sportswear-stat-item">
+                            <span className="rating-number">
+                              {product.average_rating > 0 ? product.average_rating : (productRatings[product.id] || 0)}
+                            </span>
+                            <FaStar className="star-icon" />
                           </span>
-                          <FaStar className="star-icon" />
-                        </span>
-                      )}
-                      {product.sold_quantity !== undefined && product.sold_quantity > 0 && (
-                        <span className="sportswear-stat-item">{product.sold_quantity} sold</span>
-                      )}
-                      {/* Show quantity for balls and trophies */}
+                        )}
+                        {product.sold_quantity !== undefined && product.sold_quantity > 0 && (
+                          <span className="sportswear-stat-item">{product.sold_quantity} sold</span>
+                        )}
+                      </div>
+                      {/* Show quantity for balls and trophies on the right */}
                       {(product.category?.toLowerCase() === 'balls' || product.category?.toLowerCase() === 'trophies') && 
                        product.stock_quantity !== undefined && product.stock_quantity !== null && (
-                        <span className="sportswear-stat-item">
-                          {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} available
+                        <span className="sportswear-stat-item sportswear-stat-right">
+                          Qty: {product.stock_quantity}
                         </span>
                       )}
                     </div>

@@ -348,13 +348,25 @@
 .sportswear-product-stats {
   display: flex;
   font-family: 'Oswald', sans-serif !important;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   margin: 0.05rem 0;
   gap: 0.5rem;
   min-height: 24px;
   max-height: 24px;
   height: 24px;
+}
+
+.sportswear-stats-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.sportswear-stat-right {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .sportswear-product-card .sportswear-product-stats {
@@ -1845,7 +1857,7 @@
   
   .sportswear-product-card .sportswear-product-stats {
     display: flex !important;
-    justify-content: flex-start !important;
+    justify-content: space-between !important;
     align-items: center !important;
     margin-bottom: 2px !important;
     gap: 6px !important;

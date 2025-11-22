@@ -576,23 +576,25 @@ const ProductListModal = ({ isOpen, onClose }) => {
                           
                           {/* Review Count and Sold Quantity - Public for all users */}
                           <div className="product-stats">
-                            {(product.average_rating > 0 || product.review_count > 0) && (
-                              <span className="stat-item">
-                                <span className="rating-number">{product.average_rating || 0}</span>
-                                <FaStar className="star-icon" />
-                                {product.review_count > 0 && (
-                                  <span className="review-count-text"> ({product.review_count})</span>
-                                )}
-                              </span>
-                            )}
-                            {product.sold_quantity !== undefined && product.sold_quantity > 0 && (
-                              <span className="stat-item">{product.sold_quantity} sold</span>
-                            )}
-                            {/* Show quantity for balls and trophies */}
+                            <div className="product-stats-left">
+                              {(product.average_rating > 0 || product.review_count > 0) && (
+                                <span className="stat-item">
+                                  <span className="rating-number">{product.average_rating || 0}</span>
+                                  <FaStar className="star-icon" />
+                                  {product.review_count > 0 && (
+                                    <span className="review-count-text"> ({product.review_count})</span>
+                                  )}
+                                </span>
+                              )}
+                              {product.sold_quantity !== undefined && product.sold_quantity > 0 && (
+                                <span className="stat-item">{product.sold_quantity} sold</span>
+                              )}
+                            </div>
+                            {/* Show quantity for balls and trophies on the right */}
                             {(product.category?.toLowerCase() === 'balls' || product.category?.toLowerCase() === 'trophies') && 
                              product.stock_quantity !== undefined && product.stock_quantity !== null && (
-                              <span className="stat-item">
-                                {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} available
+                              <span className="stat-item stat-right">
+                                Qty: {product.stock_quantity}
                               </span>
                             )}
                           </div>
