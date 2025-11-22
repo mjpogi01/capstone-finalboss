@@ -34,7 +34,7 @@ products {
 
 ### 2. **Trophies with Sizes**
 - **size**: JSON array of sizes, e.g., `["13\"", "16\"", "19\"]`
-- **trophy_prices**: JSONB object mapping size to price
+- **trophy_prices**: JSONB object mapping size to price (same for all branches)
   ```json
   {
     "13\"": 500,
@@ -42,7 +42,7 @@ products {
     "19\"": 1000
   }
   ```
-- **size_stocks**: JSONB object mapping size to stock quantity
+- **size_stocks**: JSONB object mapping size to stock quantity (branch-specific)
   ```json
   {
     "13\"": 10,
@@ -50,6 +50,7 @@ products {
     "19\"": 8
   }
   ```
+  **Note**: Each branch product has its own `size_stocks` object with branch-specific quantities
 - **branch_id**: One product record per branch
 - **stock_quantity**: Set to `null` (not used when sizes exist)
 
@@ -104,14 +105,16 @@ products {
     "19\"": 1000
   },
   "size_stocks": {
-    "13\"": 10,
-    "16\"": 5,
-    "19\"": 8
+    "13\"": 8,
+    "16\"": 3,
+    "19\"": 5
   },
   "branch_id": 2,
   "stock_quantity": null
 }
 ```
+
+**Note**: Each branch can have different stock quantities per size!
 
 ## Data Flow
 
@@ -152,14 +155,11 @@ products {
 4. **No Branch-Specific Stocks**: Currently, all branches share the same stock quantities per size
    - If you need branch-specific stocks per size, you'd need a different structure (e.g., `{ "branch_id": { "size": quantity } }`)
 
-## Current Limitation
+## Current Implementation
 
-**All branches share the same stock quantities per size.** If you need different stock quantities per size per branch, the structure would need to be:
-```json
-{
-  "1": { "13\"": 10, "16\"": 5 },
-  "2": { "13\"": 8, "16\"": 3 }
-}
-```
-This would require additional frontend/backend changes.
+**Each branch has its own stock quantities per size.** Each product record stores only the stocks for that specific branch:
+- Branch 1 product: `size_stocks = { "13\"": 10, "16\"": 5 }`
+- Branch 2 product: `size_stocks = { "13\"": 8, "16\"": 3 }`
+
+This allows complete flexibility - each branch can have completely different stock levels for each size.
 
