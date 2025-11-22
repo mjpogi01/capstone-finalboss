@@ -2681,31 +2681,68 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                         {availableSizes.map(size => (
                           <div key={size} style={{ 
                             display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '0.5rem',
+                            flexDirection: 'column',
+                            gap: '0.75rem',
                             padding: '0.75rem',
                             background: '#f8fafc',
                             borderRadius: '6px',
                             border: '1px solid #e5e7eb',
                             width: '100%',
                             maxWidth: '100%',
-                            flexWrap: 'wrap',
                             boxSizing: 'border-box'
                           }}>
-                            <span style={{ 
-                              fontWeight: 500, 
-                              fontSize: '0.875rem', 
-                              color: '#111827',
-                              whiteSpace: 'nowrap',
-                              flex: '0 0 auto'
-                            }}>Size: {size}</span>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              width: '100%',
+                              gap: '0.5rem'
+                            }}>
+                              <span style={{ 
+                                fontWeight: 500, 
+                                fontSize: '0.875rem', 
+                                color: '#111827',
+                                whiteSpace: 'nowrap'
+                              }}>Size: {size}</span>
+                              <button
+                                type="button"
+                                aria-label={`Remove size ${size}`}
+                                onClick={() => handleRemoveAvailableSize(size)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontSize: '1.25rem',
+                                  fontWeight: 600,
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '4px',
+                                  transition: 'all 0.2s ease',
+                                  flex: '0 0 auto',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#fef2f2';
+                                  e.target.style.transform = 'scale(1.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = 'none';
+                                  e.target.style.transform = 'scale(1)';
+                                }}
+                              >
+                                {'×'}
+                              </button>
+                            </div>
                             <div style={{ 
                               display: 'flex', 
                               alignItems: 'center', 
                               gap: '0.5rem', 
                               flex: '1 1 auto',
                               minWidth: '200px',
-                              flexWrap: 'wrap'
+                              flexWrap: 'wrap',
+                              width: '100%'
                             }}>
                               <label style={{ 
                                 fontSize: '0.75rem', 
@@ -2760,37 +2797,6 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                 }}
                               />
                             </div>
-                            <button
-                              type="button"
-                              aria-label={`Remove size ${size}`}
-                              onClick={() => handleRemoveAvailableSize(size)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#ef4444',
-                                cursor: 'pointer',
-                                fontSize: '1.25rem',
-                                fontWeight: 600,
-                                padding: '0.25rem 0.5rem',
-                                borderRadius: '4px',
-                                transition: 'all 0.2s ease',
-                                flex: '0 0 auto',
-                                marginLeft: 'auto',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#fef2f2';
-                                e.target.style.transform = 'scale(1.1)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = 'none';
-                                e.target.style.transform = 'scale(1)';
-                              }}
-                            >
-                              {'×'}
-                            </button>
                           </div>
                         ))}
                       </div>
