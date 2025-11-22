@@ -2692,15 +2692,50 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                             flexWrap: 'wrap',
                             boxSizing: 'border-box'
                           }}>
-                            <span style={{ 
-                              minWidth: '100px', 
-                              maxWidth: '200px',
-                              flex: '0 1 auto',
-                              fontWeight: 500, 
-                              fontSize: '0.875rem', 
-                              color: '#111827',
-                              wordBreak: 'break-word'
-                            }}>Size: {size}</span>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.5rem',
+                              flex: '0 0 auto',
+                              flexShrink: 0
+                            }}>
+                              <span style={{ 
+                                fontWeight: 500, 
+                                fontSize: '0.875rem', 
+                                color: '#111827',
+                                whiteSpace: 'nowrap'
+                              }}>Size: {size}</span>
+                              <button
+                                type="button"
+                                aria-label={`Remove size ${size}`}
+                                onClick={() => handleRemoveAvailableSize(size)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontSize: '1.25rem',
+                                  fontWeight: 600,
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '4px',
+                                  transition: 'all 0.2s ease',
+                                  flex: '0 0 auto',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#fef2f2';
+                                  e.target.style.transform = 'scale(1.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = 'none';
+                                  e.target.style.transform = 'scale(1)';
+                                }}
+                              >
+                                {'×'}
+                              </button>
+                            </div>
                             <div style={{ 
                               display: 'flex', 
                               alignItems: 'center', 
@@ -2762,34 +2797,6 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                 }}
                               />
                             </div>
-                            <button
-                              type="button"
-                              aria-label={`Remove size ${size}`}
-                              onClick={() => handleRemoveAvailableSize(size)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#ef4444',
-                                cursor: 'pointer',
-                                fontSize: '1.25rem',
-                                fontWeight: 600,
-                                padding: '0.25rem 0.5rem',
-                                borderRadius: '4px',
-                                transition: 'all 0.2s ease',
-                                flex: '0 0 auto',
-                                marginLeft: 'auto'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#fef2f2';
-                                e.target.style.transform = 'scale(1.1)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = 'none';
-                                e.target.style.transform = 'scale(1)';
-                              }}
-                            >
-                              {'×'}
-                            </button>
                           </div>
                         ))}
                       </div>
