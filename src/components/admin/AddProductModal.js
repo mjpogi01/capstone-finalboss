@@ -2194,29 +2194,50 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       console.log('📦 [AddProductModal] Jersey prices state:', jerseyPrices);
 
       // Handle branch stocks for simple categories (balls, medals, trophies)
+      // For trophies with sizes, use selectedBranches instead of branchStocks
       const hasBranchStocks = Object.keys(branchStocks).length > 0;
+      const hasSelectedBranches = selectedBranches.length > 0;
       const shouldUseBranchStocks = simpleCategorySelected || trophyCategorySelected;
       
-      if (hasBranchStocks && shouldUseBranchStocks) {
-        // Create/update products for each branch with stock
-        const branchStockEntries = Object.entries(branchStocks).filter(([branchId, stockQuantity]) => {
-          // Only process branches that have a stock quantity set (not null, undefined, or empty string)
-          return stockQuantity !== null && stockQuantity !== undefined && stockQuantity !== '';
-        });
+      // For trophies with sizes, check if branches are selected
+      const shouldProcessBranches = shouldUseBranchStocks && (
+        (isTrophyProduct && availableSizes.length > 0 && hasSelectedBranches) ||
+        (!isTrophyProduct || availableSizes.length === 0) && hasBranchStocks
+      );
+      
+      if (shouldProcessBranches) {
+        let branchEntries = [];
         
-        console.log('📦 [AddProductModal] Processing branch stocks:', branchStockEntries);
-        console.log('📦 [AddProductModal] Total branches to process:', branchStockEntries.length);
-        
-        if (branchStockEntries.length === 0) {
-          throw new Error('Please set stock quantity for at least one branch');
+        if (isTrophyProduct && availableSizes.length > 0 && hasSelectedBranches) {
+          // For trophies with sizes, use selected branches
+          // Each branch will get the product with size_stocks
+          branchEntries = selectedBranches.map(branchId => [branchId.toString(), null]);
+          console.log('📦 [AddProductModal] Processing trophy with sizes for branches:', selectedBranches);
+        } else {
+          // For simple categories or trophies without sizes, use branchStocks
+          branchEntries = Object.entries(branchStocks).filter(([branchId, stockQuantity]) => {
+            // Only process branches that have a stock quantity set (not null, undefined, or empty string)
+            return stockQuantity !== null && stockQuantity !== undefined && stockQuantity !== '';
+          });
+          console.log('📦 [AddProductModal] Processing branch stocks:', branchEntries);
         }
         
-        const productPromises = branchStockEntries.map(async ([branchId, stockQuantity]) => {
+        console.log('📦 [AddProductModal] Total branches to process:', branchEntries.length);
+        
+        if (branchEntries.length === 0) {
+          throw new Error('Please select at least one branch');
+        }
+        
+        const productPromises = branchEntries.map(async ([branchId, stockQuantity]) => {
           try {
           const branchProductData = {
             ...productData,
             branch_id: parseInt(branchId),
-            stock_quantity: stockQuantity ? parseInt(stockQuantity) : null
+            // For trophies with sizes, stock_quantity is null (using size_stocks instead)
+            // For other categories, use the stockQuantity from branchStocks
+            stock_quantity: (isTrophyProduct && availableSizes.length > 0) 
+              ? null 
+              : (stockQuantity ? parseInt(stockQuantity) : null)
           };
 
             console.log(`📦 [AddProductModal] Processing branch ${branchId} with stock ${stockQuantity}`);
