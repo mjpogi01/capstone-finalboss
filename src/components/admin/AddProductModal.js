@@ -595,21 +595,47 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               if (product.branch_id) {
                 branchProductsMap[product.branch_id] = {
                   stock_quantity: product.stock_quantity || 0,
-                  id: product.id
+                  id: product.id,
+                  size_stocks: product.size_stocks || null
                 };
               }
             });
             
             setBranchProducts(branchProductsMap);
-            // Initialize selected branches with branches that have stocks
+            // Initialize selected branches with branches that have stocks or size_stocks
             const branchesWithStocks = Object.keys(branchProductsMap);
             setSelectedBranches(branchesWithStocks.map(id => parseInt(id)));
-            // Initialize branchStocks with current stocks
-            const initialStocks = {};
-            Object.keys(branchProductsMap).forEach(branchId => {
-              initialStocks[branchId] = branchProductsMap[branchId].stock_quantity;
-            });
-            setBranchStocks(initialStocks);
+            
+            // For trophies with sizes, load size_stocks per branch
+            if (isTrophyCategory(formData.category) && parsedSizes.length > 0) {
+              const loadedSizeStocks = {};
+              Object.keys(branchProductsMap).forEach(branchId => {
+                const product = branchProductsMap[branchId];
+                if (product.size_stocks) {
+                  try {
+                    const stocks = typeof product.size_stocks === 'string' 
+                      ? JSON.parse(product.size_stocks) 
+                      : product.size_stocks;
+                    if (stocks && typeof stocks === 'object') {
+                      loadedSizeStocks[branchId] = stocks;
+                    }
+                  } catch (e) {
+                    console.warn(`Failed to parse size_stocks for branch ${branchId}:`, e);
+                  }
+                }
+              });
+              if (Object.keys(loadedSizeStocks).length > 0) {
+                setSizeStocks(loadedSizeStocks);
+                console.log('📦 [AddProductModal] Loaded size_stocks for all branches:', loadedSizeStocks);
+              }
+            } else {
+              // Initialize branchStocks with current stocks (for non-trophy products)
+              const initialStocks = {};
+              Object.keys(branchProductsMap).forEach(branchId => {
+                initialStocks[branchId] = branchProductsMap[branchId].stock_quantity;
+              });
+              setBranchStocks(initialStocks);
+            }
             // Set the stock quantity if all selected branches have the same stock
             if (branchesWithStocks.length > 0) {
               const stockValues = branchesWithStocks.map(id => branchProductsMap[id].stock_quantity);
