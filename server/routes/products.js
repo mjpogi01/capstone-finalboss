@@ -392,7 +392,8 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       additional_images, 
       stock_quantity, 
       sold_quantity,
-      branch_id 
+      branch_id,
+      size_stocks
     } = req.body;
 
     console.log('📦 [Products API] Creating product with data:', {
