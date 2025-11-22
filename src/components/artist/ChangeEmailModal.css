@@ -1,0 +1,244 @@
+.change-email-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.change-email-modal-content {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.change-email-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.change-email-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #ffffff;
+}
+
+.change-email-modal-title svg {
+  color: #6366f1;
+  font-size: 1.25rem;
+}
+
+.change-email-modal-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.change-email-modal-close {
+  background: transparent;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.change-email-modal-close:hover {
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+.change-email-modal-form {
+  padding: 1.5rem;
+}
+
+.change-email-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.change-email-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #a0aec0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.change-email-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #242424;
+  border: 1px solid #333;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.change-email-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.change-email-input.disabled {
+  background: #1a1a1a;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.change-email-password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.change-email-password-input-wrapper .change-email-input {
+  padding-right: 80px;
+}
+
+.change-email-password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.change-email-password-toggle:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.change-email-help-text {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.change-email-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #fca5a5;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.change-email-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.change-email-cancel-btn,
+.change-email-submit-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.change-email-cancel-btn {
+  background: #242424;
+  color: #a0aec0;
+  border: 1px solid #333;
+}
+
+.change-email-cancel-btn:hover {
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+.change-email-submit-btn {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+.change-email-submit-btn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.change-email-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .change-email-modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .change-email-modal-header {
+    padding: 1rem;
+  }
+
+  .change-email-modal-form {
+    padding: 1rem;
+  }
+
+  .change-email-modal-actions {
+    flex-direction: column;
+  }
+
+  .change-email-cancel-btn,
+  .change-email-submit-btn {
+    width: 100%;
+  }
+}
+
+
+
+

@@ -1,0 +1,87 @@
+/* Premium Shared Dashboard Theme - YOHANNS SPORTSWEAR */
+
+:root {
+  --dash-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --dash-text: #0f172a;          
+  --dash-text-muted: #64748b;    
+  --dash-border: #e5e7eb;        
+  --dash-card-bg: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  --dash-surface: #f8fafc;       
+  --dash-primary: #1e3a8a;       
+  --dash-primary-2: #2563eb;
+  --dash-gradient-start: #1e3a8a;
+  --dash-gradient-end: #2563eb;
+  --dash-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --dash-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --dash-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Base text styles for dashboard areas */
+.admin-dashboard, .owner-dashboard, .inventory-page, .accounts-page, .analytics-page {
+  font-family: var(--dash-font-family);
+  color: var(--dash-text);
+}
+
+.admin-dashboard h1, .owner-dashboard h1, .inventory-page h1, .accounts-page h1, .analytics-page h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.admin-dashboard h2, .owner-dashboard h2, .inventory-page h2, .accounts-page h2, .analytics-page h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.admin-dashboard h3, .owner-dashboard h3, .inventory-page h3, .accounts-page h3, .analytics-page h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Inputs, buttons consistency */
+.admin-dashboard input, .owner-dashboard input,
+.admin-dashboard select, .owner-dashboard select,
+.admin-dashboard button, .owner-dashboard button {
+  font-family: var(--dash-font-family);
+}
+
+/* Premium Card and Surface Styles */
+.dash-card { 
+  background: var(--dash-card-bg); 
+  border: 1px solid rgba(255, 255, 255, 0.8); 
+  border-radius: 16px; 
+  box-shadow: var(--dash-shadow-md); 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-card:hover {
+  box-shadow: var(--dash-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.dash-surface { 
+  background: var(--dash-surface); 
+}
+
+.dash-divider { 
+  border-color: #f1f5f9;
+  border-width: 2px; 
+}
+
+/* Table typography */
+.dash-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.dash-table thead { background: var(--dash-surface); border-bottom: 1px solid var(--dash-border); }
+.dash-table th { text-transform: uppercase; letter-spacing: .04em; font-weight: 600; color: #334155; font-size: .78rem; padding: .9rem 1rem; }
+.dash-table td { padding: .9rem 1rem; color: #334155; }
+
+/* Smooth hover/focus */
+.dash-hover:hover { background: #f9fbff; }
+.dash-focus:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,.15); border-color: var(--dash-primary-2); }
+
+

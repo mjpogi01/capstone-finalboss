@@ -1,0 +1,322 @@
+/* ===================================
+   OWNER DASHBOARD LAYOUT
+   With Left Sidebar Navigation
+   Optimized Grid & Spacing
+   Mobile Responsive
+   Mobile Burger Menu
+   =================================== */
+
+.owner-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+  position: relative;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Mobile Header - Hidden on Desktop */
+.owner-mobile-header {
+  display: none;
+}
+
+.owner-main-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 280px);
+  min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+/* When sidebar is collapsed - Use body class as primary selector (most reliable) */
+body.sidebar-collapsed .owner-main-content {
+  margin-left: 80px !important;
+  width: calc(100% - 80px) !important;
+}
+
+/* Additional selectors for extra coverage */
+.owner-dashboard.sidebar-collapsed .owner-main-content,
+.owner-dashboard.collapsed .owner-main-content {
+  margin-left: 80px !important;
+  width: calc(100% - 80px) !important;
+}
+
+.dashboard-content {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+  align-items: start;
+}
+
+.dashboard-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 0;
+  width: 100%;
+}
+
+.dashboard-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Ensure cards fill their containers properly */
+.dashboard-left > *,
+.dashboard-right > * {
+  width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .owner-main-content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding: 1.75rem 1.5rem;
+  }
+  
+  /* Collapsed state - must override normal state */
+  body.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.collapsed .owner-main-content {
+    margin-left: 80px !important;
+    width: calc(100% - 80px) !important;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr 350px;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .owner-main-content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding: 1.5rem 1.25rem;
+  }
+  
+  /* Collapsed state - must override normal state */
+  body.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.collapsed .owner-main-content {
+    margin-left: 80px !important;
+    width: calc(100% - 80px) !important;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .owner-main-content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding: 1.25rem 1rem;
+  }
+  
+  /* Collapsed state - must override normal state */
+  body.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.collapsed .owner-main-content {
+    margin-left: 80px !important;
+    width: calc(100% - 80px) !important;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .dashboard-right {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .owner-dashboard {
+    position: relative;
+  }
+
+  /* Show Mobile Header */
+  .owner-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 100%);
+    padding: 0 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+
+  .owner-mobile-header .mobile-burger-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .owner-mobile-header .mobile-burger-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .owner-mobile-header .mobile-burger-btn:active {
+    transform: scale(0.95);
+  }
+
+  .owner-mobile-header .mobile-header-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .owner-mobile-header .mobile-header-logo img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+
+  .owner-mobile-header .mobile-header-title {
+    flex: 1;
+    color: #ffffff;
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-align: center;
+    margin-right: 44px; /* Balance the burger button width */
+  }
+
+  .owner-main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 76px 1rem 1rem; /* 60px header + 16px gap */
+  }
+
+  /* Mobile: collapse state should not affect layout */
+  body.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.sidebar-collapsed .owner-main-content,
+  .owner-dashboard.collapsed .owner-main-content { 
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .dashboard-content {
+    max-width: 100%;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin: 1rem 0;
+  }
+
+  .dashboard-left,
+  .dashboard-right {
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .owner-mobile-header .mobile-burger-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.125rem;
+  }
+
+  .owner-mobile-header .mobile-header-logo img {
+    height: 36px;
+  }
+
+  .owner-mobile-header .mobile-header-title {
+    font-size: 1rem;
+    margin-right: 40px;
+  }
+
+  .owner-main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 72px 0.75rem 0.75rem; /* Slightly smaller padding */
+  }
+
+  .dashboard-grid {
+    gap: 1rem;
+    margin: 0.75rem 0;
+  }
+
+  .dashboard-left,
+  .dashboard-right {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .owner-mobile-header {
+    height: 56px;
+    padding: 0 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .owner-mobile-header .mobile-burger-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+
+  .owner-mobile-header .mobile-header-logo img {
+    height: 32px;
+  }
+
+  .owner-mobile-header .mobile-header-title {
+    font-size: 0.9375rem;
+    margin-right: 38px;
+  }
+
+  .owner-main-content {
+    padding: 66px 0.5rem 0.5rem; /* 56px header + 10px gap */
+  }
+
+  .dashboard-grid {
+    gap: 0.875rem;
+    margin: 0.5rem 0;
+  }
+
+  .dashboard-left,
+  .dashboard-right {
+    gap: 0.875rem;
+  }
+}
+
+
+
+

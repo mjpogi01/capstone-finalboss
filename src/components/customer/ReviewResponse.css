@@ -1,0 +1,470 @@
+re/* Review Response Component - Modern Black Theme */
+.review-response-container {
+  background: #242424;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  margin: 1rem 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.review-header {
+  padding: 1.5rem;
+  background: #2A2A2A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.review-header h4 {
+  margin: 0;
+  color: #ffffff;
+  font-family: 'Oswald', Poppins !important;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.review-timestamp {
+  color: #9AA0A6;
+  font-family: 'Oswald', Poppins !important;
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-align: right;
+}
+
+.review-content {
+  padding: 1.5rem;
+}
+
+.review-message {
+  margin-bottom: 1.5rem;
+}
+
+.review-message p {
+  margin: 0;
+  font-family: 'Oswald', Poppins !important;
+  color: #FFFFFF;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+}
+
+.review-message strong {
+  color: #00E5FF;
+  font-weight: 600;
+}
+
+.review-files h5 {
+  margin: 0 0 1rem 0;
+  color: #ffffff;
+  font-family: 'Oswald', Poppins !important;
+  font-size: 1rem;
+}
+
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.file-card {
+  background: #2A2A2A;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.file-card:hover {
+  border-color: rgba(0, 229, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 229, 255, 0.15);
+}
+
+.review-file-preview {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1A1A1A;
+  overflow: hidden;
+}
+
+.review-file-image {
+  width: 100%;
+  height: 100%;
+  font-family: 'Oswald', Poppins !important;
+  object-fit: cover;
+}
+
+.review-file-icon {
+  color: #9AA0A6;
+  font-size: 2rem;
+}
+
+.review-file-info {
+  padding: 0.75rem;
+}
+
+.review-file-name {
+  display: block;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-family: 'Oswald', Poppins !important;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  word-break: break-word;
+}
+
+.review-file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.review-view-btn,
+.review-download-btn {
+  flex: 1;
+  padding: 0.5rem;
+  background: rgba(0, 229, 255, 0.2);
+  color: #00E5FF;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+.review-view-btn:hover,
+.review-download-btn:hover {
+  background: rgba(0, 229, 255, 0.3);
+  border-color: rgba(0, 229, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.review-download-btn {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.review-download-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #2A2A2A;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-status {
+  margin: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  border-left: 4px solid #00E5FF;
+  background: rgba(0, 229, 255, 0.08);
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.review-status.approve {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.review-status.request_changes {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.review-status.feedback {
+  border-left-color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.review-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.review-status-header svg {
+  font-size: 1rem;
+}
+
+.review-status-header strong {
+  color: #ffffff;
+  display: block;
+  font-size: 0.95rem;
+}
+
+.review-status-timestamp {
+  display: block;
+  font-size: 0.75rem;
+  color: #9AA0A6;
+}
+
+.review-status p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.review-status-notes {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.review-status-notes p {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+}
+
+.review-status-feedback {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.review-status-feedback p {
+  margin-top: 0.35rem;
+  white-space: pre-wrap;
+}
+
+.approve-btn,
+.request-changes-btn,
+.provide-feedback-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.approve-btn svg,
+.request-changes-btn svg,
+.provide-feedback-btn svg {
+  font-size: 0.65rem;
+}
+
+/* Approve Button - Clean Green */
+.approve-btn {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.approve-btn:hover {
+  background: #059669;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+
+.approve-btn:active {
+  background: #047857;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Request Changes Button - Clean Orange */
+.request-changes-btn {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.request-changes-btn:hover {
+  background: #d97706;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25);
+  transform: translateY(-1px);
+}
+
+.request-changes-btn:active {
+  background: #b45309;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.2);
+}
+
+/* Provide Feedback Button - Clean Purple */
+.provide-feedback-btn {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.provide-feedback-btn:hover {
+  background: #7c3aed;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.25);
+  transform: translateY(-1px);
+}
+
+.provide-feedback-btn:active {
+  background: #6d28d9;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Response Form */
+.response-form {
+  background: #2A2A2A;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.response-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Oswald', Poppins !important;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #444;
+}
+
+.response-header h5 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.close-form-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-form-btn:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.response-content {
+  padding: 1.5rem;
+}
+
+.response-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  font-family: 'Oswald', Poppins !important;
+  background: #1A1A1A;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 100px;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.response-textarea:focus {
+  outline: none;
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.1);
+}
+
+.response-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.cancel-response-btn,
+.submit-response-btn {
+  padding: 0.75rem 1.5rem;
+  font-family: 'Oswald', Poppins !important;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-response-btn {
+  background: #1a1a1a;
+  color: #ffffff !important;
+  border: 1px solid #444;
+}
+
+.cancel-response-btn:hover {
+  background: #2a2a2a;
+  border-color: #666;
+}
+
+.submit-response-btn {
+  background: rgba(0, 229, 255, 0.2);
+  color: #00E5FF;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.submit-response-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.3);
+  border-color: rgba(0, 229, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.submit-response-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .review-actions {
+    flex-direction: column;
+  }
+
+  .approve-btn,
+  .request-changes-btn,
+  .provide-feedback-btn {
+    flex: 1;
+  }
+
+  .files-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .response-actions {
+    flex-direction: column;
+  }
+
+  .cancel-response-btn,
+  .submit-response-btn {
+    flex: 1;
+  }
+}

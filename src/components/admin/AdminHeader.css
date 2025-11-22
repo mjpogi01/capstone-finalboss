@@ -1,0 +1,324 @@
+.admin-header {
+  background: #f8f9fa;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.header-left {
+  flex: 1;
+}
+
+.welcome-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.welcome-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.dropdown-arrow {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: #718096;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-arrow:hover {
+  color: #2d3748;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 200px;
+  margin-top: 0.5rem;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.dropdown-item:hover {
+  background: #f7fafc;
+}
+
+.dropdown-item.logout {
+  color: #e53e3e;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0.25rem 0;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.search-form {
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+  font-size: 1rem;
+  color: #a0aec0;
+  margin-right: 0.5rem;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  color: #2d3748;
+}
+
+.search-input::placeholder {
+  color: #a0aec0;
+}
+
+.filter-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #a0aec0;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.filter-btn:hover {
+  color: #4a5568;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.date-time {
+  text-align: right;
+}
+
+.date {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.25rem;
+}
+
+.time {
+  font-size: 0.9rem;
+  color: #718096;
+}
+
+/* Tablet styles */
+@media (max-width: 1024px) {
+  .admin-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .welcome-text {
+    font-size: 1rem;
+  }
+  
+  .search-form {
+    max-width: 350px;
+  }
+  
+  .date {
+    font-size: 0.95rem;
+  }
+  
+  .time {
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .header-left,
+  .header-center,
+  .header-right {
+    flex: none;
+    width: 100%;
+  }
+  
+  .header-center {
+    display: block;
+  }
+  
+  .search-form {
+    max-width: none;
+  }
+  
+  .welcome-section {
+    justify-content: center;
+  }
+  
+  .welcome-text {
+    font-size: 0.95rem;
+  }
+  
+  .search-container {
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .search-input {
+    font-size: 0.85rem;
+  }
+  
+  .date-time {
+    text-align: center;
+  }
+  
+  .date {
+    font-size: 0.9rem;
+  }
+  
+  .time {
+    font-size: 0.8rem;
+  }
+  
+  .user-dropdown {
+    min-width: 180px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Small mobile styles */
+@media (max-width: 480px) {
+  .admin-header {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .welcome-text {
+    font-size: 0.9rem;
+  }
+  
+  .search-container {
+    padding: 0.3rem 0.6rem;
+  }
+  
+  .search-input {
+    font-size: 0.8rem;
+  }
+  
+  .search-input::placeholder {
+    font-size: 0.8rem;
+  }
+  
+  .filter-btn {
+    font-size: 0.9rem;
+  }
+  
+  .date {
+    font-size: 0.85rem;
+  }
+  
+  .time {
+    font-size: 0.75rem;
+  }
+  
+  .user-dropdown {
+    min-width: 160px;
+  }
+  
+  .dropdown-item {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Extra small mobile styles */
+@media (max-width: 360px) {
+  .admin-header {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .welcome-text {
+    font-size: 0.85rem;
+  }
+  
+  .search-container {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .search-input {
+    font-size: 0.75rem;
+  }
+  
+  .search-input::placeholder {
+    font-size: 0.75rem;
+  }
+  
+  .filter-btn {
+    font-size: 0.8rem;
+  }
+  
+  .date {
+    font-size: 0.8rem;
+  }
+  
+  .time {
+    font-size: 0.7rem;
+  }
+  
+  .user-dropdown {
+    min-width: 140px;
+  }
+  
+  .dropdown-item {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}

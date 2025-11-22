@@ -1,0 +1,476 @@
+/* Artist Profile Page Styles - Light Theme */
+
+/* Main Container */
+.artist-profile-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem 0;
+  color: #0f172a;
+  position: relative;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.artist-profile-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Content Container */
+.artist-profile-content {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Top Controls - Edit/Save/Cancel Buttons */
+.artist-profile-top-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.artist-edit-link {
+  color: #2563eb;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.artist-edit-link:hover {
+  color: #1d4ed8;
+}
+
+.artist-edit-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.artist-save-btn,
+.artist-cancel-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  font-family: 'Inter', sans-serif;
+}
+
+.artist-save-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: 2px solid #2563eb;
+}
+
+.artist-save-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.artist-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.artist-cancel-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 2px solid #e2e8f0;
+}
+
+.artist-cancel-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+/* Personal Information Section */
+.artist-personal-info-section {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* Profile Picture Section */
+.artist-profile-picture-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.artist-profile-picture {
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+.artist-profile-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #e5e7eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.artist-profile-avatar:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.02);
+}
+
+.artist-profile-avatar svg {
+  width: 80px;
+  height: 80px;
+}
+
+.artist-profile-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e5e7eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.artist-profile-image:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.02);
+}
+
+.artist-upload-btn {
+  background: #f8fafc;
+  color: #2563eb;
+  border: 2px solid #2563eb;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'Inter', sans-serif;
+}
+
+.artist-upload-btn:hover:not(:disabled) {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
+}
+
+.artist-upload-btn:disabled {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Personal Information Form */
+.artist-personal-info-form {
+  flex: 1;
+}
+
+.artist-form-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.artist-form-header h3 {
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Form Fields */
+.artist-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.artist-form-field {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.artist-form-field label {
+  min-width: 140px;
+  color: #0f172a;
+  font-weight: 500;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.artist-form-field input {
+  flex: 1;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #0f172a;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-family: 'Inter', sans-serif;
+}
+
+.artist-form-field input::placeholder {
+  color: #94a3b8;
+}
+
+.artist-form-field input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #2563eb;
+}
+
+.artist-form-field input:disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Rating Stars */
+.artist-profile-stars {
+  display: flex;
+  gap: 0.125rem;
+}
+
+.artist-star {
+  font-size: 1rem;
+  color: #d1d5db;
+}
+
+.artist-star-filled {
+  color: #fbbf24;
+}
+
+.artist-star-half {
+  color: #fbbf24;
+  opacity: 0.5;
+}
+
+.artist-star-empty {
+  color: #d1d5db;
+}
+
+/* Buttons */
+.artist-change-password-btn,
+.artist-change-email-btn {
+  background: #f8fafc;
+  color: #2563eb;
+  border: 2px solid #2563eb;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
+
+.artist-change-password-btn:hover,
+.artist-change-email-btn:hover {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Artist Status Toggle Button */
+.artist-status-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  background: transparent;
+}
+
+.artist-status-toggle-btn.active {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.artist-status-toggle-btn.active:hover {
+  background: #a7f3d0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.artist-status-toggle-btn.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.artist-status-toggle-btn.inactive:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.artist-status-toggle-btn .toggle-icon {
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.artist-status-toggle-btn:hover .toggle-icon {
+  transform: scale(1.1);
+}
+
+.artist-status-toggle-btn .toggle-label {
+  font-size: 0.75rem;
+}
+
+/* Loading State */
+.artist-profile-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #2563eb;
+}
+
+.artist-profile-loading-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+}
+
+.artist-profile-loading-text {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .artist-profile-page {
+    padding: 1.5rem 0;
+  }
+  
+  .artist-profile-container {
+    padding: 0 1.5rem;
+  }
+  
+  .artist-profile-content {
+    padding: 1.75rem;
+  }
+  
+  .artist-personal-info-section {
+    gap: 2.5rem;
+  }
+  
+  .artist-profile-picture {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .artist-profile-avatar svg {
+    width: 70px;
+    height: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .artist-profile-page {
+    padding: 0.5rem 0;
+  }
+  
+  .artist-profile-container {
+    padding: 0 0.5rem;
+  }
+  
+  .artist-profile-content {
+    padding: 1rem;
+  }
+  
+  .artist-personal-info-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .artist-profile-picture-section {
+    align-items: center;
+    order: 1;
+  }
+  
+  .artist-personal-info-form {
+    order: 2;
+  }
+  
+  .artist-form-field {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .artist-form-field label {
+    min-width: auto;
+  }
+  
+  .artist-form-field input {
+    width: 100%;
+  }
+  
+  .artist-profile-picture {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .artist-profile-avatar svg {
+    width: 50px;
+    height: 50px;
+  }
+}

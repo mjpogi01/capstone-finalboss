@@ -1,0 +1,35 @@
+[33mcommit ad7808119921d00f2cc785e9142988ca84041511[m
+Author: mjpogi01 <mjmonday01@gmail.com>
+Date:   Mon Oct 20 23:25:13 2025 +0800
+
+    Add walk-in ordering feature with dropdown order details
+    
+    - Add WalkInOrdering component with product browsing and search
+    - Add floating walk-in order button on Orders page
+    - Implement dropdown for order details (team/single order info)
+    - Add email service for order confirmations
+    - Fix order creation to use admin's user ID for walk-in orders
+    - Add wishlist table creation script
+    - Update ProductModal to support walk-in ordering callbacks
+    - Add FloatingButton.css for walk-in order button styling
+    - Fix various ESLint warnings and improve code structure
+
+EMAIL_SETUP_GUIDE.md
+server/.env
+server/index.js
+server/lib/db.js
+server/lib/emailService.js
+server/routes/email.js
+server/routes/orders.js
+server/scripts/create-wishlist-table.js
+server/scripts/setup-email.js
+server/scripts/test-email.js
+src/components/admin/FloatingButton.css
+src/components/admin/Orders.css.backup
+src/components/admin/Orders.js
+src/components/admin/WalkInOrdering.css
+src/components/admin/WalkInOrdering.js
+src/components/customer/ProductModal.js
+src/pages/owner/OwnerDashboard.js
+src/services/orderService.js
+src/services/wishlistService.js

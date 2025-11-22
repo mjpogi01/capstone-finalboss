@@ -1,0 +1,218 @@
+================================================================================
+                    USE CASE DIAGRAM - YOHANNS E-COMMERCE SYSTEM
+================================================================================
+
+ACTORS:
+  • Customer    - Regular users who shop and purchase products
+  • Admin       - Branch administrators managing their branch
+  • Owner       - System owners with access to all branches
+  • Artist      - Designers handling custom design tasks
+
+================================================================================
+                            CUSTOMER USE CASES
+================================================================================
+
+Authentication & Account:
+  ✓ Register Account
+  ✓ Login
+  ✓ Logout
+  ✓ View Profile
+  ✓ Edit Profile
+  ✓ Change Password
+
+Shopping:
+  ✓ Browse Products
+  ✓ Search Products
+  ✓ View Product Details
+  ✓ Add to Cart
+  ✓ Manage Cart (Add/Remove/Update Quantity)
+  ✓ Add to Wishlist
+  ✓ View Wishlist
+
+Orders:
+  ✓ Checkout
+  ✓ Place Order
+  ✓ View Order History
+  ✓ Track Order
+  ✓ Cancel Order
+  ✓ Review Order
+
+Information & Support:
+  ✓ Contact Support (Chat)
+  ✓ View Branches
+  ✓ View FAQs
+  ✓ View About Page
+  ✓ View Highlights
+  ✓ View Privacy Policy
+  ✓ View Terms and Conditions
+  ✓ Subscribe to Newsletter
+
+================================================================================
+                             ADMIN USE CASES
+================================================================================
+
+Dashboard & Analytics:
+  ✓ View Dashboard
+  ✓ View Analytics (Branch-specific)
+  ✓ View Branch Data
+
+Order Management:
+  ✓ Manage Orders (View/Update Status)
+  ✓ Manage Walk-in Orders
+
+Inventory:
+  ✓ Manage Inventory (Add/Edit/Delete Products)
+
+User Management:
+  ✓ Manage Accounts (Users/Admins)
+  ✓ Support Chats (Respond to Customers)
+
+Authentication:
+  ✓ Login
+  ✓ Logout
+
+================================================================================
+                             OWNER USE CASES
+================================================================================
+
+Dashboard & Analytics:
+  ✓ View Dashboard
+  ✓ View Analytics (All Branches)
+  ✓ View All Branches Data
+
+Order Management:
+  ✓ Manage Orders (All Branches)
+  ✓ Manage Walk-in Orders (All Branches)
+
+User Management:
+  ✓ Manage Accounts (All Users/Admins)
+  ✓ Support Chats (All Branches)
+
+Authentication:
+  ✓ Login
+  ✓ Logout
+
+================================================================================
+                            ARTIST USE CASES
+================================================================================
+
+Dashboard & Tasks:
+  ✓ View Dashboard
+  ✓ View Tasks
+  ✓ Update Task Status
+  ✓ View Workload Overview
+
+Profile & Communication:
+  ✓ Manage Profile
+  ✓ Customer Chats (Communicate with Customers)
+
+Authentication:
+  ✓ Login
+  ✓ Logout
+
+================================================================================
+                          USE CASE RELATIONSHIPS
+================================================================================
+
+INCLUDE RELATIONSHIPS (Required):
+  • Add to Cart → includes → Manage Cart
+  • Manage Cart → includes → Checkout
+  • Checkout → includes → Place Order
+
+EXTEND RELATIONSHIPS (Optional):
+  • Place Order → extends → View Order History
+  • View Order History → extends → Track Order
+  • View Order History → extends → Review Order
+  • View Order History → extends → Cancel Order
+  • View Product Details → extends → Add to Cart
+  • View Product Details → extends → Add to Wishlist
+  • Manage Orders (Admin) → extends → Support Chats
+  • Manage All Orders (Owner) → extends → Support Chats
+  • View Tasks (Artist) → extends → Update Task Status
+  • View Tasks (Artist) → extends → Customer Chats
+
+================================================================================
+                          VISUAL REPRESENTATION
+================================================================================
+
+                    ┌─────────────────────────────────┐
+                    │         CUSTOMER                 │
+                    └─────────────────────────────────┘
+                              │
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Browse Products]    [Add to Cart]        [View Orders]
+        │                     │                     │
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [View Details]  →  [Manage Cart]  →  [Checkout]  →  [Place Order]
+        │                     │                     │
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Add Wishlist]      [View Wishlist]    [Track/Cancel/Review]
+
+                    ┌─────────────────────────────────┐
+                    │          ADMIN                 │
+                    └─────────────────────────────────┘
+                              │
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Dashboard]         [Manage Orders]      [Inventory]
+        │                     │                     │
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Analytics]         [Support Chats]    [Manage Accounts]
+  (Branch-specific)
+
+                    ┌─────────────────────────────────┐
+                    │          OWNER                 │
+                    └─────────────────────────────────┘
+                              │
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Dashboard]         [Manage Orders]      [Analytics]
+        │                     │              (All Branches)
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [All Branches]      [Support Chats]    [Manage Accounts]
+        Data              (All Branches)      (All Users)
+
+                    ┌─────────────────────────────────┐
+                    │         ARTIST                 │
+                    └─────────────────────────────────┘
+                              │
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Dashboard]         [View Tasks]         [Workload]
+        │                     │                     │
+        │                     │                     │
+        ▼                     ▼                     ▼
+  [Update Status]    [Customer Chats]    [Profile]
+
+================================================================================
+                              NOTES
+================================================================================
+
+1. All actors share Login and Logout use cases.
+
+2. Admin and Owner have similar features but different data scope:
+   - Admin: Branch-specific data
+   - Owner: All branches data
+
+3. Customer flow: Browse → Add to Cart → Checkout → Place Order → Track/Review
+
+4. Admin/Owner flow: Dashboard → Manage Orders/Inventory → Support Chats
+
+5. Artist flow: Dashboard → View Tasks → Update Status → Customer Chats
+
+================================================================================
+
+

@@ -1,0 +1,305 @@
+<svg width="1600" height="2400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+      .actor-text { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #fff; }
+      .package-title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
+      .usecase-text { font-family: Arial, sans-serif; font-size: 11px; fill: #333; }
+      .relationship-text { font-family: Arial, sans-serif; font-size: 10px; fill: #666; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1600" height="2400" fill="#f5f5f5"/>
+  
+  <!-- Title -->
+  <text x="800" y="40" text-anchor="middle" class="title">Use Case Diagram - Yohanns E-commerce System</text>
+  
+  <!-- CUSTOMER SECTION -->
+  <g id="customer">
+    <!-- Customer Actor -->
+    <ellipse cx="200" cy="150" rx="80" ry="50" fill="#4CAF50" stroke="#2e7d32" stroke-width="2"/>
+    <text x="200" y="160" text-anchor="middle" class="actor-text">Customer</text>
+    
+    <!-- Customer Package -->
+    <rect x="350" y="80" width="550" height="600" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2" rx="10"/>
+    <text x="625" y="110" text-anchor="middle" class="package-title">Customer Features</text>
+    
+    <!-- Customer Use Cases -->
+    <rect x="370" y="130" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="150" text-anchor="middle" class="usecase-text">Register Account</text>
+    <text x="430" y="165" text-anchor="middle" class="usecase-text">(UC1)</text>
+    
+    <rect x="510" y="130" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="150" text-anchor="middle" class="usecase-text">Login</text>
+    <text x="570" y="165" text-anchor="middle" class="usecase-text">(UC2)</text>
+    
+    <rect x="650" y="130" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="150" text-anchor="middle" class="usecase-text">Logout</text>
+    <text x="710" y="165" text-anchor="middle" class="usecase-text">(UC3)</text>
+    
+    <rect x="370" y="200" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="220" text-anchor="middle" class="usecase-text">Browse Products</text>
+    <text x="430" y="235" text-anchor="middle" class="usecase-text">(UC4)</text>
+    
+    <rect x="510" y="200" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="220" text-anchor="middle" class="usecase-text">Search Products</text>
+    <text x="570" y="235" text-anchor="middle" class="usecase-text">(UC5)</text>
+    
+    <rect x="650" y="200" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="220" text-anchor="middle" class="usecase-text">View Details</text>
+    <text x="710" y="235" text-anchor="middle" class="usecase-text">(UC6)</text>
+    
+    <rect x="370" y="270" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="290" text-anchor="middle" class="usecase-text">Add to Cart</text>
+    <text x="430" y="305" text-anchor="middle" class="usecase-text">(UC7)</text>
+    
+    <rect x="510" y="270" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="290" text-anchor="middle" class="usecase-text">Manage Cart</text>
+    <text x="570" y="305" text-anchor="middle" class="usecase-text">(UC8)</text>
+    
+    <rect x="650" y="270" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="290" text-anchor="middle" class="usecase-text">Wishlist</text>
+    <text x="710" y="305" text-anchor="middle" class="usecase-text">(UC9-UC10)</text>
+    
+    <rect x="370" y="340" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="360" text-anchor="middle" class="usecase-text">Checkout</text>
+    <text x="430" y="375" text-anchor="middle" class="usecase-text">(UC11)</text>
+    
+    <rect x="510" y="340" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="360" text-anchor="middle" class="usecase-text">Place Order</text>
+    <text x="570" y="375" text-anchor="middle" class="usecase-text">(UC12)</text>
+    
+    <rect x="650" y="340" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="360" text-anchor="middle" class="usecase-text">View Orders</text>
+    <text x="710" y="375" text-anchor="middle" class="usecase-text">(UC13)</text>
+    
+    <rect x="370" y="410" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="430" text-anchor="middle" class="usecase-text">Track Order</text>
+    <text x="430" y="445" text-anchor="middle" class="usecase-text">(UC14)</text>
+    
+    <rect x="510" y="410" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="430" text-anchor="middle" class="usecase-text">Cancel Order</text>
+    <text x="570" y="445" text-anchor="middle" class="usecase-text">(UC15)</text>
+    
+    <rect x="650" y="410" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="430" text-anchor="middle" class="usecase-text">Review Order</text>
+    <text x="710" y="445" text-anchor="middle" class="usecase-text">(UC16)</text>
+    
+    <rect x="370" y="480" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="500" text-anchor="middle" class="usecase-text">View Profile</text>
+    <text x="430" y="515" text-anchor="middle" class="usecase-text">(UC17)</text>
+    
+    <rect x="510" y="480" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="500" text-anchor="middle" class="usecase-text">Edit Profile</text>
+    <text x="570" y="515" text-anchor="middle" class="usecase-text">(UC18)</text>
+    
+    <rect x="650" y="480" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="500" text-anchor="middle" class="usecase-text">Change Password</text>
+    <text x="710" y="515" text-anchor="middle" class="usecase-text">(UC19)</text>
+    
+    <rect x="370" y="550" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="430" y="570" text-anchor="middle" class="usecase-text">Contact Support</text>
+    <text x="430" y="585" text-anchor="middle" class="usecase-text">(UC20)</text>
+    
+    <rect x="510" y="550" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="570" y="570" text-anchor="middle" class="usecase-text">View Branches</text>
+    <text x="570" y="585" text-anchor="middle" class="usecase-text">(UC21)</text>
+    
+    <rect x="650" y="550" width="120" height="50" fill="#fff" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="710" y="570" text-anchor="middle" class="usecase-text">FAQs & Info</text>
+    <text x="710" y="585" text-anchor="middle" class="usecase-text">(UC22-UC27)</text>
+    
+    <!-- Lines from Customer to Use Cases -->
+    <line x1="280" y1="150" x2="370" y2="155" stroke="#4CAF50" stroke-width="2"/>
+    <line x1="280" y1="150" x2="510" y2="155" stroke="#4CAF50" stroke-width="2"/>
+    <line x1="280" y1="150" x2="650" y2="155" stroke="#4CAF50" stroke-width="2"/>
+  </g>
+  
+  <!-- ADMIN SECTION -->
+  <g id="admin">
+    <!-- Admin Actor -->
+    <ellipse cx="200" cy="850" rx="80" ry="50" fill="#2196F3" stroke="#1565c0" stroke-width="2"/>
+    <text x="200" y="860" text-anchor="middle" class="actor-text">Admin</text>
+    
+    <!-- Admin Package -->
+    <rect x="350" y="780" width="550" height="300" fill="#E3F2FD" stroke="#2196F3" stroke-width="2" rx="10"/>
+    <text x="625" y="810" text-anchor="middle" class="package-title">Admin Features</text>
+    
+    <!-- Admin Use Cases -->
+    <rect x="370" y="830" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="430" y="850" text-anchor="middle" class="usecase-text">View Dashboard</text>
+    <text x="430" y="865" text-anchor="middle" class="usecase-text">(UC28)</text>
+    
+    <rect x="510" y="830" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="570" y="850" text-anchor="middle" class="usecase-text">View Analytics</text>
+    <text x="570" y="865" text-anchor="middle" class="usecase-text">(UC29)</text>
+    
+    <rect x="650" y="830" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="710" y="850" text-anchor="middle" class="usecase-text">Manage Orders</text>
+    <text x="710" y="865" text-anchor="middle" class="usecase-text">(UC30)</text>
+    
+    <rect x="370" y="900" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="430" y="920" text-anchor="middle" class="usecase-text">Walk-in Orders</text>
+    <text x="430" y="935" text-anchor="middle" class="usecase-text">(UC31)</text>
+    
+    <rect x="510" y="900" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="570" y="920" text-anchor="middle" class="usecase-text">Manage Inventory</text>
+    <text x="570" y="935" text-anchor="middle" class="usecase-text">(UC32)</text>
+    
+    <rect x="650" y="900" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="710" y="920" text-anchor="middle" class="usecase-text">Manage Accounts</text>
+    <text x="710" y="935" text-anchor="middle" class="usecase-text">(UC33)</text>
+    
+    <rect x="370" y="970" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="430" y="990" text-anchor="middle" class="usecase-text">Support Chats</text>
+    <text x="430" y="1005" text-anchor="middle" class="usecase-text">(UC34)</text>
+    
+    <rect x="510" y="970" width="120" height="50" fill="#fff" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="570" y="990" text-anchor="middle" class="usecase-text">View Branch Data</text>
+    <text x="570" y="1005" text-anchor="middle" class="usecase-text">(UC35)</text>
+    
+    <!-- Lines from Admin to Use Cases -->
+    <line x1="280" y1="850" x2="370" y2="855" stroke="#2196F3" stroke-width="2"/>
+    <line x1="280" y1="850" x2="510" y2="855" stroke="#2196F3" stroke-width="2"/>
+    <line x1="280" y1="850" x2="650" y2="855" stroke="#2196F3" stroke-width="2"/>
+  </g>
+  
+  <!-- OWNER SECTION -->
+  <g id="owner">
+    <!-- Owner Actor -->
+    <ellipse cx="200" cy="1250" rx="80" ry="50" fill="#FF9800" stroke="#e65100" stroke-width="2"/>
+    <text x="200" y="1260" text-anchor="middle" class="actor-text">Owner</text>
+    
+    <!-- Owner Package -->
+    <rect x="350" y="1180" width="550" height="250" fill="#FFF3E0" stroke="#FF9800" stroke-width="2" rx="10"/>
+    <text x="625" y="1210" text-anchor="middle" class="package-title">Owner Features</text>
+    
+    <!-- Owner Use Cases -->
+    <rect x="370" y="1230" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="430" y="1250" text-anchor="middle" class="usecase-text">View Dashboard</text>
+    <text x="430" y="1265" text-anchor="middle" class="usecase-text">(UC36)</text>
+    
+    <rect x="510" y="1230" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="570" y="1250" text-anchor="middle" class="usecase-text">View Analytics</text>
+    <text x="570" y="1265" text-anchor="middle" class="usecase-text">(UC37)</text>
+    
+    <rect x="650" y="1230" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="710" y="1250" text-anchor="middle" class="usecase-text">Manage Orders</text>
+    <text x="710" y="1265" text-anchor="middle" class="usecase-text">(UC38)</text>
+    
+    <rect x="370" y="1300" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="430" y="1320" text-anchor="middle" class="usecase-text">Walk-in Orders</text>
+    <text x="430" y="1335" text-anchor="middle" class="usecase-text">(UC39)</text>
+    
+    <rect x="510" y="1300" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="570" y="1320" text-anchor="middle" class="usecase-text">Manage Accounts</text>
+    <text x="570" y="1335" text-anchor="middle" class="usecase-text">(UC40)</text>
+    
+    <rect x="650" y="1300" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="710" y="1320" text-anchor="middle" class="usecase-text">Support Chats</text>
+    <text x="710" y="1335" text-anchor="middle" class="usecase-text">(UC41)</text>
+    
+    <rect x="510" y="1370" width="120" height="50" fill="#fff" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="570" y="1390" text-anchor="middle" class="usecase-text">All Branch Data</text>
+    <text x="570" y="1405" text-anchor="middle" class="usecase-text">(UC42)</text>
+    
+    <!-- Lines from Owner to Use Cases -->
+    <line x1="280" y1="1250" x2="370" y2="1255" stroke="#FF9800" stroke-width="2"/>
+    <line x1="280" y1="1250" x2="510" y2="1255" stroke="#FF9800" stroke-width="2"/>
+    <line x1="280" y1="1250" x2="650" y2="1255" stroke="#FF9800" stroke-width="2"/>
+  </g>
+  
+  <!-- ARTIST SECTION -->
+  <g id="artist">
+    <!-- Artist Actor -->
+    <ellipse cx="200" cy="1600" rx="80" ry="50" fill="#9C27B0" stroke="#6a1b9a" stroke-width="2"/>
+    <text x="200" y="1610" text-anchor="middle" class="actor-text">Artist</text>
+    
+    <!-- Artist Package -->
+    <rect x="350" y="1530" width="550" height="200" fill="#F3E5F5" stroke="#9C27B0" stroke-width="2" rx="10"/>
+    <text x="625" y="1560" text-anchor="middle" class="package-title">Artist Features</text>
+    
+    <!-- Artist Use Cases -->
+    <rect x="370" y="1580" width="120" height="50" fill="#fff" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="430" y="1600" text-anchor="middle" class="usecase-text">View Dashboard</text>
+    <text x="430" y="1615" text-anchor="middle" class="usecase-text">(UC43)</text>
+    
+    <rect x="510" y="1580" width="120" height="50" fill="#fff" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="570" y="1600" text-anchor="middle" class="usecase-text">View Tasks</text>
+    <text x="570" y="1615" text-anchor="middle" class="usecase-text">(UC44)</text>
+    
+    <rect x="650" y="1580" width="120" height="50" fill="#fff" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="710" y="1600" text-anchor="middle" class="usecase-text">Update Status</text>
+    <text x="710" y="1615" text-anchor="middle" class="usecase-text">(UC45)</text>
+    
+    <rect x="370" y="1650" width="120" height="50" fill="#fff" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="430" y="1670" text-anchor="middle" class="usecase-text">View Workload</text>
+    <text x="430" y="1685" text-anchor="middle" class="usecase-text">(UC46)</text>
+    
+    <rect x="510" y="1650" width="120" height="50" fill="#fff" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="570" y="1670" text-anchor="middle" class="usecase-text">Manage Profile</text>
+    <text x="570" y="1685" text-anchor="middle" class="usecase-text">(UC47)</text>
+    
+    <rect x="650" y="1650" width="120" height="50" fill="#fff" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="710" y="1670" text-anchor="middle" class="usecase-text">Customer Chats</text>
+    <text x="710" y="1685" text-anchor="middle" class="usecase-text">(UC48)</text>
+    
+    <!-- Lines from Artist to Use Cases -->
+    <line x1="280" y1="1600" x2="370" y2="1605" stroke="#9C27B0" stroke-width="2"/>
+    <line x1="280" y1="1600" x2="510" y2="1605" stroke="#9C27B0" stroke-width="2"/>
+    <line x1="280" y1="1600" x2="650" y2="1605" stroke="#9C27B0" stroke-width="2"/>
+  </g>
+  
+  <!-- RELATIONSHIPS SECTION -->
+  <g id="relationships">
+    <rect x="1000" y="80" width="550" height="700" fill="#f9f9f9" stroke="#666" stroke-width="2" rx="10"/>
+    <text x="1275" y="110" text-anchor="middle" class="package-title">Key Relationships</text>
+    
+    <!-- Include Relationships -->
+    <text x="1020" y="150" class="relationship-text" font-weight="bold">Include (Required):</text>
+    <line x1="1020" y1="160" x2="1520" y2="160" stroke="#4CAF50" stroke-width="2"/>
+    <text x="1020" y="180" class="relationship-text">Add to Cart → Manage Cart → Checkout → Place Order</text>
+    
+    <!-- Extend Relationships -->
+    <text x="1020" y="220" class="relationship-text" font-weight="bold">Extend (Optional):</text>
+    <line x1="1020" y1="230" x2="1520" y2="230" stroke="#2196F3" stroke-width="2"/>
+    <text x="1020" y="250" class="relationship-text">Place Order → View Order History</text>
+    <text x="1020" y="270" class="relationship-text">View Order History → Track/Review/Cancel</text>
+    <text x="1020" y="290" class="relationship-text">View Product Details → Add to Cart/Wishlist</text>
+    <text x="1020" y="310" class="relationship-text">Manage Orders → Support Chats (Admin/Owner)</text>
+    <text x="1020" y="330" class="relationship-text">View Tasks → Update Status/Chats (Artist)</text>
+    
+    <!-- Statistics -->
+    <rect x="1020" y="360" width="510" height="200" fill="#fff" stroke="#ddd" stroke-width="1" rx="5"/>
+    <text x="1275" y="385" text-anchor="middle" class="package-title">Statistics</text>
+    <text x="1050" y="420" class="relationship-text">• Total Actors: 4</text>
+    <text x="1050" y="440" class="relationship-text">• Total Use Cases: 53</text>
+    <text x="1050" y="460" class="relationship-text">• Customer Use Cases: 27</text>
+    <text x="1050" y="480" class="relationship-text">• Admin Use Cases: 9</text>
+    <text x="1050" y="500" class="relationship-text">• Owner Use Cases: 9</text>
+    <text x="1050" y="520" class="relationship-text">• Artist Use Cases: 8</text>
+    
+    <!-- Legend -->
+    <rect x="1020" y="580" width="510" height="180" fill="#fff" stroke="#ddd" stroke-width="1" rx="5"/>
+    <text x="1275" y="605" text-anchor="middle" class="package-title">Legend</text>
+    <circle cx="1040" cy="630" r="10" fill="#4CAF50"/>
+    <text x="1060" y="635" class="relationship-text">Customer</text>
+    <circle cx="1040" cy="660" r="10" fill="#2196F3"/>
+    <text x="1060" y="665" class="relationship-text">Admin</text>
+    <circle cx="1040" cy="690" r="10" fill="#FF9800"/>
+    <text x="1060" y="695" class="relationship-text">Owner</text>
+    <circle cx="1040" cy="720" r="10" fill="#9C27B0"/>
+    <text x="1060" y="725" class="relationship-text">Artist</text>
+    <line x1="1200" y1="630" x2="1500" y2="630" stroke="#4CAF50" stroke-width="2"/>
+    <text x="1210" y="635" class="relationship-text">Include Relationship</text>
+    <line x1="1200" y1="660" x2="1500" y2="660" stroke="#2196F3" stroke-width="2" stroke-dasharray="5,5"/>
+    <text x="1210" y="665" class="relationship-text">Extend Relationship</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="800" y="2350" text-anchor="middle" class="relationship-text" font-size="14">Yohanns E-commerce System - Use Case Diagram</text>
+  <text x="800" y="2370" text-anchor="middle" class="relationship-text" font-size="12">Generated for Capstone Project</text>
+</svg>
+
+

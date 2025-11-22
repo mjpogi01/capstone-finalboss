@@ -1,0 +1,1809 @@
+/* ===========================================
+   ACCOUNT MANAGEMENT - MODERN CLEAN DESIGN
+   Yohanns Sportswear House
+   =========================================== */
+
+/* ===========================================
+   GLOBAL STYLES & TYPOGRAPHY
+   =========================================== */
+
+.admin-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  font-family: 'Oswald', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* .admin-main-content styling now handled by AdminDashboard.css */
+
+.accounts-container {
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+  transition: max-width 0.3s ease;
+}
+
+/* Responsive when sidebar is collapsed */
+.admin-dashboard.sidebar-collapsed .accounts-container,
+body.sidebar-collapsed .accounts-container {
+  max-width: 100%;
+}
+
+/* Mobile: collapse state should not affect layout */
+@media (max-width: 768px) {
+  .admin-dashboard.sidebar-collapsed .accounts-container,
+  body.sidebar-collapsed .accounts-container {
+    max-width: 100%;
+  }
+}
+
+/* ===========================================
+   HEADER SECTION
+   =========================================== */
+
+.accounts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.accounts-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+/* ===========================================
+   ACCOUNTS TABS
+   =========================================== */
+.accounts-tabs {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.accounts-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.accounts-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #64748b;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.01em;
+  position: relative;
+  margin-bottom: -2px;
+}
+
+.accounts-tab:hover {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  border-bottom-color: rgba(59, 130, 246, 0.3);
+}
+
+.accounts-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.accounts-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 2px 2px 0 0;
+}
+
+.accounts-tab .tab-icon {
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.accounts-tab:hover .tab-icon {
+  transform: scale(1.1);
+}
+
+.accounts-tab.active .tab-icon {
+  color: #3b82f6;
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .accounts-tabs {
+    gap: 0.5rem;
+  }
+
+  .accounts-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .accounts-tab .tab-icon {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .accounts-tab {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    gap: 0.375rem;
+  }
+}
+
+/* ===========================================
+   REFRESH BUTTON - MODERN FLOATING STYLE
+   =========================================== */
+
+.refresh-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.refresh-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+.refresh-btn:active {
+  transform: translateY(-1px);
+}
+
+.refresh-btn svg {
+  font-size: 1.125rem;
+  transition: transform 0.3s ease;
+}
+
+.refresh-btn:hover svg {
+  transform: rotate(180deg);
+}
+
+/* ===========================================
+   ACCOUNT SECTIONS - CARD STYLE
+   =========================================== */
+
+.accounts-section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  overflow: visible;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+}
+
+.accounts-section:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.section-header {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-header h2 svg {
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+/* ===========================================
+   SEARCH CONTAINERS - MINIMAL LINE DESIGN
+   =========================================== */
+
+.accounts-search-container { 
+  position: relative; 
+  display: flex; 
+  align-items: center; 
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+  padding: 0.5rem 0;
+  width: 200px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accounts-search-container:focus-within {
+  border-bottom-color: #3b82f6;
+  border-bottom-width: 2px;
+}
+
+.accounts-search-input { 
+  border: none; 
+  outline: none;
+  font-size: 0.75rem;
+  flex: 1;
+  background: transparent;
+  padding: 0;
+  margin-left: 0.5rem;
+  color: #374151;
+  font-family: inherit;
+}
+
+.accounts-search-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.accounts-search-icon { 
+  color: #6b7280; 
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.accounts-search-container:focus-within .accounts-search-icon {
+  color: #3b82f6;
+}
+
+/* ===========================================
+   TABLE CONTAINERS - MODERN DESIGN
+   =========================================== */
+
+.accounts-table-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  background: white;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Remove horizontal scroll on desktop for customer table */
+@media (min-width: 1024px) {
+  /* Hide overflow for container with customer table */
+  .accounts-table-container:has(.customer-table) {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+  
+  /* Ensure customer table fits container */
+  .accounts-table-container .customer-table {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* Ensure admin and artist table containers don't restrict width */
+.accounts-table-container .admin-table,
+.accounts-table-container .artist-table {
+  display: table;
+  width: 100%;
+}
+
+/* Visual indicator for scrollable table on mobile */
+@media (max-width: 767px) {
+  .accounts-table-container::after {
+    content: '← Scroll →';
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    pointer-events: none;
+    opacity: 0.8;
+    z-index: 5;
+    animation: fadeOut 3s ease-in-out forwards;
+  }
+  
+  @keyframes fadeOut {
+    0%, 50% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+.accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: auto;
+  min-width: 600px;
+}
+
+/* Override for admin table to ensure full width */
+.accounts-table-container .admin-table {
+  min-width: 100% !important;
+}
+
+/* Override for artist table to ensure full width */
+.accounts-table-container .artist-table {
+  min-width: 100% !important;
+}
+
+/* Override for customer table to ensure full width */
+.accounts-table-container .customer-table {
+  min-width: 100% !important;
+}
+
+/* Ensure table columns distribute evenly across full width */
+.admin-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}
+
+.artist-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}
+
+.customer-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.admin-table th,
+.admin-table td,
+.artist-table th,
+.artist-table td,
+.customer-table th,
+.customer-table td {
+  box-sizing: border-box;
+}
+
+/* Distribute column widths for admin table - must total 100% */
+.admin-table th:nth-child(1),
+.admin-table td:nth-child(1) {
+  width: 20% !important;
+  min-width: 20%;
+  max-width: 20%;
+}
+
+.admin-table th:nth-child(2),
+.admin-table td:nth-child(2) {
+  width: 25% !important;
+  min-width: 25%;
+  max-width: 25%;
+}
+
+.admin-table th:nth-child(3),
+.admin-table td:nth-child(3) {
+  width: 15% !important;
+  min-width: 15%;
+  max-width: 15%;
+}
+
+.admin-table th:nth-child(4),
+.admin-table td:nth-child(4) {
+  width: 25% !important;
+  min-width: 25%;
+  max-width: 25%;
+}
+
+.admin-table th:nth-child(5),
+.admin-table td:nth-child(5) {
+  width: 15% !important;
+  min-width: 15%;
+  max-width: 15%;
+}
+
+/* Distribute column widths for artist table - must total 100% (7 columns) */
+.artist-table th:nth-child(1),
+.artist-table td:nth-child(1) {
+  width: 18% !important;
+  min-width: 18%;
+  max-width: 18%;
+}
+
+.artist-table th:nth-child(2),
+.artist-table td:nth-child(2) {
+  width: 22% !important;
+  min-width: 22%;
+  max-width: 22%;
+}
+
+.artist-table th:nth-child(3),
+.artist-table td:nth-child(3) {
+  width: 12% !important;
+  min-width: 12%;
+  max-width: 12%;
+}
+
+.artist-table th:nth-child(4),
+.artist-table td:nth-child(4) {
+  width: 12% !important;
+  min-width: 12%;
+  max-width: 12%;
+}
+
+.artist-table th:nth-child(5),
+.artist-table td:nth-child(5) {
+  width: 12% !important;
+  min-width: 12%;
+  max-width: 12%;
+}
+
+.artist-table th:nth-child(6),
+.artist-table td:nth-child(6) {
+  width: 12% !important;
+  min-width: 12%;
+  max-width: 12%;
+}
+
+.artist-table th:nth-child(7),
+.artist-table td:nth-child(7) {
+  width: 12% !important;
+  min-width: 12%;
+  max-width: 12%;
+}
+
+/* Distribute column widths for customer table - must total 100% (5 columns) */
+.customer-table th:nth-child(1),
+.customer-table td:nth-child(1) {
+  width: 20% !important;
+  min-width: 20%;
+  max-width: 20%;
+}
+
+.customer-table th:nth-child(2),
+.customer-table td:nth-child(2) {
+  width: 25% !important;
+  min-width: 25%;
+  max-width: 25%;
+}
+
+.customer-table th:nth-child(3),
+.customer-table td:nth-child(3) {
+  width: 15% !important;
+  min-width: 15%;
+  max-width: 15%;
+}
+
+.customer-table th:nth-child(4),
+.customer-table td:nth-child(4) {
+  width: 30% !important;
+  min-width: 30%;
+  max-width: 30%;
+}
+
+.customer-table th:nth-child(5),
+.customer-table td:nth-child(5) {
+  width: 10% !important;
+  min-width: 10%;
+  max-width: 10%;
+}
+
+.accounts-table thead {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.accounts-table th {
+  padding: 1rem 0.875rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-right: 1px solid #e2e8f0;
+}
+
+.accounts-table th:last-child {
+  border-right: none;
+}
+
+/* Customer table specific - tighter spacing */
+.accounts-table.customer-table th,
+.accounts-table.customer-table td {
+  padding: 0.875rem 0.75rem;
+}
+
+.accounts-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Alternating row backgrounds */
+.accounts-table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.accounts-table tbody tr:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.accounts-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.accounts-table td {
+  padding: 1rem 0.875rem;
+  color: #374151;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.accounts-table td:last-child {
+  border-right: none;
+}
+
+/* ===========================================
+   ROLE BADGES - MODERN SAAS STYLING
+   =========================================== */
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  font-family: inherit;
+}
+
+.role-badge.owner {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.role-badge.admin {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.role-badge.customer {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.role-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+   STATUS & VERIFICATION BADGES - ARTIST TABLE
+   =========================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  font-family: inherit;
+}
+
+.status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  font-family: inherit;
+}
+
+.verification-badge.verified {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.verification-badge.unverified {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-badge:hover,
+.verification-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Status Toggle Button */
+.status-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  font-family: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+
+.status-toggle-btn.active {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.status-toggle-btn.active:hover {
+  background: #a7f3d0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.status-toggle-btn.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.status-toggle-btn.inactive:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.status-toggle-btn .toggle-icon {
+  font-size: 1.125rem;
+  transition: transform 0.2s ease;
+}
+
+.status-toggle-btn:hover .toggle-icon {
+  transform: scale(1.1);
+}
+
+.status-toggle-btn .toggle-label {
+  font-size: 0.6875rem;
+}
+
+/* ===========================================
+   ACTION BUTTONS - MINIMALISTIC PILL STYLE
+   =========================================== */
+
+/* ===========================================
+   DELETE BUTTONS - MINIMAL SAAS STYLE
+   =========================================== */
+
+.delete-btn {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.5rem;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.delete-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.delete-btn:active {
+  transform: translateY(0);
+  background: #fee2e2;
+}
+
+.delete-btn svg {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+/* ===========================================
+   LOADING & EMPTY STATES
+   =========================================== */
+
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.125rem;
+  color: #64748b;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 2rem 0;
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #64748b;
+  font-style: italic;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin: 1rem;
+}
+
+/* ===========================================
+   EDIT FUNCTIONALITY STYLES
+   =========================================== */
+
+.edit-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.edit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.edit-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.edit-btn svg {
+  font-size: 1rem;
+}
+
+.save-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.save-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.save-btn svg {
+  font-size: 1rem;
+}
+
+.cancel-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.cancel-btn:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.cancel-btn svg {
+  font-size: 1rem;
+}
+
+.owner-badge {
+  background: #fbbf24;
+  color: #92400e;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ===========================================
+   RESPONSIVE DESIGN
+   =========================================== */
+
+/* Large Desktop (1400px+) */
+@media (min-width: 1400px) {
+  .admin-main-content {
+    padding: 3rem;
+  }
+  
+  .accounts-header {
+    padding: 2.5rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 2.75rem;
+  }
+}
+
+/* Desktop (1200px - 1399px) */
+@media (max-width: 1399px) {
+  /* .admin-main-content styling handled by AdminDashboard.css */
+}
+
+/* Large Laptop (1024px - 1199px) */
+@media (max-width: 1199px) {
+  .accounts-header h1 {
+    font-size: 2.25rem;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .accounts-search-container {
+    width: 100%;
+    max-width: 250px;
+    padding: 0.4rem 0;
+  }
+}
+
+/* Tablet (768px - 1023px) */
+@media (max-width: 1023px) {
+  
+  .accounts-header {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: stretch;
+    padding: 1.5rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 2rem;
+  }
+  
+  .section-header {
+    padding: 0.875rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1.375rem;
+  }
+  
+  .section-header h2 svg {
+    font-size: 1.125rem;
+  }
+  
+  .accounts-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  .accounts-table-container::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .accounts-table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+  }
+  
+  .accounts-table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  
+  .accounts-table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  .accounts-table {
+    font-size: 0.8rem;
+  }
+  
+  /* On tablet, keep admin and artist tables at 100% width but allow horizontal scroll if needed */
+  .admin-table {
+    width: 100% !important;
+    min-width: 700px;
+  }
+  
+  .artist-table {
+    width: 100% !important;
+    min-width: 800px; /* Slightly wider for 7 columns */
+  }
+  
+  .customer-table {
+    width: 100% !important;
+    min-width: 100% !important; /* Fit container width instead of forcing scroll */
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: 1.25rem 0.75rem;
+  }
+  
+  /* Admin table specific responsive adjustments - only override min-width for scrolling */
+  .admin-table th:nth-child(3),
+  .admin-table td:nth-child(3) {
+    min-width: 80px;
+  }
+  
+  .admin-table th:nth-child(4),
+  .admin-table td:nth-child(4) {
+    min-width: 100px;
+  }
+  
+  .accounts-search-container {
+    width: 100%;
+    padding: 0.35rem 0;
+  }
+}
+
+/* Mobile Large (481px - 767px) */
+@media (max-width: 767px) {
+  
+  .accounts-header {
+    padding: 1.25rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 1.875rem;
+  }
+  
+  .section-header {
+    padding: 0.75rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .section-header h2 svg {
+    font-size: 1rem;
+  }
+  
+  .accounts-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  
+  .accounts-table {
+    font-size: 0.75rem;
+  }
+  
+  .admin-table {
+    min-width: 650px;
+  }
+  
+  .artist-table {
+    min-width: 700px; /* Wider for 7 columns */
+  }
+  
+  .customer-table {
+    min-width: 650px; /* 5 columns */
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: 1rem 0.5rem;
+    white-space: nowrap;
+  }
+  
+  /* Admin table: Make email and name wrap on very small screens */
+  .admin-table td:nth-child(1),
+  .admin-table td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 150px;
+  }
+  
+  /* Artist table: Make email and name wrap on very small screens */
+  .artist-table td:nth-child(1),
+  .artist-table td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 150px;
+  }
+  
+  /* Customer table: Make email, name, and address wrap on very small screens */
+  .customer-table td:nth-child(1),
+  .customer-table td:nth-child(2),
+  .customer-table td:nth-child(4) {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 150px;
+  }
+  
+  /* Admin table: Adjust column widths for mobile */
+  .admin-table th:nth-child(1),
+  .admin-table td:nth-child(1) {
+    min-width: 120px;
+  }
+  
+  .admin-table th:nth-child(2),
+  .admin-table td:nth-child(2) {
+    min-width: 150px;
+  }
+  
+  .admin-table th:nth-child(3),
+  .admin-table td:nth-child(3) {
+    min-width: 70px;
+  }
+  
+  .admin-table th:nth-child(4),
+  .admin-table td:nth-child(4) {
+    min-width: 90px;
+  }
+  
+  .admin-table th:nth-child(5),
+  .admin-table td:nth-child(5) {
+    min-width: 60px;
+  }
+  
+  /* Artist table: Adjust column widths for mobile */
+  .artist-table th:nth-child(1),
+  .artist-table td:nth-child(1) {
+    min-width: 120px;
+  }
+  
+  .artist-table th:nth-child(2),
+  .artist-table td:nth-child(2) {
+    min-width: 150px;
+  }
+  
+  .artist-table th:nth-child(3),
+  .artist-table td:nth-child(3) {
+    min-width: 80px;
+  }
+  
+  .artist-table th:nth-child(4),
+  .artist-table td:nth-child(4) {
+    min-width: 80px;
+  }
+  
+  .artist-table th:nth-child(5),
+  .artist-table td:nth-child(5) {
+    min-width: 70px;
+  }
+  
+  .artist-table th:nth-child(6),
+  .artist-table td:nth-child(6) {
+    min-width: 70px;
+  }
+  
+  .artist-table th:nth-child(7),
+  .artist-table td:nth-child(7) {
+    min-width: 60px;
+  }
+  
+  /* Customer table: Adjust column widths for mobile */
+  .customer-table th:nth-child(1),
+  .customer-table td:nth-child(1) {
+    min-width: 100px;
+  }
+  
+  .customer-table th:nth-child(2),
+  .customer-table td:nth-child(2) {
+    min-width: 130px;
+  }
+  
+  .customer-table th:nth-child(3),
+  .customer-table td:nth-child(3) {
+    min-width: 100px;
+  }
+  
+  .customer-table th:nth-child(4),
+  .customer-table td:nth-child(4) {
+    min-width: 150px;
+  }
+  
+  .customer-table th:nth-child(5),
+  .customer-table td:nth-child(5) {
+    min-width: 60px;
+  }
+  
+  .refresh-btn {
+    padding: 0.625rem;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .refresh-btn svg {
+    font-size: 1rem;
+  }
+  
+  .delete-btn {
+    padding: 0.4rem;
+    width: 32px;
+    height: 32px;
+  }
+  
+  .delete-btn svg {
+    font-size: 0.875rem;
+  }
+  
+  .edit-btn,
+  .save-btn,
+  .cancel-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0.4rem;
+  }
+  
+  .edit-btn svg,
+  .save-btn svg,
+  .cancel-btn svg {
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile Small (320px - 480px) */
+@media (max-width: 480px) {
+  
+  .accounts-header {
+    padding: 1rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .section-header {
+    padding: 0.625rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1.125rem;
+  }
+  
+  .section-header h2 svg {
+    font-size: 0.875rem;
+  }
+  
+  .accounts-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -0.5rem;
+    padding: 0 0.5rem;
+  }
+  
+  .accounts-table {
+    font-size: 0.7rem;
+  }
+  
+  .admin-table {
+    min-width: 600px;
+  }
+  
+  .artist-table {
+    min-width: 650px; /* Wider for 7 columns */
+  }
+  
+  .customer-table {
+    min-width: 600px; /* 5 columns */
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: 0.875rem 0.375rem;
+  }
+  
+  /* Admin table: Further optimize for small screens */
+  .admin-table th:nth-child(1),
+  .admin-table td:nth-child(1) {
+    min-width: 100px;
+    max-width: 120px;
+  }
+  
+  .admin-table th:nth-child(2),
+  .admin-table td:nth-child(2) {
+    min-width: 130px;
+    max-width: 150px;
+  }
+  
+  .admin-table th:nth-child(3),
+  .admin-table td:nth-child(3) {
+    min-width: 60px;
+  }
+  
+  .admin-table th:nth-child(4),
+  .admin-table td:nth-child(4) {
+    min-width: 80px;
+  }
+  
+  .admin-table th:nth-child(5),
+  .admin-table td:nth-child(5) {
+    min-width: 50px;
+  }
+  
+  /* Artist table: Further optimize for small screens */
+  .artist-table th:nth-child(1),
+  .artist-table td:nth-child(1) {
+    min-width: 100px;
+    max-width: 120px;
+  }
+  
+  .artist-table th:nth-child(2),
+  .artist-table td:nth-child(2) {
+    min-width: 130px;
+    max-width: 150px;
+  }
+  
+  .artist-table th:nth-child(3),
+  .artist-table td:nth-child(3) {
+    min-width: 70px;
+  }
+  
+  .artist-table th:nth-child(4),
+  .artist-table td:nth-child(4) {
+    min-width: 70px;
+  }
+  
+  .artist-table th:nth-child(5),
+  .artist-table td:nth-child(5) {
+    min-width: 60px;
+  }
+  
+  .artist-table th:nth-child(6),
+  .artist-table td:nth-child(6) {
+    min-width: 60px;
+  }
+  
+  .artist-table th:nth-child(7),
+  .artist-table td:nth-child(7) {
+    min-width: 50px;
+  }
+  
+  /* Customer table: Further optimize for small screens */
+  .customer-table th:nth-child(1),
+  .customer-table td:nth-child(1) {
+    min-width: 90px;
+    max-width: 110px;
+  }
+  
+  .customer-table th:nth-child(2),
+  .customer-table td:nth-child(2) {
+    min-width: 120px;
+    max-width: 140px;
+  }
+  
+  .customer-table th:nth-child(3),
+  .customer-table td:nth-child(3) {
+    min-width: 90px;
+    max-width: 110px;
+  }
+  
+  .customer-table th:nth-child(4),
+  .customer-table td:nth-child(4) {
+    min-width: 140px;
+    max-width: 180px;
+  }
+  
+  .customer-table th:nth-child(5),
+  .customer-table td:nth-child(5) {
+    min-width: 50px;
+  }
+  
+  /* Make role and branch badges smaller on mobile */
+  .admin-table .role-badge {
+    font-size: 0.625rem;
+    padding: 0.2rem 0.5rem;
+  }
+  
+  /* Make status and verification badges smaller on mobile */
+  .artist-table .status-badge,
+  .artist-table .verification-badge {
+    font-size: 0.625rem;
+    padding: 0.2rem 0.5rem;
+  }
+  
+  .refresh-btn {
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .refresh-btn svg {
+    font-size: 0.875rem;
+  }
+  
+  .delete-btn {
+    padding: 0.375rem;
+    width: 30px;
+    height: 30px;
+  }
+  
+  .delete-btn svg {
+    font-size: 0.8rem;
+  }
+  
+  .edit-btn,
+  .save-btn,
+  .cancel-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0.375rem;
+  }
+  
+  .edit-btn svg,
+  .save-btn svg,
+  .cancel-btn svg {
+    font-size: 0.8rem;
+  }
+  
+  .accounts-search-container {
+    padding: 0.3rem 0;
+  }
+  
+  .accounts-search-input {
+    font-size: 0.7rem;
+  }
+}
+
+/* Extra Small Mobile (below 320px) */
+@media (max-width: 319px) {
+  
+  .accounts-header {
+    padding: 0.875rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .section-header {
+    padding: 0.5rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1rem;
+  }
+  
+  .section-header h2 svg {
+    font-size: 0.75rem;
+  }
+  
+  .accounts-table {
+    font-size: 0.65rem;
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: 0.75rem 0.25rem;
+  }
+  
+  .refresh-btn {
+    padding: 0.4rem;
+    width: 32px;
+    height: 32px;
+  }
+  
+  .refresh-btn svg {
+    font-size: 0.8rem;
+  }
+  
+  .delete-btn {
+    padding: 0.3rem;
+    width: 28px;
+    height: 28px;
+  }
+  
+  .delete-btn svg {
+    font-size: 0.75rem;
+  }
+  
+  .edit-btn,
+  .save-btn,
+  .cancel-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0.3rem;
+  }
+  
+  .edit-btn svg,
+  .save-btn svg,
+  .cancel-btn svg {
+    font-size: 0.75rem;
+  }
+  
+  .accounts-search-container {
+    padding: 0.25rem 0;
+  }
+  
+  .accounts-search-input {
+    font-size: 0.65rem;
+  }
+}
+
+/* ===========================================
+   ACCESSIBILITY & FOCUS STATES
+   =========================================== */
+
+.refresh-btn:focus,
+.delete-btn:focus,
+.accounts-search-input:focus {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .accounts-table tbody tr:nth-child(even) {
+    background-color: #f0f0f0;
+  }
+  
+  .accounts-table tbody tr:hover {
+    background: #e0e0e0;
+  }
+  
+  .role-badge.owner {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #856404;
+  }
+  
+  .role-badge.admin {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #155724;
+  }
+  
+  .role-badge.customer {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #721c24;
+  }
+  
+  .delete-btn {
+    border: 2px solid #ef4444;
+    background: #fef2f2;
+  }
+  
+  .delete-btn:hover {
+    background: #fee2e2;
+    border-color: #dc2626;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .accounts-section,
+  .refresh-btn,
+  .delete-btn,
+  .accounts-table tbody tr,
+  .role-badge {
+    transition: none;
+  }
+  
+  .accounts-section:hover,
+  .accounts-table tbody tr:hover,
+  .refresh-btn:hover,
+  .delete-btn:hover {
+    transform: none;
+  }
+  
+  .refresh-btn:hover svg {
+    transform: none;
+  }
+}
+
+/* ===========================================
+   LARGE SCREEN RESPONSIVE (54 inch displays)
+   =========================================== */
+
+/* 4K / Ultra-Wide Displays (2560px - 3839px) */
+@media (min-width: 2560px) and (max-width: 3839px) {
+  .accounts-container {
+    max-width: 2400px;
+    padding: 2.5rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 3rem;
+  }
+  
+  .accounts-table {
+    font-size: 0.9375rem;
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* Large 4K Displays (3840px+) */
+@media (min-width: 3840px) {
+  .accounts-container {
+    max-width: 3200px;
+    padding: 3rem;
+  }
+  
+  .accounts-header h1 {
+    font-size: 3.5rem;
+  }
+  
+  .accounts-table {
+    font-size: 1rem;
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: 1.5rem 1.25rem;
+  }
+}
+
+/* ===========================================
+   PAGINATION CONTROLS
+   =========================================== */
+
+.accounts-pagination {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 1.5rem;
+  border-radius: 0 0 12px 12px;
+}
+
+.pagination-info {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-number {
+  min-width: 36px;
+  height: 36px;
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-number:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.page-number.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.pagination-per-page {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-per-page label {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pagination-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #475569;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-select:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.pagination-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (max-width: 768px) {
+  .accounts-pagination {
+    padding: 1rem;
+  }
+  
+  .pagination-buttons {
+    gap: 0.75rem;
+  }
+  
+  .pagination-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+  
+  .page-number {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.8125rem;
+  }
+  
+  .pagination-per-page {
+    justify-content: center;
+  }
+}

@@ -1,0 +1,336 @@
+/* Artist Assignment Loading Modal */
+.artist-assignment-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-in;
+}
+
+.artist-assignment-loading-modal {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+.artist-assignment-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.artist-assignment-spinner {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+}
+
+.artist-assignment-spinner .spinner-icon {
+  font-size: 36px;
+  color: white;
+  animation: rotate 2s linear infinite;
+}
+
+.artist-assignment-loading-content h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.artist-assignment-loading-content p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.loading-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--primary-blue);
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 30px rgba(59, 130, 246, 0.6);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Success State Styles */
+.artist-assignment-loading-modal.success-state {
+  animation: successPulse 0.5s ease-out;
+}
+
+.artist-assignment-success-check {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.checkmark {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 3;
+  stroke: #10b981;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #10b981;
+  animation: fillCheckmark 0.4s ease-in-out 0.4s forwards, scaleCheckmark 0.3s ease-in-out 0.9s both;
+}
+
+.checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3;
+  stroke-miterlimit: 10;
+  stroke: #10b981;
+  fill: none;
+  animation: strokeCheckmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-width: 3;
+  stroke: #10b981;
+  animation: strokeCheckmark 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+.success-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #10b981;
+  animation: fadeInUp 0.5s ease-out 0.3s both;
+}
+
+.success-message {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  animation: fadeInUp 0.5s ease-out 0.5s both;
+}
+
+.artist-name-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-radius: var(--radius-lg);
+  border: 2px solid #10b981;
+  animation: fadeInUp 0.5s ease-out 0.7s both, scaleIn 0.4s ease-out 0.7s both;
+}
+
+.artist-name-display .artist-icon {
+  font-size: 20px;
+  color: #10b981;
+}
+
+.artist-name-display span {
+  font-size: 18px;
+  font-weight: 600;
+  color: #059669;
+}
+
+/* Success State Animations */
+@keyframes fillCheckmark {
+  100% {
+    box-shadow: inset 0px 0px 0px 30px #10b981;
+  }
+}
+
+@keyframes strokeCheckmark {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scaleCheckmark {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Smooth transition between states */
+.artist-assignment-loading-content {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Responsive adjustments for loading modal */
+@media (max-width: 768px) {
+  .artist-assignment-loading-modal {
+    padding: 30px 20px;
+    max-width: 90%;
+  }
+
+  .artist-assignment-spinner {
+    width: 60px;
+    height: 60px;
+  }
+
+  .artist-assignment-spinner .spinner-icon {
+    font-size: 28px;
+  }
+
+  .artist-assignment-loading-content h3 {
+    font-size: 20px;
+  }
+
+  .artist-assignment-loading-content p {
+    font-size: 14px;
+  }
+
+  .artist-assignment-success-check {
+    width: 80px;
+    height: 80px;
+  }
+
+  .checkmark {
+    width: 80px;
+    height: 80px;
+  }
+
+  .success-title {
+    font-size: 24px;
+  }
+
+  .success-message {
+    font-size: 14px;
+  }
+
+  .artist-name-display {
+    padding: 12px 20px;
+  }
+
+  .artist-name-display span {
+    font-size: 16px;
+  }
+}
+

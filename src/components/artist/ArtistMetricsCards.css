@@ -1,0 +1,244 @@
+/* ===========================================
+   ARTIST METRICS CARDS - WHITE THEME
+   Unique class names to avoid conflicts
+   =========================================== */
+
+.artist-metrics-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.artist-metric-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.875rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  color: #0f172a;
+  position: relative;
+  isolation: isolate;
+}
+
+.artist-metric-card:hover {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+  /* Ensure proper stacking context for child elements */
+  isolation: isolate;
+}
+
+.artist-card-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.artist-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.artist-card-info {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+  background: transparent;
+  pointer-events: none;
+}
+
+.artist-card-info > * {
+  pointer-events: auto;
+}
+
+.artist-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.125rem 0;
+  line-height: 1.2;
+  overflow: visible;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+  z-index: 20;
+}
+
+.artist-card-change {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.artist-card-change-positive {
+  color: #059669;
+}
+
+.artist-card-change-negative {
+  color: #dc2626;
+}
+
+.artist-card-change-neutral {
+  color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .artist-metrics-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .artist-metric-card {
+    padding: 1.25rem;
+  }
+  
+  .artist-card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+  
+  .artist-card-value {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .artist-metrics-cards {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .artist-metric-card {
+    padding: 1rem;
+  }
+  
+  .artist-card-content {
+    gap: 0.75rem;
+  }
+  
+  .artist-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .artist-card-title {
+    font-size: 0.8rem;
+  }
+  
+  .artist-card-value {
+    font-size: 1.25rem;
+  }
+  
+  .artist-card-change {
+    font-size: 0.7rem;
+  }
+}
+
+/* Loading States */
+.artist-metric-card.artist-loading-skeleton {
+  animation: artist-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes artist-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.artist-loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: artist-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes artist-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Animation for value changes */
+.artist-card-value {
+  transition: transform 0.3s ease, z-index 0s;
+  position: relative;
+  z-index: 20;
+}
+
+.artist-metric-card:hover .artist-card-value {
+  transform: scale(1.05) translateX(8px);
+  z-index: 20;
+}
+
+/* Icon animations - keep icon behind text */
+.artist-card-icon {
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.artist-metric-card:hover .artist-card-icon {
+  transform: scale(1.05) rotate(3deg);
+  z-index: 1;
+  /* Ensure icon stays in its own stacking context below text */
+  isolation: isolate;
+}
+
+/* Ensure card info stays above icon during hover */
+.artist-card-info {
+  position: relative;
+  z-index: 10;
+}
+
+.artist-metric-card:hover .artist-card-info {
+  z-index: 10;
+}
+
+/* White theme - ensure cards stay white on all states */
+.artist-metric-card:focus,
+.artist-metric-card:active,
+.artist-metric-card:focus-within {
+  background: #ffffff !important;
+}

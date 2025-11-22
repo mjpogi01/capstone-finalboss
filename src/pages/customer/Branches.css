@@ -1,0 +1,1727 @@
+/* Main container styles - matching FAQs structure */
+.branches-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%);
+  color: #ffffff;
+  padding: 60px 0 3rem 0;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+.branches-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero section styles - matching FAQs */
+.branches-hero {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 0.5rem 0;
+}
+
+.branches-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #00bfff;
+  text-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+  font-family: 'Poppins', sans-serif;
+}
+
+.branches-subtitle {
+  font-size: 1.2rem;
+  color: #a9d8ff;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.5;
+  font-weight: 400;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* ======================
+   SCROLL REVEAL ANIMATIONS
+   ====================== */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 700ms ease, transform 700ms ease;
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 80ms; }
+.reveal-delay-2 { transition-delay: 160ms; }
+.reveal-delay-3 { transition-delay: 240ms; }
+.reveal-delay-4 { transition-delay: 320ms; }
+.reveal-delay-5 { transition-delay: 400ms; }
+
+/* Main content section */
+.branches-content {
+  margin-bottom: 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Layout grid for map and branch list */
+.branches-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Map column styles */
+.branches-map-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  z-index: 1;
+  height: 600px; /* Match branches list height */
+}
+
+/* Map container */
+.branches-map-wrapper {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-radius: 15px;
+  padding: 1rem;
+  border: 1px solid #333;
+  box-shadow: 0 8px 24px rgba(0, 191, 255, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1; /* Map wrapper in normal flow */
+  height: 100%; /* Take full height of parent */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box; /* Include padding in height calculation */
+}
+
+/* Ensure map container and its markers are always visible */
+.branches-map-wrapper .leaflet-container {
+  position: relative;
+  z-index: 1;
+  height: 100% !important; /* Ensure Leaflet container takes full height */
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Smooth map pan/zoom transitions */
+.branches-map-wrapper .leaflet-map-pane {
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.branches-map-wrapper .leaflet-tile-pane {
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Route line styling - Make it more visible with animation */
+.branches-map-wrapper .leaflet-overlay-pane svg path {
+  filter: drop-shadow(0 0 4px rgba(0, 191, 255, 0.6));
+  transition: filter 0.3s ease, opacity 0.6s ease, stroke-width 0.3s ease;
+  animation: routeLineAppear 0.8s ease-out;
+  opacity: 1;
+}
+
+/* Route line appear animation */
+@keyframes routeLineAppear {
+  0% {
+    opacity: 0;
+    stroke-width: 0;
+  }
+  50% {
+    opacity: 0.5;
+    stroke-width: 2;
+  }
+  100% {
+    opacity: 1;
+    stroke-width: 5;
+  }
+}
+
+/* Route line hover effect */
+.branches-map-wrapper .leaflet-overlay-pane svg path:hover {
+  filter: drop-shadow(0 0 8px rgba(0, 191, 255, 0.9));
+}
+
+/* Ensure marker pane is always above modal overlay */
+.branches-map-wrapper .leaflet-marker-pane {
+  z-index: 10001 !important;
+  position: relative !important;
+}
+
+.branches-map-wrapper:hover {
+  border-color: #00bfff;
+  box-shadow: 0 8px 30px rgba(0, 191, 255, 0.25);
+}
+
+.branches-map {
+  height: 100%;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #333;
+  position: relative;
+  z-index: 1;
+  flex: 1; /* Take remaining space in flex container */
+  min-height: 0; /* Allow flex item to shrink */
+}
+
+/* Branch list styles - matching FAQs item structure */
+.branches-list-wrapper {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 1px solid #333;
+  box-shadow: 0 8px 24px rgba(0, 191, 255, 0.15);
+  height: 600px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+.branches-list-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.branches-list-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.branches-list-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 191, 255, 0.3);
+  border-radius: 10px;
+}
+
+.branches-list-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 191, 255, 0.5);
+}
+
+/* Branch item - similar to FAQ item */
+.branches-item {
+  background: #0d0d0d;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid #333;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.branches-item:hover {
+  border-color: rgba(0, 191, 255, 0.4);
+  box-shadow: 0 6px 24px rgba(0, 191, 255, 0.25);
+  transform: translateY(-3px);
+  background: rgba(0, 191, 255, 0.05);
+}
+
+.branches-item:active {
+  transform: translateY(-1px);
+  transition: transform 0.1s ease;
+}
+
+.branches-item-active {
+  border-color: #00bfff;
+  background: rgba(0, 191, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 191, 255, 0.3);
+}
+
+.branches-item-content {
+  padding: 1.25rem;
+}
+
+.branches-item-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.branches-item-address {
+  font-size: 0.9rem;
+  color: #a9d8ff;
+  line-height: 1.6;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+}
+
+.branches-directions-button {
+  width: 100%;
+  padding: 10px 16px;
+  background: #00bfff;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.branches-directions-button:hover {
+  background: #0099cc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 191, 255, 0.4);
+}
+
+.branches-directions-button:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Travel information panel */
+.branches-travel-info {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 1px solid #333;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.branches-travel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 191, 255, 0.2);
+}
+
+.branches-travel-distance {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #00bfff;
+  font-family: 'Poppins', sans-serif;
+  text-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+}
+
+.branches-travel-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.branches-travel-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.branches-travel-mode:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: rgba(0, 191, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.branches-travel-mode-ferry {
+  background: rgba(0, 191, 255, 0.15);
+  border: 1px solid rgba(0, 191, 255, 0.4);
+}
+
+.branches-travel-mode-ferry:hover {
+  background: rgba(0, 191, 255, 0.25);
+  border-color: rgba(0, 191, 255, 0.6);
+}
+
+.branches-travel-mode-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.branches-travel-mode-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.branches-travel-mode-ferry .branches-travel-mode-label {
+  color: #00bfff;
+  font-weight: 600;
+}
+
+.branches-travel-mode-time {
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Map popup styles */
+.branches-popup {
+  min-width: 250px;
+  max-width: 300px;
+}
+
+.branches-popup-content {
+  padding: 12px;
+  background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+  border-radius: 10px;
+  color: #ffffff;
+}
+
+.branches-popup-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #00bfff;
+  margin-bottom: 6px;
+  text-shadow: 0 0 8px rgba(0, 191, 255, 0.5);
+  font-family: 'Poppins', sans-serif;
+}
+
+.branches-popup-accuracy {
+  font-size: 0.85rem;
+  color: #a9d8ff;
+  margin-top: 0.25rem;
+  font-family: 'Roboto', sans-serif;
+}
+
+.branches-refresh-location-btn {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(0, 191, 255, 0.2);
+  border: 1px solid rgba(0, 191, 255, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.branches-refresh-location-btn:hover:not(:disabled) {
+  background: rgba(0, 191, 255, 0.3);
+  border-color: rgba(0, 191, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.branches-refresh-location-btn:disabled {
+  background: #444;
+  border-color: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.branches-refresh-location-btn svg {
+  font-size: 0.9rem;
+}
+
+.branches-popup-address {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #a9d8ff;
+  margin-bottom: 8px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+}
+
+.branches-popup-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 191, 255, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  margin-bottom: 8px;
+}
+
+.branches-popup-badge-text {
+  font-size: 11px;
+  color: #00bfff;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Mobile popup styles */
+@media (max-width: 768px) {
+  .branches-popup {
+    min-width: 200px;
+    max-width: 85vw;
+  }
+
+  .branches-popup-content {
+    padding: 10px;
+  }
+
+  .branches-popup-title {
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+
+  .branches-popup-address {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .branches-popup-badge {
+    padding: 5px 8px;
+    margin-bottom: 6px;
+  }
+
+  .branches-popup-badge-text {
+    font-size: 10px;
+  }
+
+  .branches-refresh-location-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    margin-top: 0.4rem;
+  }
+
+  .branches-popup-accuracy {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .branches-popup {
+    min-width: 180px;
+    max-width: 90vw;
+  }
+
+  .branches-popup-content {
+    padding: 8px;
+  }
+
+  .branches-popup-title {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .branches-popup-address {
+    font-size: 10px;
+    margin-bottom: 5px;
+  }
+
+  .branches-popup-badge {
+    padding: 4px 7px;
+    margin-bottom: 5px;
+  }
+
+  .branches-popup-badge-text {
+    font-size: 9px;
+  }
+
+  .branches-refresh-location-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+  }
+
+  .branches-popup-accuracy {
+    font-size: 0.7rem;
+  }
+}
+
+/* Responsive design - matching FAQs breakpoints */
+@media (max-width: 768px) {
+  .branches-container {
+    padding: 50px 0 1.5rem 0;
+  }
+  
+  .branches-wrapper {
+    padding: 0 1rem;
+    max-width: 100%;
+  }
+  
+  .branches-hero {
+    padding: 0.4rem 0;
+    margin-bottom: 1rem;
+  }
+  
+  .branches-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    padding: 0 0.5rem;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+  
+  .branches-subtitle {
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+    padding: 0 0.5rem;
+    max-width: 95%;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+  
+  .branches-content {
+    margin-bottom: 2rem;
+  }
+  
+  .branches-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .branches-map-column {
+    height: auto;
+  }
+  
+  .branches-map-wrapper {
+    padding: 0.75rem;
+    height: auto;
+    min-height: 250px;
+  }
+  
+  .branches-map {
+    height: 250px !important;
+    min-height: 250px;
+  }
+  
+  .branches-list-wrapper {
+    height: auto;
+    max-height: none;
+    padding: 1rem;
+    overflow-y: visible;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+  }
+  
+  .branches-item {
+    width: 100%;
+    margin: 0;
+    margin-bottom: 0;
+  }
+  
+  .branches-item-content {
+    padding: 0.9rem;
+  }
+  
+  .branches-item-name {
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .branches-item-address {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  
+  .branches-directions-button {
+    padding: 7px 12px;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  
+  .branches-travel-info {
+    padding: 1rem;
+  }
+  
+  .branches-travel-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .branches-travel-modes {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .branches-travel-mode {
+    padding: 0.6rem;
+  }
+  
+  .branches-travel-distance {
+    font-size: 1.1rem;
+  }
+  
+  .branches-travel-mode-label {
+    font-size: 0.7rem;
+  }
+  
+  .branches-travel-mode-time {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .branches-container {
+    padding: 45px 0 1rem 0;
+  }
+  
+  .branches-wrapper {
+    padding: 0 0.75rem;
+  }
+  
+  .branches-hero {
+    padding: 0.3rem 0;
+    margin-bottom: 1rem;
+  }
+  
+  .branches-title {
+    font-size: clamp(1.3rem, 7vw, 1.6rem);
+    line-height: 1.15;
+    margin-bottom: 0.4rem;
+    padding: 0 0.25rem;
+  }
+  
+  .branches-subtitle {
+    font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+    line-height: 1.35;
+    margin: 0 auto;
+    padding: 0 0.25rem;
+  }
+  
+  .branches-content {
+    margin-bottom: 1.5rem;
+  }
+  
+  .branches-layout {
+    gap: 0.75rem;
+  }
+  
+  .branches-map-column {
+    height: auto;
+  }
+  
+  .branches-map-wrapper {
+    padding: 0.5rem;
+    height: auto;
+    min-height: 220px;
+  }
+  
+  .branches-map {
+    height: 220px !important;
+    min-height: 220px;
+  }
+  
+  .branches-list-wrapper {
+    padding: 0.75rem;
+    max-height: none;
+    overflow-y: visible;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+  
+  .branches-item {
+    margin-bottom: 0;
+  }
+  
+  .branches-item-content {
+    padding: 0.8rem;
+  }
+  
+  .branches-item-name {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .branches-item-address {
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+  
+  .branches-directions-button {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+    margin-top: 0.45rem;
+  }
+  
+  .branches-travel-info {
+    padding: 0.875rem;
+  }
+  
+  .branches-travel-header {
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.6rem;
+  }
+  
+  .branches-travel-modes {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  
+  .branches-travel-mode {
+    padding: 0.5rem;
+  }
+  
+  .branches-travel-distance {
+    font-size: 1rem;
+  }
+  
+  .branches-travel-mode-label {
+    font-size: 0.65rem;
+  }
+  
+  .branches-travel-mode-time {
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .branches-container {
+    padding: 40px 0 0.75rem 0;
+  }
+  
+  .branches-wrapper {
+    padding: 0 0.5rem;
+  }
+  
+  .branches-hero {
+    padding: 0.25rem 0;
+    margin-bottom: 0.75rem;
+  }
+  
+  .branches-title {
+    font-size: clamp(1.2rem, 8vw, 1.4rem);
+    line-height: 1.1;
+    margin-bottom: 0.35rem;
+    padding: 0;
+  }
+  
+  .branches-subtitle {
+    font-size: clamp(0.8rem, 4vw, 0.9rem);
+    line-height: 1.3;
+    margin: 0 auto;
+    padding: 0;
+  }
+  
+  .branches-content {
+    margin-bottom: 1rem;
+  }
+  
+  .branches-layout {
+    gap: 0.6rem;
+  }
+  
+  .branches-map-column {
+    height: auto;
+  }
+  
+  .branches-map-wrapper {
+    padding: 0.4rem;
+    height: auto;
+    min-height: 200px;
+  }
+  
+  .branches-map {
+    height: 200px !important;
+    min-height: 200px;
+  }
+  
+  .branches-list-wrapper {
+    padding: 0.6rem;
+    max-height: none;
+    overflow-y: visible;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+  
+  .branches-item {
+    margin-bottom: 0;
+  }
+  
+  .branches-item-content {
+    padding: 0.7rem;
+  }
+  
+  .branches-item-name {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .branches-item-address {
+    font-size: 0.65rem;
+    line-height: 1.4;
+  }
+  
+  .branches-directions-button {
+    padding: 5px 8px;
+    font-size: 0.65rem;
+    margin-top: 0.4rem;
+  }
+  
+  .branches-travel-info {
+    padding: 0.75rem;
+  }
+  
+  .branches-travel-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .branches-travel-modes {
+    gap: 0.5rem;
+  }
+  
+  .branches-travel-mode {
+    padding: 0.45rem;
+  }
+  
+  .branches-travel-distance {
+    font-size: 0.95rem;
+  }
+  
+  .branches-travel-mode-label {
+    font-size: 0.6rem;
+  }
+  
+  .branches-travel-mode-time {
+    font-size: 0.75rem;
+  }
+}
+
+/* Tablet Landscape (769px - 1024px, landscape) - Desktop UI */
+@media only screen and (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+  /* Uses desktop styles - minimal overrides if needed */
+}
+
+/* Tablet Portrait (769px - 1024px, portrait) - Mobile UI */
+@media only screen and (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  .branches-container {
+    padding: 50px 0 1.5rem 0;
+  }
+  
+  .branches-wrapper {
+    padding: 0 1rem;
+    max-width: 100%;
+  }
+  
+  .branches-hero {
+    padding: 0.4rem 0;
+    margin-bottom: 1rem;
+  }
+  
+  .branches-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    padding: 0 0.5rem;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+  
+  .branches-subtitle {
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+    padding: 0 0.5rem;
+    max-width: 95%;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+  
+  .branches-content {
+    margin-bottom: 2rem;
+  }
+  
+  .branches-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .branches-map-column {
+    height: auto;
+  }
+  
+  .branches-map-wrapper {
+    padding: 0.75rem;
+    height: auto;
+    min-height: 250px;
+  }
+  
+  .branches-map {
+    height: 250px !important;
+    min-height: 250px;
+  }
+  
+  .branches-list-wrapper {
+    height: auto;
+    max-height: none;
+    padding: 1rem;
+    overflow-y: visible;
+  }
+  
+  .branches-item {
+    width: 100%;
+    margin: 0 auto 0.75rem auto;
+  }
+  
+  .branches-item-content {
+    padding: 1rem;
+  }
+  
+  .branches-travel-modes {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .branches-travel-distance {
+    font-size: 1.1rem;
+  }
+}
+
+/* Branch Details Modal Styles - Small and Corner Positioned */
+.branch-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 0.75rem;
+  pointer-events: none;
+}
+
+/* When modal is open, overlay allows clicks through to close, but doesn't block map markers */
+.branch-modal-overlay-open {
+  opacity: 1;
+  pointer-events: auto; /* Enable pointer events to allow clicking overlay to close */
+}
+
+/* Ensure map markers are always visible and clickable, even above modal overlay */
+.branch-modal-overlay-open ~ .branches-map-wrapper .leaflet-marker-pane,
+.branches-map-wrapper .leaflet-marker-pane {
+  z-index: 10001 !important;
+  pointer-events: auto !important;
+  position: relative;
+}
+
+/* Active markers should be above everything */
+.branch-modal-overlay-open ~ .branches-map-wrapper .leaflet-marker-pane img.active-branch-marker,
+.branches-map-wrapper .leaflet-marker-pane img.active-branch-marker {
+  z-index: 10002 !important;
+  pointer-events: auto !important;
+}
+
+.branch-modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 191, 255, 0.2);
+  max-width: 380px;
+  width: 100%;
+  max-height: 75vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(100%) translateY(0);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100000;
+  pointer-events: auto;
+  margin-bottom: 0.75rem;
+  margin-right: 0.75rem;
+}
+
+.branch-modal-open {
+  transform: translateX(0) translateY(0);
+  opacity: 1;
+}
+
+.branch-modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  font-size: 0.85rem;
+}
+
+.branch-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #00bfff;
+}
+
+.branch-modal-header {
+  padding: 0.875rem 2rem 0.75rem 0.875rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0, 191, 255, 0.15);
+}
+
+.branch-modal-content {
+  padding: 0.75rem 0.875rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+}
+
+.branch-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #00bfff;
+  margin-bottom: 0.35rem;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.branch-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(0, 191, 255, 0.15);
+  border-radius: 5px;
+  color: #00bfff;
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+.branch-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.35rem;
+}
+
+.branch-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.branch-modal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #00bfff;
+  font-weight: 600;
+  font-size: 0.7rem;
+  font-family: 'Poppins', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.branch-modal-section-title svg {
+  font-size: 0.8rem;
+  color: #00bfff;
+}
+
+.branch-modal-address {
+  color: #d0e8ff;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.branch-modal-link {
+  color: #00bfff;
+  font-size: 0.75rem;
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  word-break: break-all;
+}
+
+.branch-modal-link:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.branch-modal-hours {
+  color: #d0e8ff;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+}
+
+.branch-modal-hours p {
+  margin: 0.1rem 0;
+}
+
+.branch-modal-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.branch-modal-service-tag {
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 191, 255, 0.15);
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  border-radius: 5px;
+  color: #00bfff;
+  font-size: 0.65rem;
+  font-weight: 500;
+  font-family: 'Roboto', sans-serif;
+  transition: background 0.2s ease;
+}
+
+.branch-modal-service-tag:hover {
+  background: rgba(0, 191, 255, 0.25);
+}
+
+.branch-modal-footer {
+  padding: 0.75rem 0.875rem;
+  border-top: 1px solid rgba(0, 191, 255, 0.2);
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  margin-top: auto;
+}
+
+.branch-modal-directions-btn,
+.branch-modal-gmaps-btn {
+  width: 100%;
+  padding: 0.55rem 0.875rem;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  border: none;
+}
+
+.branch-modal-directions-btn {
+  background: #00bfff;
+  color: #000000;
+}
+
+.branch-modal-directions-btn:hover:not(:disabled) {
+  background: #0099cc;
+}
+
+.branch-modal-directions-btn:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.branch-modal-gmaps-btn {
+  background: transparent;
+  color: #00bfff;
+  border: 1px solid rgba(0, 191, 255, 0.4);
+}
+
+.branch-modal-gmaps-btn:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: rgba(0, 191, 255, 0.6);
+}
+
+/* Custom scrollbar for modal content */
+.branch-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.branch-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.branch-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 191, 255, 0.3);
+  border-radius: 3px;
+}
+
+.branch-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 191, 255, 0.5);
+}
+
+/* Map marker highlighting for active branch */
+.leaflet-marker-pane {
+  z-index: 10001 !important; /* Markers should be visible, but modal (100000) will be above */
+  position: relative;
+}
+
+/* Active branch marker - larger and pulsing */
+.leaflet-marker-pane .leaflet-marker-icon {
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+/* Ensure active red markers are always visible above modal */
+.leaflet-marker-pane .leaflet-marker-icon[src*="ff3333"],
+.leaflet-marker-pane img[src*="ff3333"] {
+  z-index: 10002 !important;
+  position: relative;
+}
+
+/* Active branch marker pulsing animation */
+.active-branch-marker {
+  animation: activeBranchBounce 0.6s ease-out, activeBranchPulse 2s ease-in-out 0.6s infinite !important;
+  z-index: 10002 !important; /* Active markers are visible, but modal (100000) will be above */
+  position: relative !important;
+  filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.9)) !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55), filter 0.3s ease !important;
+}
+
+/* Bounce animation when marker is first clicked */
+@keyframes activeBranchBounce {
+  0% {
+    transform: scale(0.8) translateZ(0);
+    filter: drop-shadow(0 0 10px rgba(255, 51, 51, 0.7)) !important;
+  }
+  50% {
+    transform: scale(1.4) translateZ(0);
+    filter: drop-shadow(0 0 25px rgba(255, 51, 51, 1)) !important;
+  }
+  100% {
+    transform: scale(1) translateZ(0);
+    filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.9)) !important;
+  }
+}
+
+/* Continuous pulse animation */
+@keyframes activeBranchPulse {
+  0%, 100% {
+    transform: scale(1) translateZ(0);
+    filter: drop-shadow(0 0 15px rgba(255, 51, 51, 0.9)) !important;
+  }
+  50% {
+    transform: scale(1.2) translateZ(0);
+    filter: drop-shadow(0 0 25px rgba(255, 51, 51, 1)) !important;
+  }
+}
+
+/* Ensure active markers are always visible */
+.leaflet-marker-pane img.active-branch-marker {
+  z-index: 10002 !important; /* Markers are visible, but modal (100000) will be above */
+  position: relative !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Responsive Modal Styles */
+@media (max-width: 768px) {
+  .branch-modal-overlay {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0.4rem 0.4rem 80px 0.4rem;
+  }
+
+  .branch-modal {
+    max-width: 65%;
+    max-height: 40vh;
+    border-radius: 12px 12px 0 0;
+    transform: translateY(100%);
+    margin: 0;
+  }
+
+  .branch-modal-open {
+    transform: translateY(0);
+  }
+
+  .branch-modal-close {
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 16px;
+    height: 16px;
+    font-size: 0.65rem;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  .branch-modal-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-modal-header {
+    padding: 0.6rem 1.5rem 0.5rem 0.6rem;
+  }
+
+  .branch-modal-content {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .branch-modal-title {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .branch-modal-badge {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+  }
+
+  .branch-modal-body {
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .branch-modal-section {
+    gap: 0.2rem;
+  }
+
+  .branch-modal-section-title {
+    font-size: 0.6rem;
+    gap: 0.25rem;
+  }
+
+  .branch-modal-section-title svg {
+    font-size: 0.7rem;
+  }
+
+  .branch-modal-address,
+  .branch-modal-link,
+  .branch-modal-hours {
+    font-size: 0.65rem;
+  }
+
+  .branch-modal-service-tag {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.55rem;
+  }
+
+  .branch-modal-footer {
+    padding: 0.5rem 0.6rem;
+    gap: 0.4rem;
+  }
+
+  .branch-modal-directions-btn,
+  .branch-modal-gmaps-btn {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.6rem;
+    gap: 0.2rem;
+    line-height: 1.2;
+    min-height: 36px;
+    height: auto;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .branch-modal-overlay {
+    padding: 0 0 70px 0;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .branch-modal {
+    max-width: 70%;
+    max-height: 42vh;
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+  }
+
+  .branch-modal-close {
+    width: 14px;
+    height: 14px;
+    top: 0.35rem;
+    right: 0.35rem;
+    font-size: 0.6rem;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  .branch-modal-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-modal-header {
+    padding: 0.55rem 1.4rem 0.45rem 0.55rem;
+  }
+
+  .branch-modal-content {
+    padding: 0.45rem 0.55rem;
+  }
+
+  .branch-modal-title {
+    font-size: 0.8rem;
+    line-height: 1.3;
+    margin-bottom: 0.2rem;
+  }
+
+  .branch-modal-badge {
+    font-size: 0.55rem;
+    padding: 0.15rem 0.35rem;
+    gap: 0.2rem;
+  }
+
+  .branch-modal-body {
+    gap: 0.45rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .branch-modal-section {
+    gap: 0.15rem;
+  }
+
+  .branch-modal-section-title {
+    font-size: 0.55rem;
+    gap: 0.2rem;
+  }
+
+  .branch-modal-section-title svg {
+    font-size: 0.65rem;
+  }
+
+  .branch-modal-address,
+  .branch-modal-link,
+  .branch-modal-hours {
+    font-size: 0.6rem;
+    line-height: 1.3;
+  }
+
+  .branch-modal-hours p {
+    margin: 0.06rem 0;
+  }
+
+  .branch-modal-services {
+    gap: 0.25rem;
+  }
+
+  .branch-modal-service-tag {
+    font-size: 0.5rem;
+    padding: 0.12rem 0.35rem;
+  }
+
+  .branch-modal-footer {
+    padding: 0.45rem 0.55rem;
+    gap: 0.35rem;
+  }
+
+  .branch-modal-directions-btn,
+  .branch-modal-gmaps-btn {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.55rem;
+    gap: 0.18rem;
+    line-height: 1.2;
+    min-height: 32px;
+    height: auto;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 360px) {
+  .branch-modal-overlay {
+    padding: 0 0 65px 0;
+  }
+
+  .branch-modal {
+    max-width: 65%;
+    max-height: 40vh;
+  }
+
+  .branch-modal-close {
+    width: 12px;
+    height: 12px;
+    top: 0.3rem;
+    right: 0.3rem;
+    font-size: 0.55rem;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  .branch-modal-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-modal-header {
+    padding: 0.5rem 1.3rem 0.4rem 0.5rem;
+  }
+
+  .branch-modal-content {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .branch-modal-title {
+    font-size: 0.75rem;
+  }
+
+  .branch-modal-badge {
+    font-size: 0.5rem;
+    padding: 0.12rem 0.3rem;
+  }
+
+  .branch-modal-body {
+    gap: 0.4rem;
+    padding-bottom: 0.15rem;
+  }
+
+  .branch-modal-section {
+    gap: 0.15rem;
+  }
+
+  .branch-modal-section-title {
+    font-size: 0.5rem;
+    gap: 0.18rem;
+  }
+
+  .branch-modal-section-title svg {
+    font-size: 0.6rem;
+  }
+
+  .branch-modal-address,
+  .branch-modal-link,
+  .branch-modal-hours {
+    font-size: 0.55rem;
+    line-height: 1.25;
+  }
+
+  .branch-modal-hours p {
+    margin: 0.05rem 0;
+  }
+
+  .branch-modal-services {
+    gap: 0.2rem;
+  }
+
+  .branch-modal-service-tag {
+    font-size: 0.45rem;
+    padding: 0.1rem 0.3rem;
+  }
+
+  .branch-modal-footer {
+    padding: 0.4rem 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .branch-modal-directions-btn,
+  .branch-modal-gmaps-btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.5rem;
+    gap: 0.15rem;
+    line-height: 1.2;
+    min-height: 28px;
+    height: auto;
+    box-sizing: border-box;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .branches-container {
+    padding: 40px 0 0.75rem 0;
+  }
+  
+  .branches-hero {
+    padding: 0.2rem 0;
+    margin-bottom: 0.75rem;
+  }
+  
+  .branches-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .branches-subtitle {
+    font-size: 0.85rem;
+    margin: 0 auto;
+  }
+  
+  .branches-content {
+    margin-bottom: 1rem;
+  }
+  
+  .branches-layout {
+    gap: 0.75rem;
+  }
+  
+  .branches-map-column {
+    height: auto;
+  }
+  
+  .branches-map-wrapper {
+    padding: 0.5rem;
+    height: auto;
+    min-height: 180px;
+  }
+  
+  .branches-map {
+    height: 180px !important;
+    min-height: 180px;
+  }
+  
+  .branches-list-wrapper {
+    max-height: none;
+    padding: 0.75rem;
+    overflow-y: visible;
+  }
+  
+  .branches-item {
+    margin-bottom: 0.5rem;
+  }
+  
+  .branches-item-content {
+    padding: 0.75rem;
+  }
+  
+  .branches-item-name {
+    font-size: 0.85rem;
+  }
+  
+  .branches-item-address {
+    font-size: 0.75rem;
+  }
+  
+  .branches-directions-button {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}

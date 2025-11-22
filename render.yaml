@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: yohanns-app
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:production
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+    healthCheckPath: /health
+
+
+
+
+
+
+

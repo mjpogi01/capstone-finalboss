@@ -1,0 +1,737 @@
+/* ============================================
+   YOHANN'S SIGN IN MODAL - ULTRA-COMPACT
+   Optimized to fit any device screen
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ============================================
+   OVERLAY
+   ============================================ */
+
+.signinModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+  overflow: hidden;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .signinModalOverlay {
+    padding: 5px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+}
+
+/* ============================================
+   MODAL CONTAINER
+   ============================================ */
+
+.signinModal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+  max-width: 95vw;
+  max-height: 95vh;
+  background: #0f0f0f;
+  border-radius: 18px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 86, 255, 0.15);
+  border: 1px solid rgba(0, 86, 255, 0.2);
+  color: white;
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+}
+
+.signinModal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.signinModal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.signinModal::-webkit-scrollbar-thumb {
+  background: rgba(0, 86, 255, 0.3);
+  border-radius: 3px;
+}
+
+.signinModal::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 86, 255, 0.5);
+}
+
+/* ============================================
+   MODAL CONTENT
+   ============================================ */
+
+.signinModalContent {
+  padding: 18px 18px 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ============================================
+   CLOSE BUTTON
+   ============================================ */
+
+.signinCloseBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  font-weight: 300;
+}
+
+.signinCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+/* ============================================
+   HEADER - LOGO & TITLE
+   ============================================ */
+
+.signinHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  margin: 0;
+}
+
+.signinLogo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 86, 255, 0.2));
+}
+
+.signinTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.signinSubtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+/* ============================================
+   SOCIAL BUTTONS
+   ============================================ */
+
+.signinSocialButtons {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  width: 100%;
+}
+
+.signinSocialBtn {
+  flex: 1;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.3s ease;
+  min-width: 0;
+}
+
+.signinSocialBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 86, 255, 0.12);
+}
+
+.signinSocialBtn svg {
+  font-size: 13px;
+}
+
+/* ============================================
+   DIVIDER
+   ============================================ */
+
+.signinDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0px 0;
+}
+
+.signinDivider::before,
+.signinDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================
+   FORM
+   ============================================ */
+
+.signinForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.signinFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.signinLabel {
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.signinPasswordHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -2px 0;
+}
+
+.signinForgotLink {
+  background: none;
+  border: none;
+  color: #0099ff;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  padding: 0;
+  margin: 0 3px;
+  outline: none;
+}
+
+.signinForgotLink:hover {
+  color: #00aaff;
+  text-decoration: underline;
+}
+
+.signinForgotLink:focus {
+  color: #00aaff;
+  text-decoration: underline;
+  outline: 2px solid rgba(0, 153, 255, 0.3);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================
+   INPUT WRAPPER & FIELDS
+   ============================================ */
+
+.signinInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0 8px;
+  transition: all 0.3s ease;
+  margin-top: -2px;
+}
+
+.signinInputWrapper:focus-within {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(0, 86, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 86, 255, 0.15);
+}
+
+.signinInputIcon {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.signinInputWrapper:focus-within .signinInputIcon {
+  color: rgba(0, 86, 255, 0.8);
+}
+
+.signinInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 6px 0;
+  font-size: 10px;
+  font-family: 'Poppins', sans-serif;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease;
+}
+
+.signinInput:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.signinInput:-webkit-autofill,
+.signinInput:-webkit-autofill:hover,
+.signinInput:-webkit-autofill:focus,
+.signinInput:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+.signinInput::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.signinInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signinPasswordToggle {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.signinPasswordToggle:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+/* ============================================
+   CAPTCHA CONTAINER
+   ============================================ */
+
+.signinCaptchaContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 4px 0;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.signinCaptchaContainer > div {
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+/* Dark theme adjustments for reCAPTCHA */
+.signinCaptchaContainer iframe {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* ============================================
+   SIGN UP BUTTON
+   ============================================ */
+
+.signinSignInBtn {
+  width: 100%;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #0055ff 0%, #0077ff 100%);
+  color: white;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.2px;
+  margin-top: -4px;
+  box-shadow: 0 6px 16px rgba(0, 86, 255, 0.2);
+}
+
+.signinSignInBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.signinSignInBtn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.signinSignInBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0066ff 0%, #0088ff 100%);
+  box-shadow: 0 8px 20px rgba(0, 86, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.signinSignInBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.signinSpinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ============================================
+   SIGN UP PROMPT
+   ============================================ */
+
+.signinSignUpPrompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 6px;
+}
+
+.signinSignUpPrompt p {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  font-weight: 400;
+}
+
+.signinSignUpLink {
+  background: none;
+  border: none;
+  color: #0099ff;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 9px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  padding: 0;
+  margin: 0 3px;
+}
+
+.signinSignUpLink:hover {
+  color: #00aaff;
+  text-decoration: underline;
+}
+
+/* ============================================
+   ERROR ALERT
+   ============================================ */
+
+.signinErrorAlert {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ff8a8a;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.signinErrorIcon {
+  font-size: 15px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN - TABLET
+   ============================================ */
+
+@media (max-width: 768px) {
+  .signinModal {
+    width: 95vw;
+    max-width: 380px;
+    max-height: 90vh;
+    border-radius: 18px;
+  }
+
+  .signinModalContent {
+    padding: 22px 20px;
+    gap: 9px;
+  }
+
+  .signinLogo {
+    height: 38px;
+  }
+
+  .signinTitle {
+    font-size: 20px;
+  }
+
+  .signinSubtitle {
+    font-size: 10px;
+  }
+
+  .signinSocialBtn {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
+
+  .signinSignInBtn {
+    font-size: 11px;
+    padding: 9px 16px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN - MOBILE
+   ============================================ */
+
+@media (max-width: 480px) {
+  .signinModal {
+    width: 92vw;
+    max-width: 340px;
+    max-height: 90vh;
+    border-radius: 16px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .signinModalContent {
+    padding: 18px 16px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .signinCloseBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    top: 10px;
+    right: 10px;
+  }
+
+  .signinHeader {
+    gap: 6px;
+    margin-top: 0;
+  }
+
+  .signinLogo {
+    height: 34px;
+  }
+
+  .signinTitle {
+    font-size: 18px;
+  }
+
+  .signinSubtitle {
+    font-size: 9px;
+  }
+
+  .signinSocialBtn {
+    font-size: 9px;
+    padding: 7px 9px;
+    gap: 5px;
+  }
+
+  .signinSocialBtn svg {
+    font-size: 13px;
+  }
+
+  .signinDivider {
+    font-size: 8px;
+    margin: 0px 0;
+    gap: 8px;
+  }
+
+  .signinLabel {
+    font-size: 8px;
+  }
+
+  .signinInput {
+    font-size: 10px;
+    padding: 7px 0;
+  }
+
+  .signinInputIcon {
+    font-size: 13px;
+  }
+
+  .signinPasswordToggle {
+    font-size: 13px;
+  }
+
+  .signinInputWrapper {
+    padding: 0 8px;
+    gap: 7px;
+  }
+
+  .signinSignInBtn {
+    font-size: 10px;
+    padding: 8px 12px;
+    gap: 4px;
+  }
+
+  .signinSpinner {
+    width: 9px;
+    height: 9px;
+    border-width: 1.5px;
+  }
+
+  .signinSignUpPrompt {
+    padding-top: 8px;
+    gap: 6px;
+  }
+
+  .signinSignUpPrompt p {
+    font-size: 10px;
+  }
+
+  .signinSignUpLink {
+    font-size: 10px;
+    padding: 6px 16px;
+  }
+
+  .signinErrorAlert {
+    font-size: 9px;
+    padding: 6px 8px;
+    gap: 7px;
+  }
+
+  .signinErrorIcon {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) and (max-height: 600px) {
+  .signinModal {
+    max-height: 95vh;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}

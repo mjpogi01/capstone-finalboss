@@ -1,0 +1,670 @@
+/* Branch Select Modal Overlay */
+.branch-select-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Container */
+.branch-select-modal {
+  background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+  border-radius: 20px;
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 
+              0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: slideUp 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Close Button */
+.branch-select-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.branch-select-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  transform: rotate(90deg);
+  color: #ef4444;
+}
+
+/* Header */
+.branch-select-header {
+  padding: 40px 40px 30px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.branch-select-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 15px;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.branch-select-description {
+  font-size: 16px;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Content Area */
+.branch-select-content {
+  padding: 30px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 1100px) {
+  .branch-select-content {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  .branch-select-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  /* Make the last item full width if it's alone */
+  .branch-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .branch-select-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  /* Make the last item full width if it's alone */
+  .branch-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Branch Cards */
+.branch-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.3s ease;
+  animation: slideInCard 0.5s ease forwards;
+  opacity: 0;
+}
+
+@keyframes slideInCard {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.branch-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+}
+
+/* Branch Card Header */
+.branch-card-header {
+  flex: 1;
+}
+
+.branch-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.branch-card-address {
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Facebook Button */
+.branch-facebook-btn {
+  background: linear-gradient(135deg, #1877f2 0%, #0c5fd6 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+.branch-facebook-btn:hover {
+  background: linear-gradient(135deg, #0c5fd6 0%, #0a4fb8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(24, 119, 242, 0.4);
+}
+
+.branch-facebook-btn:active {
+  transform: translateY(0);
+}
+
+.fb-icon {
+  font-size: 16px;
+}
+
+/* Footer */
+.branch-select-footer {
+  padding: 30px 40px 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.branch-select-footer-text {
+  font-size: 15px;
+  color: #9ca3af;
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+
+.branch-main-page-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.branch-main-page-btn:hover {
+  background: #3b82f6;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+.branch-main-page-btn:active {
+  transform: translateY(0);
+}
+
+/* Scrollbar Styling */
+.branch-select-modal::-webkit-scrollbar {
+  width: 4px;
+}
+
+.branch-select-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.branch-select-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.branch-select-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive Design */
+@media only screen and (max-width: 768px) {
+  .branch-select-modal {
+    border-radius: 16px;
+    max-height: 95vh;
+  }
+  
+  .branch-select-close {
+    width: 24px;
+    height: 24px;
+    top: 4px;
+    right: 4px;
+    font-size: 12px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  
+  .branch-select-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-select-header {
+    padding: 20px 16px 16px;
+  }
+
+  .branch-select-title {
+    font-size: 18px;
+    margin: 0 0 10px;
+  }
+
+  .branch-select-description {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .branch-select-content {
+    padding: 12px 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    row-gap: 18px;
+  }
+  
+  /* Make the last item full width if it's alone */
+  .branch-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .branch-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .branch-card-title {
+    font-size: 11px;
+    margin: 0 0 6px;
+    line-height: 1.3;
+  }
+
+  .branch-card-address {
+    font-size: 9px;
+    line-height: 1.4;
+  }
+
+  .branch-facebook-btn {
+    font-size: 8px !important;
+    padding: 10px 10px !important;
+    gap: 5px !important;
+    min-height: auto !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+  }
+  
+  .fb-icon {
+    font-size: 10px !important;
+  }
+
+  .branch-select-footer {
+    padding: 16px 16px 20px;
+  }
+
+  .branch-select-footer-text {
+    font-size: 11px;
+    margin: 0 0 12px;
+  }
+
+  .branch-main-page-btn {
+    font-size: 11px;
+    padding: 8px 20px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .branch-select-modal {
+    border-radius: 14px;
+    max-height: 95vh;
+  }
+  
+  .branch-select-close {
+    width: 22px;
+    height: 22px;
+    top: 3px;
+    right: 3px;
+    font-size: 11px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  
+  .branch-select-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-select-header {
+    padding: 18px 14px 14px;
+  }
+
+  .branch-select-title {
+    font-size: 16px;
+    margin: 0 0 8px;
+  }
+
+  .branch-select-description {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .branch-select-content {
+    padding: 10px 14px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    row-gap: 16px;
+  }
+  
+  /* Make the last item full width if it's alone */
+  .branch-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .branch-card {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .branch-card-title {
+    font-size: 10px;
+    margin: 0 0 5px;
+    line-height: 1.3;
+  }
+
+  .branch-card-address {
+    font-size: 8.5px;
+    line-height: 1.4;
+  }
+
+  .branch-facebook-btn {
+    font-size: 7.5px !important;
+    padding: 9.5px 8px !important;
+    gap: 4px !important;
+    min-height: auto !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+  }
+  
+  .fb-icon {
+    font-size: 9px !important;
+  }
+
+  .branch-select-footer {
+    padding: 14px 14px 18px;
+  }
+
+  .branch-select-footer-text {
+    font-size: 10px;
+    margin: 0 0 10px;
+  }
+
+  .branch-main-page-btn {
+    font-size: 10px;
+    padding: 7px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .branch-select-overlay {
+    padding: 10px;
+  }
+
+  .branch-select-modal {
+    border-radius: 12px;
+  }
+  
+  .branch-select-close {
+    width: 20px;
+    height: 20px;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  
+  .branch-select-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-select-header {
+    padding: 16px 12px 12px;
+  }
+
+  .branch-select-title {
+    font-size: 14px;
+    margin: 0 0 6px;
+  }
+
+  .branch-select-description {
+    font-size: 9px;
+    line-height: 1.3;
+  }
+
+  .branch-select-content {
+    padding: 8px 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    row-gap: 14px;
+  }
+  
+  /* Make the last item full width if it's alone */
+  .branch-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .branch-card {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .branch-card-title {
+    font-size: 9px;
+    margin: 0 0 4px;
+    line-height: 1.2;
+  }
+  
+  .branch-card-address {
+    font-size: 8px;
+    line-height: 1.3;
+  }
+  
+  .branch-facebook-btn {
+    font-size: 7px !important;
+    padding: 9px 6px !important;
+    gap: 3px !important;
+    min-height: auto !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+    border-radius: 3px !important;
+    font-weight: 500 !important;
+  }
+  
+  .fb-icon {
+    font-size: 8px !important;
+  }
+
+  .branch-select-footer {
+    padding: 12px 12px 16px;
+  }
+  
+  .branch-select-footer-text {
+    font-size: 9px;
+    margin: 0 0 8px;
+  }
+  
+  .branch-main-page-btn {
+    font-size: 9px;
+    padding: 6px 16px;
+  }
+}
+
+@media (max-width: 280px) {
+  .branch-select-overlay {
+    padding: 8px;
+  }
+
+  .branch-select-modal {
+    border-radius: 10px;
+  }
+  
+  .branch-select-close {
+    width: 18px;
+    height: 18px;
+    top: 2px;
+    right: 2px;
+    font-size: 9px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  
+  .branch-select-close:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .branch-select-header {
+    padding: 14px 10px 10px;
+  }
+
+  .branch-select-title {
+    font-size: 12px;
+    margin: 0 0 5px;
+  }
+
+  .branch-select-description {
+    font-size: 8px;
+    line-height: 1.3;
+  }
+
+  .branch-select-content {
+    padding: 6px 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    row-gap: 12px;
+  }
+  
+  /* Make the last item full width if it's alone */
+  .branch-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .branch-card {
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .branch-card-title {
+    font-size: 8px;
+    margin: 0 0 3px;
+    line-height: 1.2;
+  }
+
+  .branch-card-address {
+    font-size: 7px;
+    line-height: 1.3;
+  }
+
+  .branch-facebook-btn {
+    font-size: 6.5px !important;
+    padding: 8.5px 5px !important;
+    gap: 2px !important;
+    min-height: auto !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+    border-radius: 3px !important;
+    font-weight: 500 !important;
+  }
+  
+  .fb-icon {
+    font-size: 7px !important;
+  }
+
+  .branch-select-footer {
+    padding: 10px 10px 14px;
+  }
+
+  .branch-select-footer-text {
+    font-size: 8px;
+    margin: 0 0 6px;
+  }
+
+  .branch-main-page-btn {
+    font-size: 8px;
+    padding: 5px 14px;
+  }
+}
+

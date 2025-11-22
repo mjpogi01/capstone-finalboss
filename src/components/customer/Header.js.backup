@@ -1,0 +1,127 @@
+import React, { useState } from 'react';
+import './Header.css';
+import logo from '../images/yohanns_logo-removebg-preview 3.png';
+import SignInModal from './SignInModal';
+
+const Header = ({ onNavigate }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
+
+  const filterOptions = [
+    { category: 'Categories', options: ['Jerseys', 'T-Shirts', 'Long Sleeves', 'Uniforms', 'Accessories'] },
+    { category: 'Price Range', options: ['Under P500', 'P500 - P1000', 'P1000 - P1500', 'Above P1500'] },
+    { category: 'Size', options: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'] },
+    { category: 'Color', options: ['Blue', 'Red', 'White', 'Black', 'Green', 'Yellow', 'Purple'] },
+    { category: 'Brand', options: ['Yohann\'s Own', 'Replicated', 'Custom Design'] }
+  ];
+
+  return (
+    <header className="header">
+      <div className="header-top">
+        <div className="logo">
+          <img 
+            src={logo} 
+            alt="YOHANNS Sportswear House" 
+            className="logo-image"
+          />
+        </div>
+        
+        <nav className="nav-menu">
+          <button onClick={() => onNavigate && onNavigate('home')} className="nav-link" style={{ background: 'transparent' }}>HOME</button>
+          <button onClick={() => onNavigate && onNavigate('branches')} className="nav-link" style={{ background: 'transparent' }}>BRANCHES</button>
+          <a href="#about" className="nav-link">ABOUT</a>
+          <a href="#highlights" className="nav-link">HIGHLIGHTS</a>
+          <a href="#faqs" className="nav-link">FAQs</a>
+          <a href="#contacts" className="nav-link">CONTACTS</a>
+        </nav>
+        
+        <div className="utility-icons">
+          <div className="icon" aria-label="Cart">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M3 3h2l3 12h10l3-8H6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="19" r="2" fill="none" stroke="currentColor" strokeWidth="2" />
+              <circle cx="17" cy="19" r="2" fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </div>
+          <div className="icon" aria-label="Wishlist">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="icon" aria-label="Account" onClick={() => setShowSignInModal(true)}>
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div className="search-section">
+        <div className="more-dropdown-container">
+          <div 
+            className="more-dropdown"
+            onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+          >
+            <span className="filter-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />
+                <line x1="15.5" y1="15.5" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="filter-text">FILTER</span>
+            <span className="dropdown-arrow">▼</span>
+          </div>
+          
+          {showMoreDropdown && (
+            <div className="dropdown-menu">
+              <div className="filter-categories-row">
+                {filterOptions.map((filter, index) => (
+                  <div key={index} className="filter-category">
+                    <h4 className="filter-category-title">{filter.category}</h4>
+                    <div className="filter-options">
+                      {filter.options.map((option, optionIndex) => (
+                        <label key={optionIndex} className="filter-option">
+                          <input type="checkbox" />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="filter-actions">
+                <button className="apply-filters">Apply Filters</button>
+                <button className="clear-filters">Clear All</button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          <button className="search-button" aria-label="Search">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <line x1="15.5" y1="15.5" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <SignInModal 
+        isOpen={showSignInModal} 
+        onClose={() => setShowSignInModal(false)} 
+      />
+    </header>
+  );
+};
+
+export default Header; 

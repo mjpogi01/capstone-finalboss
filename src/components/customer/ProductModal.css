@@ -1,0 +1,3146 @@
+/* Product Modal - Unique Naming Convention */
+/* Naming Pattern: [component]-[location]-[element]-[state] */
+/* Example: modal-header-title, modal-content-form-input, modal-footer-button-primary */
+
+/* ===== MODAL OVERLAY ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  overflow: hidden;
+}
+
+/* ===== MODAL CONTAINER ===== */
+.modal-container {
+  position: relative;
+  width: 95vw;
+  max-width: 1200px;
+  height: 85vh;
+  max-height: 800px;
+  background: #000000;
+  border: 2px solid #95def7;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5001;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modal-close-button:hover {
+  background: rgba(255, 77, 77, 0.9);
+  border-color: rgba(255, 77, 77, 0.5);
+  color: #fff;
+  transform: rotate(90deg);
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+}
+
+.modal-close-button:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+/* ===== MODAL MAIN CONTENT ===== */
+.modal-main-content {
+  display: flex;
+  flex: 1;
+  height: 100%;
+}
+
+/* ===== LEFT PANEL - IMAGE SECTION ===== */
+.modal-left-panel {
+  flex: 0.8;
+  padding: 20px;
+  background: #000000;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid rgba(0, 191, 255, 0.2);
+  box-shadow: none !important;
+}
+
+.modal-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 500px !important;
+  max-height: 500px !important;
+  object-fit: contain !important;
+  object-position: center;
+  border-radius: 0;
+  border: 2px solid #fff;
+  position: relative !important;
+  top: unset !important;
+  left: unset !important;
+  display: block !important;
+  align-items: unset !important;
+  justify-content: unset !important;
+  flex-shrink: unset !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.modal-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #2e2e2e;
+  border-radius: 8px;
+  box-shadow: none !important;
+}
+
+.modal-image-emoji {
+  font-size: 4rem;
+  opacity: 0.7;
+}
+
+/* ===== RIGHT PANEL - CONTENT SECTION ===== */
+.modal-right-panel {
+  flex: 1.2;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  background: #000000;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #00bfff transparent;
+  position: relative;
+  z-index: 0;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+/* Maximum specificity to override any global styles */
+.modal-overlay .modal-container .modal-right-panel::-webkit-scrollbar {
+  width: 1px !important;
+  height: 1px !important;
+  position: absolute !important;
+  right: 2px !important;
+}
+
+.modal-overlay .modal-container .modal-right-panel::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.modal-overlay .modal-container .modal-right-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00bfff, #ffd700) !important;
+  border-radius: 1px !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.modal-overlay .modal-container .modal-right-panel:hover::-webkit-scrollbar-thumb {
+  opacity: 0.4 !important;
+}
+
+.modal-overlay .modal-container .modal-right-panel::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8 !important;
+}
+
+/* Firefox scrollbar - hidden when not used */
+.modal-overlay .modal-container .modal-right-panel {
+  scrollbar-width: thin !important;
+  scrollbar-color: transparent transparent !important;
+  transition: scrollbar-color 0.3s ease !important;
+  position: relative !important;
+}
+
+.modal-overlay .modal-container .modal-right-panel:hover {
+  scrollbar-color: rgba(0, 191, 255, 0.4) transparent !important;
+}
+
+/* ===== HEADER SECTION ===== */
+.modal-header-section {
+  flex-shrink: 0;
+  padding: 20px 0 20px 0;
+  margin: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #000000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+.modal-brand-header {
+  font-size: 1rem;
+  color: #fff;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-product-title {
+  font-size: 2rem !important;
+  color: #ffffff !important;
+  margin: 0 0 15px 0 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-family: 'Oswald', sans-serif !important;
+  line-height: 1.1 !important;
+  filter: contrast(1.2);
+}
+
+.modal-product-price-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modal-price-label {
+  font-size: 0.85rem;
+  color: #95def7;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+.modal-product-price {
+  font-size: 1.5rem;
+  color: #ffd700;
+  font-weight: 900;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.original-price {
+  color: #a0aec0;
+  text-decoration: line-through;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.discounted-price {
+  color: #ffd700;
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.modal-price-per-unit {
+  font-size: 0.9rem;
+  color: #95def7;
+  font-weight: 500;
+  margin-top: 5px;
+  opacity: 0.8;
+}
+
+.modal-product-price-wrapper::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #00bfff, #ffd700, #00bfff);
+  margin: 15px 0 0 0;
+  border-radius: 1px;
+}
+
+/* ===== CONTENT SECTION ===== */
+.modal-content-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 0 30px 0;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+/* ===== ORDER TYPE SWITCH ===== */
+.modal-order-switch {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-switch-container {
+  display: flex;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  overflow: visible;
+  position: relative;
+}
+
+.modal-switch-option {
+  flex: 1;
+  background: #1a1a2e;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #ccc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.modal-switch-option:hover {
+  color: #fff;
+  background: rgba(0, 191, 255, 0.1);
+}
+
+.modal-switch-option.active {
+  background: linear-gradient(135deg, #00bfff, #ffd700);
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 191, 255, 0.3);
+  border: 2px solid #00bfff;
+}
+
+.modal-switch-text {
+  font-size: 0.9rem;
+}
+
+.modal-switch-icon {
+  font-size: 1rem;
+  color: inherit;
+}
+
+/* ===== TEAM MEMBERS SECTION ===== */
+.modal-team-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-fabric-section {
+  margin: 14px 0;
+  padding-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid #333;
+}
+
+.modal-fabric-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.modal-fabric-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal-fabric-button {
+  flex: 1 1 calc(50% - 10px);
+  max-width: calc(50% - 10px);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #2a2a3e;
+  border: 2px solid #555;
+  border-radius: 8px;
+  color: #ccc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-fabric-button:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: #00bfff;
+  color: #00bfff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 191, 255, 0.2);
+}
+
+.modal-fabric-button.active {
+  background: #00bfff;
+  color: #fff;
+  border-color: #00bfff;
+  box-shadow: 0 6px 18px rgba(0, 191, 255, 0.35);
+}
+
+.modal-fabric-button.active:hover {
+  background: #0099cc;
+  border-color: #0099cc;
+}
+
+.modal-fabric-name {
+  font-weight: 700;
+}
+
+.modal-fabric-fee {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #9ae6ff;
+}
+
+.modal-fabric-button.active .modal-fabric-fee {
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .modal-fabric-button {
+    flex: 1 1 calc(50% - 5px);
+    max-width: calc(50% - 5px);
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+  
+  .modal-fabric-fee {
+    font-size: 0.65rem;
+  }
+}
+
+.modal-team-name-section {
+  margin-bottom: 15px;
+}
+
+.modal-team-name-input {
+  width: 100%;
+  background: #2a2a3e;
+  border: 2px solid #00bfff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  font-family: "Oswald", sans-serif;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.modal-team-name-input:focus {
+  outline: none;
+  border-color: #00bfff;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background: #333344;
+}
+
+.modal-team-name-input::placeholder {
+  color: #aaaaaa;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.modal-team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.modal-team-label {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-members-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-right: 5px;
+  margin-top: 15px;
+}
+
+.modal-member-card {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  animation: slideIn 0.3s ease-out;
+  padding: 15px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 15px;
+  min-height: auto;
+}
+
+.modal-member-card:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.modal-member-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.modal-member-tag-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.modal-member-tag {
+  background: #00bfff;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: "Oswald", sans-serif;
+  display: inline-block;
+  width: fit-content;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.modal-member-price {
+  color: #ffd700;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: "Oswald", sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.modal-member-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  display: inline;
+  cursor: pointer;
+  color: #95def7;
+}
+
+.modal-member-toggle-btn:hover,
+.modal-member-toggle-btn:active,
+.modal-member-toggle-btn:focus {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  display: inline;
+  cursor: pointer;
+  color: #95def7;
+  transform: none;
+  transition: none;
+}
+
+.modal-member-toggle-btn-expanded,
+.modal-member-toggle-btn-expanded:hover,
+.modal-member-toggle-btn-expanded:active,
+.modal-member-toggle-btn-expanded:focus {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  display: inline;
+  cursor: pointer;
+  color: #95def7;
+  transform: none;
+  transition: none;
+}
+
+.modal-member-toggle-label {
+  display: inline;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Oswald", sans-serif;
+}
+
+.modal-member-customization-section {
+  animation: slideDown 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 16px;
+  padding: 20px;
+  background: rgba(0, 191, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-top: 1px solid #333;
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+.modal-member-row-row-1 {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.modal-member-row-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.modal-member-row-row-1 .modal-member-wrapper {
+  flex: 1;
+}
+
+.modal-member-row-row-1 .modal-remove-member-button {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.modal-member-size-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.modal-member-size-label {
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Oswald", sans-serif;
+}
+
+.modal-member-input {
+  background: #2a2a3e;
+  border: 2px solid #00bfff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  width: 100%;
+  height: 100%;
+  font-family: "Oswald", sans-serif;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.modal-member-input:focus {
+  outline: none;
+  border-color: #00bfff;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background: #333344;
+}
+
+.modal-member-input::placeholder {
+  color: #aaaaaa;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.modal-member-input.number-input { min-width: 0; }
+
+.modal-member-select {
+  background: #2a2a3e;
+  border: 2px solid #00bfff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  padding-right: 40px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  height: 100%;
+  font-family: "Oswald", sans-serif;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFFFFF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.modal-member-select:focus {
+  outline: none;
+  border-color: #00bfff;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background-color: #333344;
+}
+
+.modal-member-select option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+/* Per-Member Customization Section - Merged with above definition */
+
+.modal-member-customization-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.modal-member-customization-label {
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Oswald", sans-serif;
+}
+
+.modal-member-jersey-type-buttons,
+.modal-member-size-type-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modal-member-jersey-type-btn,
+.modal-member-size-type-btn {
+  flex: 1;
+  min-width: 100px;
+  background: #2a2a3e;
+  border: 2px solid #00bfff;
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Oswald", sans-serif;
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.2);
+}
+
+.modal-member-jersey-type-btn:hover,
+.modal-member-size-type-btn:hover {
+  background: #333344;
+  box-shadow: 0 0 12px rgba(0, 191, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.modal-member-jersey-type-btn.active,
+.modal-member-size-type-btn.active {
+  background: #00bfff;
+  border-color: #00bfff;
+  color: #000;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.6);
+  font-weight: 700;
+}
+
+.modal-member-size-selectors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+.modal-add-member-button {
+  background: #00bfff;
+  color: #000;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 191, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.modal-add-member-button:hover {
+  background: #0099cc;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 191, 255, 0.5);
+}
+
+.modal-add-member-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 191, 255, 0.4);
+}
+
+.modal-add-member-button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.5;
+}
+
+.modal-members-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+
+.modal-member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #2a2a3e;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-member-name {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.modal-member-number {
+  color: #00bfff;
+  margin-right: 8px;
+}
+
+.modal-member-size {
+  color: #ccc;
+  margin-right: auto;
+}
+
+.modal-remove-member-button {
+  background: #ff4d4d;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.modal-remove-member-button:hover {
+  background: #ff3333;
+  transform: scale(1.1);
+}
+
+/* ===== SINGLE ORDER SECTION ===== */
+.modal-single-order-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-single-order-label {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-single-order-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.modal-single-order-form-row-1 {
+  grid-column: 1 / -1;
+}
+
+.modal-single-order-size-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-single-order-size-label {
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Oswald", sans-serif;
+}
+
+/* ===== TEAM ORDER FORM STYLES (Unique Class Names) ===== */
+.team-order-form-card {
+  background: transparent;
+  margin-bottom: 15px;
+  padding: 0;
+}
+
+.team-order-form-row-1 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+
+.team-order-form-row-2 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.team-order-form-row-3 {
+  display: flex;
+  gap: 10px;
+}
+
+.team-order-form-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.team-order-form-teamname-wrapper {
+  flex: 1;
+}
+
+.team-order-form-jerseyno-wrapper,
+.team-order-form-surname-wrapper {
+  flex: 1;
+}
+
+.team-order-form-input {
+  width: 100%;
+  background: #444C55;
+  border: 2px solid #00BFFF;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.3s ease;
+  font-family: "Oswald" , sans-serif;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.team-order-form-input::placeholder {
+  color: #AAAAAA;
+  text-align: left;
+  font-weight: 700;
+}
+
+.team-order-form-input:focus {
+  outline: none;
+  border-color: #00BFFF;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background: #4A5460;
+}
+
+.team-order-form-size-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-order-form-size-label {
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Oswald" , sans-serif;
+}
+
+.team-order-form-select {
+  width: 100%;
+  background: #444C55;
+  border: 2px solid #00BFFF;
+  border-radius: 8px;
+  padding: 12px 16px;
+  padding-right: 40px;
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Oswald" , sans-serif;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFFFFF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.team-order-form-select:focus {
+  outline: none;
+  border-color: #00BFFF;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background-color: #4A5460;
+}
+
+.team-order-form-select option {
+  background: #1A1A1A;
+  color: #FFFFFF;
+  padding: 10px;
+}
+
+.team-order-form-remove-btn {
+  background: rgba(255, 77, 77, 0.2);
+  border: 2px solid #FF4D4D;
+  border-radius: 8px;
+  color: #FF4D4D;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.team-order-form-remove-btn:hover {
+  background: rgba(255, 77, 77, 0.4);
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+}
+
+.team-order-form-error-message {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  color: #FF4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Error states for team order form */
+.team-order-form-input.error {
+  border-color: #FF4444 !important;
+  background: rgba(255, 68, 68, 0.1) !important;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.5) !important;
+}
+
+.team-order-form-input.error:focus {
+  border-color: #FF4444 !important;
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.7) !important;
+}
+
+/* ===== SINGLE ORDER FORM STYLES (Unique Class Names) ===== */
+.single-order-form-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+}
+
+.single-order-form-card {
+  background: transparent;
+  padding: 0;
+}
+
+.single-order-form-row-1 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.single-order-form-row-2 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.single-order-form-row-3 {
+  display: flex;
+  gap: 10px;
+}
+
+.single-order-form-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.single-order-form-teamname-wrapper {
+  flex: 1;
+}
+
+.single-order-form-jerseyno-wrapper,
+.single-order-form-surname-wrapper {
+  flex: 1;
+}
+
+.single-order-form-input {
+  width: 100%;
+  background: #444C55;
+  border: 2px solid #00BFFF;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.3s ease;
+  font-family: "Oswald" , sans-serif;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.single-order-form-input::placeholder {
+  color: #AAAAAA;
+  text-align: left;
+  font-weight: 700;
+}
+
+.single-order-form-input:focus {
+  outline: none;
+  border-color: #00BFFF;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background: #4A5460;
+}
+
+.single-order-form-size-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.single-order-form-size-label {
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Oswald" , sans-serif;
+}
+
+.single-order-form-select {
+  width: 100%;
+  background: #444C55;
+  border: 2px solid #00BFFF;
+  border-radius: 8px;
+  padding: 12px 16px;
+  padding-right: 40px;
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFFFFF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.single-order-form-select:focus {
+  outline: none;
+  border-color: #00BFFF;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background-color: #4A5460;
+}
+
+.single-order-form-select option {
+  background: #1A1A1A;
+  color: #FFFFFF;
+  padding: 10px;
+}
+
+.single-order-form-error-message {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  color: #FF4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Error states for single order form */
+.single-order-form-input.error {
+  border-color: #FF4444 !important;
+  background: rgba(255, 68, 68, 0.1) !important;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.5) !important;
+}
+
+.single-order-form-input.error:focus {
+  border-color: #FF4444 !important;
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.7) !important;
+}
+
+/* ===== BALL DETAILS SECTION ===== */
+.modal-ball-details-section {
+  margin-bottom: 15px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1));
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  border-radius: 12px;
+}
+
+.modal-ball-details-label {
+  display: block;
+  color: #ff6b35;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+.modal-ball-details-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-ball-details-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(26, 26, 46, 0.8);
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.modal-ball-details-input:focus {
+  outline: none;
+  border-color: #ff6b35;
+  background: rgba(26, 26, 46, 1);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.modal-ball-details-input option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+/* ===== TROPHY DETAILS SECTION ===== */
+/* ===== BALL DETAILS SECTION ===== */
+.modal-ball-details-section {
+  margin-bottom: 15px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 115, 0, 0.1), rgba(255, 69, 0, 0.1));
+  border: 2px solid rgba(255, 115, 0, 0.3);
+  border-radius: 12px;
+}
+
+.modal-ball-details-label {
+  display: block;
+  color: #ff8c00;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+.modal-ball-details-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-ball-details-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(26, 26, 46, 0.8);
+  border: 2px solid rgba(255, 115, 0, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.modal-ball-details-input:focus {
+  outline: none;
+  border-color: #ff8c00;
+  background: rgba(26, 26, 46, 1);
+  box-shadow: 0 0 0 3px rgba(255, 115, 0, 0.1);
+}
+
+.modal-ball-details-input.error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.05);
+}
+
+.modal-ball-details-input.error:focus {
+  border-color: #ff4444 !important;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-ball-details-input option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.modal-ball-details-form .modal-error-message {
+  position: relative;
+  right: auto;
+  top: auto;
+  transform: none;
+  margin-top: -8px;
+  text-align: left;
+}
+
+/* ===== TROPHY DETAILS SECTION ===== */
+.modal-trophy-details-section {
+  margin-bottom: 15px;
+  padding: 20px;
+  background: transparent;
+  border: 2px solid #00bfff;
+  border-radius: 12px;
+}
+
+.modal-trophy-details-label {
+  display: block;
+  color: #00bfff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+.modal-trophy-details-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-trophy-details-input,
+.modal-trophy-details-textarea {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(26, 26, 46, 0.8);
+  border: 2px solid #00bfff;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.modal-trophy-details-input:focus,
+.modal-trophy-details-textarea:focus {
+  outline: none;
+  border-color: #00bfff;
+  background: rgba(26, 26, 46, 1);
+  box-shadow: 0 0 0 3px rgba(0, 191, 255, 0.2);
+}
+
+.modal-trophy-details-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modal-trophy-details-input option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.modal-trophy-details-input::placeholder,
+.modal-trophy-details-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Trophy Error States */
+.modal-trophy-details-input.error,
+.modal-trophy-details-textarea.error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.05);
+}
+
+.modal-trophy-details-input.error:focus,
+.modal-trophy-details-textarea.error:focus {
+  border-color: #ff4444 !important;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-trophy-details-form .modal-error-message {
+  position: relative;
+  right: auto;
+  top: auto;
+  transform: none;
+  font-size: 0.85rem;
+  color: #ff4444;
+  margin-top: 6px;
+  font-weight: 500;
+  display: block;
+}
+
+.modal-trophy-details-form .modal-input-wrapper {
+  width: 100%;
+}
+
+.modal-single-order-input,
+.modal-single-order-select {
+  background: #2a2a3e;
+  border: 2px solid #00bfff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  font-family: "Oswald", sans-serif;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+}
+
+.modal-single-order-select {
+  padding-right: 40px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFFFFF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.modal-single-order-input:focus {
+  outline: none;
+  border-color: #00bfff;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background: #333344;
+}
+
+.modal-single-order-select:focus {
+  outline: none;
+  border-color: #00bfff;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.5), 0 0 5px rgba(0, 191, 255, 0.8);
+  background-color: #333344;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFFFFF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+.modal-single-order-input::placeholder {
+  color: #aaaaaa;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* Error styling for inputs */
+.modal-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.modal-single-order-input.error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.05);
+  padding-right: 45px; /* Make room for error icon */
+}
+
+.modal-single-order-input.error:focus {
+  border-color: #ff4444 !important;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-single-order-input.error::placeholder {
+  color: #ff4444 !important;
+  opacity: 1;
+}
+
+.modal-error-message {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ff4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease;
+  background: rgba(26, 26, 46, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-single-order-select option {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 8px;
+}
+
+/* Error styling for team member inputs */
+.modal-member-input.error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.05);
+  padding-right: 90px !important; /* Make room for error message */
+}
+
+.modal-member-input.error:focus {
+  border-color: #ff4444 !important;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-member-input.error::placeholder {
+  color: #ff4444 !important;
+  opacity: 1;
+}
+
+/* Wrapper divs for team member inputs with error messages */
+.modal-member-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.modal-member-wrapper .modal-member-input {
+  width: 100%;
+}
+
+/* Ensure error messages in team member fields are sized correctly */
+.modal-member-inputs .modal-input-wrapper .modal-error-message {
+  font-size: 0.7rem !important;
+}
+
+/* Error styling for team name input */
+.modal-team-name-input.error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.05);
+  padding-right: 45px;
+}
+
+.modal-team-name-input.error:focus {
+  border-color: #ff4444 !important;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-team-name-input.error::placeholder {
+  color: #ff4444 !important;
+  opacity: 1;
+}
+
+/* ===== SIZE TYPE SECTION ===== */
+.modal-size-type-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-size-type-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-size-chart-link {
+  color: #00bfff;
+  text-decoration: underline;
+  font-weight: 600;
+  font-size: 0.85rem;
+  outline: none;
+  border: none;
+}
+
+.modal-size-chart-link:hover {
+  color: #ffd700;
+}
+
+.modal-size-chart-link:focus,
+.modal-size-chart-link:active {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+.modal-size-type-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-size-type-button {
+  flex: 1;
+  background: #2a2a3e;
+  color: #ccc;
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-size-type-button:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: #00bfff;
+  color: #00bfff;
+  transform: translateY(-1px);
+}
+
+.modal-size-type-button.active {
+  background: #00bfff;
+  color: #fff;
+  border-color: #00bfff;
+  box-shadow: 0 4px 8px rgba(0, 191, 255, 0.3);
+}
+
+.modal-size-type-button.active:hover {
+  background: #0099cc;
+  border-color: #0099cc;
+  transform: translateY(-1px);
+}
+
+/* ===== JERSEY TYPE SECTION ===== */
+.modal-jersey-type-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-jersey-type-label {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-jersey-type-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-jersey-type-button {
+  flex: 1;
+  background: #2a2a3e;
+  color: #ccc;
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-jersey-type-button:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: #00bfff;
+  color: #00bfff;
+  transform: translateY(-1px);
+}
+
+.modal-jersey-type-button.active {
+  background: #00bfff;
+  color: #fff;
+  border-color: #00bfff;
+  box-shadow: 0 4px 8px rgba(0, 191, 255, 0.3);
+}
+
+.modal-jersey-type-button.active:hover {
+  background: #0099cc;
+  border-color: #0099cc;
+  transform: translateY(-1px);
+}
+
+/* ===== QUANTITY SECTION ===== */
+.modal-quantity-section {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-quantity-label {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.modal-quantity-button {
+  background: #2a2a3e;
+  color: #fff;
+  border: 2px solid #555;
+  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.modal-quantity-button:hover {
+  background: rgba(0, 191, 255, 0.2);
+  border-color: #00bfff;
+  transform: scale(1.1);
+}
+
+.modal-quantity-display {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.modal-action-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #333;
+}
+
+.modal-add-cart-button {
+  flex: 1;
+  background: #00bfff;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 15px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-add-cart-button:hover {
+  background: #0099cc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 191, 255, 0.3);
+}
+
+.modal-buy-now-button {
+  flex: 1;
+  background: #2a2a3e;
+  color: #fff;
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 15px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-buy-now-button:hover {
+  background: #3a3a4e;
+  border-color: #00bfff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 191, 255, 0.2);
+}
+
+/* ===== PRODUCT DESCRIPTION ===== */
+.modal-description-section {
+  margin-top: 25px;
+}
+
+.modal-description-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
+  transition: all 0.3s ease;
+}
+
+.modal-description-header:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 0 -15px;
+}
+
+.modal-description-title {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-description-chevron {
+  color: #00bfff;
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.modal-description-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.modal-description-content {
+  padding: 20px 0;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+/* ===== REVIEWS SECTION ===== */
+.modal-reviews-section {
+  margin-top: 0;
+}
+
+.modal-reviews-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
+  transition: all 0.3s ease;
+}
+
+.modal-reviews-header:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 0 -15px;
+}
+
+.modal-reviews-title-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.modal-reviews-title {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-average-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-stars-display {
+  display: flex;
+  gap: 3px;
+}
+
+.modal-star {
+  color: #ffd700;
+  font-size: 1.4rem;
+}
+
+.modal-star.filled {
+  color: #ffd700;
+}
+
+.modal-rating-text {
+  color: #00bfff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.modal-reviews-chevron {
+  color: #00bfff;
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.modal-reviews-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.modal-reviews-content {
+  padding: 20px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.modal-review-item {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.modal-review-item:hover {
+  border-color: #00bfff;
+  box-shadow: 0 2px 8px rgba(0, 191, 255, 0.2);
+}
+
+.modal-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.modal-review-user {
+  color: #00bfff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.modal-review-rating {
+  display: flex;
+  gap: 3px;
+}
+
+.modal-review-comment {
+  color: #ccc;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.modal-review-date {
+  color: #a0aec0;
+  font-size: 0.8rem;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .modal-container {
+    width: 95vw;
+    height: 90vh;
+  }
+  
+  .modal-main-content {
+    flex-direction: column;
+  }
+  
+  .modal-left-panel {
+    border-right: none;
+    border-bottom: 2px solid #00bfff;
+    flex: 0 0 auto;
+    max-height: 50vh;
+  }
+  
+  .modal-right-panel {
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .modal-left-panel,
+  .modal-right-panel {
+    padding: 20px;
+  }
+  
+  .modal-product-title {
+    font-size: 2rem;
+  }
+  
+  .modal-single-order-form {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-action-buttons {
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+  
+  .modal-add-cart-button,
+  .modal-buy-now-button {
+    flex: 1 !important;
+    padding: 10px 12px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* Reduce quantity button and display size on mobile */
+  .modal-quantity-button {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 1rem !important;
+  }
+  
+  .modal-quantity-display {
+    font-size: 1rem !important;
+    min-width: 25px !important;
+  }
+}
+
+/* Tablet styles */
+@media (max-width: 1024px) {
+  .modal-container {
+    width: 90vw;
+    max-width: 1000px;
+    height: 80vh;
+  }
+  
+  .modal-left-panel,
+  .modal-right-panel {
+    padding: 25px;
+  }
+  
+  .modal-product-title {
+    font-size: 2.2rem;
+  }
+  
+  .modal-product-price {
+    font-size: 1.6rem;
+  }
+  
+  .modal-single-order-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  
+  .modal-team-order-form {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .modal-container {
+    width: 95vw;
+    height: 90vh;
+    border-radius: 8px;
+  }
+  
+  .modal-close-button {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    top: 15px;
+    right: 15px;
+  }
+  
+  /* Group left panel and content section as one page on mobile */
+  .modal-main-content {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    min-height: 0;
+    height: 100% !important;
+  }
+  
+  /* Single scrollbar for the whole page on mobile */
+  .modal-main-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 191, 255, 0.5);
+    border-radius: 3px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 191, 255, 0.7);
+  }
+  
+  .modal-main-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 191, 255, 0.5) rgba(0, 0, 0, 0.3);
+  }
+  
+  .modal-left-panel {
+    border-right: none !important;
+    border-bottom: 2px solid #00bfff;
+    flex: 0 0 auto !important;
+    max-height: none !important;
+    padding: 8px;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  
+  .modal-right-panel {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    padding: 8px !important;
+    width: 100% !important;
+  }
+  
+  /* Remove individual scrollbars - use main content scrollbar only */
+  .modal-right-panel::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .modal-right-panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .modal-content-section {
+    overflow: visible !important;
+  }
+  
+  .modal-image {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 250px !important;
+    max-height: 250px !important;
+    object-fit: contain !important;
+  }
+  
+  .modal-header-section {
+    padding: 15px 0px !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  
+  .modal-product-title {
+    font-size: 10px !important;
+    line-height: 1.2;
+    margin: 0 0 10px 0 !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Jersey type button - 10px font on mobile */
+  .modal-jersey-type-button {
+    font-size: 10px !important;
+  }
+  
+  /* Jersey type section - padding and margin on mobile */
+  .modal-jersey-type-section {
+    padding: 0px 0px 8px !important;
+    margin: 0px 0px 8px !important;
+  }
+  
+  /* Size type section - reduce margin on mobile */
+  .modal-size-type-section {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
+  /* Remove vertical scrollbars on mobile */
+  .modal-right-panel {
+    overflow-y: visible !important;
+  }
+  
+  .modal-content-section {
+    overflow-y: visible !important;
+  }
+  
+  /* Description and Review titles - 10px on mobile */
+  .modal-description-title {
+    font-size: 10px !important;
+  }
+  
+  .modal-reviews-title {
+    font-size: 10px !important;
+  }
+  
+  /* Jersey type buttons - 10px on mobile */
+  .modal-member-jersey-type-btn,
+  .modal-member-size-type-btn {
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+  }
+  
+  /* Make size selectors display side by side on mobile - short size on the right */
+  .modal-member-size-selectors {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+  }
+  
+  .modal-member-size-wrapper {
+    flex: 1 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Ensure short size is on the right */
+  .modal-member-size-wrapper:last-child {
+    margin-left: auto;
+  }
+  
+  .modal-product-title::-webkit-scrollbar {
+    height: 3px;
+  }
+  
+  .modal-product-title::-webkit-scrollbar-thumb {
+    background: rgba(0, 191, 255, 0.5);
+    border-radius: 2px;
+  }
+  
+  .modal-product-price {
+    font-size: 1.2rem;
+  }
+  
+  .modal-fabric-section {
+    margin-bottom: 12px;
+  }
+  
+  .modal-fabric-title {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+  
+  .modal-fabric-options {
+    gap: 6px;
+  }
+  
+  .modal-single-order-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  /* Make last item align to left if it doesn't have a partner */
+  .modal-single-order-form > *:last-child:nth-child(odd) {
+    grid-column: 1;
+  }
+  
+  /* Ensure Shirt Size and Short Size are side by side on mobile - override the odd child rule */
+  .modal-single-order-form > .modal-single-order-size-wrapper:first-of-type {
+    grid-column: 1 !important;
+  }
+  
+  .modal-single-order-form > .modal-single-order-size-wrapper:last-of-type {
+    grid-column: 2 !important;
+  }
+  
+  /* If there's only one size wrapper, keep it in column 1 */
+  .modal-single-order-form > .modal-single-order-size-wrapper:only-of-type {
+    grid-column: 1 !important;
+  }
+  
+  .modal-single-order-form-row-1 {
+    grid-column: 1 / -1;
+  }
+  
+  .modal-team-order-form {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  /* Reduce all content padding - MOBILE ONLY */
+  .modal-single-order-section {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  
+  .modal-single-order-label {
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+  }
+  
+  .modal-single-order-size-wrapper {
+    gap: 4px;
+  }
+  
+  /* Ensure Shirt Size and Short Size are side by side on mobile */
+  .modal-single-order-form .modal-single-order-size-wrapper {
+    width: 100%;
+  }
+  
+  /* Make sure both size selectors are in the same row */
+  .modal-single-order-form > .modal-single-order-size-wrapper:first-of-type {
+    grid-column: 1;
+  }
+  
+  .modal-single-order-form > .modal-single-order-size-wrapper:last-of-type {
+    grid-column: 2;
+  }
+  
+  .modal-single-order-size-label {
+    font-size: 0.7rem;
+  }
+  
+  .team-order-form-card {
+    margin-bottom: 8px;
+  }
+  
+  .team-order-form-row-1,
+  .team-order-form-row-2,
+  .team-order-form-row-3 {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  
+  .team-order-form-input,
+  .team-order-form-select {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+  }
+  
+  .team-order-form-size-label {
+    font-size: 0.7rem;
+  }
+  
+  .modal-form-group {
+    margin-bottom: 6px;
+  }
+  
+  .modal-form-label {
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+  }
+  
+  .modal-form-input,
+  .modal-form-select {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+  }
+  
+  .modal-action-buttons {
+    flex-direction: row !important;
+    gap: 6px !important;
+    margin-top: 8px;
+  }
+  
+  .modal-add-cart-button,
+  .modal-buy-now-button {
+    flex: 1 !important;
+    padding: 8px 10px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Reduce quantity button and display size on mobile */
+  .modal-quantity-button {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .modal-quantity-display {
+    font-size: 0.9rem !important;
+    min-width: 20px !important;
+  }
+  
+  .modal-button {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  /* Hide error messages on mobile - show only red borders */
+  .modal-error-message {
+    display: none !important;
+  }
+
+  /* Adjust padding since we're not showing error messages */
+  .modal-member-input.error {
+    padding-right: 12px !important;
+  }
+
+  .modal-team-name-input.error {
+    padding-right: 12px !important;
+  }
+
+  .modal-single-order-input.error {
+    padding-right: 12px !important;
+  }
+}
+
+/* Small mobile styles */
+@media (max-width: 480px) {
+  .modal-container {
+    width: 98vw;
+    height: 95vh;
+    border-radius: 6px;
+  }
+  
+  .modal-close-button {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+    top: 12px;
+    right: 12px;
+  }
+  
+  /* Group left panel and content section as one page on mobile */
+  .modal-main-content {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    height: 100% !important;
+  }
+  
+  /* Single scrollbar for the whole page on mobile */
+  .modal-main-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 191, 255, 0.5);
+    border-radius: 3px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 191, 255, 0.7);
+  }
+  
+  .modal-main-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 191, 255, 0.5) rgba(0, 0, 0, 0.3);
+  }
+  
+  .modal-left-panel {
+    border-right: none !important;
+    border-bottom: 2px solid #00bfff;
+    flex: 0 0 auto !important;
+    max-height: none !important;
+    padding: 6px;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  
+  .modal-right-panel {
+    flex: 0 0 auto !important;
+    padding: 6px !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  
+  /* Remove individual scrollbars - use main content scrollbar only */
+  .modal-right-panel::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .modal-right-panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .modal-content-section {
+    overflow: visible !important;
+  }
+  
+  .modal-single-order-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  
+  .modal-single-order-form > *:last-child:nth-child(odd) {
+    grid-column: 1;
+  }
+  
+  /* Ensure Shirt Size and Short Size are side by side on mobile - override the odd child rule */
+  .modal-single-order-form > .modal-single-order-size-wrapper:first-of-type {
+    grid-column: 1 !important;
+  }
+  
+  .modal-single-order-form > .modal-single-order-size-wrapper:last-of-type {
+    grid-column: 2 !important;
+  }
+  
+  /* If there's only one size wrapper, keep it in column 1 */
+  .modal-single-order-form > .modal-single-order-size-wrapper:only-of-type {
+    grid-column: 1 !important;
+  }
+  
+  .modal-image {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 200px !important;
+    max-height: 200px !important;
+    object-fit: contain !important;
+  }
+  
+  .modal-header-section {
+    padding: 15px 0px !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  
+  .modal-product-title {
+    font-size: 10px !important;
+    margin: 0 0 8px 0 !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Jersey type button - 10px font on mobile */
+  .modal-jersey-type-button {
+    font-size: 10px !important;
+  }
+  
+  /* Jersey type section - padding and margin on mobile */
+  .modal-jersey-type-section {
+    padding: 0px 0px 8px !important;
+    margin: 0px 0px 8px !important;
+  }
+  
+  /* Size type section - reduce margin on mobile */
+  .modal-size-type-section {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
+  /* Remove vertical scrollbars on mobile */
+  .modal-right-panel {
+    overflow-y: visible !important;
+  }
+  
+  .modal-content-section {
+    overflow-y: visible !important;
+  }
+  
+  /* Description and Review titles - 10px on mobile */
+  .modal-description-title {
+    font-size: 10px !important;
+  }
+  
+  .modal-reviews-title {
+    font-size: 10px !important;
+  }
+  
+  /* Jersey type buttons - 10px on mobile */
+  .modal-member-jersey-type-btn,
+  .modal-member-size-type-btn {
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+  }
+  
+  /* Make size selectors display side by side on mobile - short size on the right */
+  .modal-member-size-selectors {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+  }
+  
+  .modal-member-size-wrapper {
+    flex: 1 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Ensure short size is on the right */
+  .modal-member-size-wrapper:last-child {
+    margin-left: auto;
+  }
+  
+  .modal-product-price {
+    font-size: 1rem;
+  }
+  
+  .modal-fabric-button {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    gap: 3px;
+  }
+  
+  .modal-fabric-fee {
+    font-size: 0.6rem;
+  }
+  
+  .modal-form-group {
+    margin-bottom: 12px;
+  }
+  
+  .modal-form-label {
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
+  
+  .modal-form-input,
+  .modal-form-select {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .modal-button {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+  
+  .modal-team-member {
+    padding: 10px;
+  }
+  
+  .modal-member-header {
+    font-size: 0.9rem;
+  }
+  
+  .modal-member-form {
+    gap: 8px;
+  }
+  
+  .modal-member-form .modal-form-group {
+    margin-bottom: 8px;
+  }
+
+  /* Hide error messages on mobile - show only red borders */
+  .modal-error-message {
+    display: none !important;
+  }
+
+  /* Adjust padding since we're not showing error messages */
+  .modal-member-input.error {
+    padding-right: 12px !important;
+  }
+
+  .modal-team-name-input.error {
+    padding-right: 12px !important;
+  }
+
+  .modal-single-order-input.error {
+    padding-right: 12px !important;
+  }
+}
+
+/* Extra small mobile styles */
+@media (max-width: 360px) {
+  .modal-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 4px;
+  }
+  
+  .modal-close-button {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    top: 10px;
+    right: 10px;
+  }
+  
+  /* Group left panel and content section as one page on mobile */
+  .modal-main-content {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    height: 100% !important;
+  }
+  
+  /* Single scrollbar for the whole page on mobile */
+  .modal-main-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 191, 255, 0.5);
+    border-radius: 3px;
+  }
+  
+  .modal-main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 191, 255, 0.7);
+  }
+  
+  .modal-main-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 191, 255, 0.5) rgba(0, 0, 0, 0.3);
+  }
+  
+  .modal-left-panel {
+    border-right: none !important;
+    border-bottom: 2px solid #00bfff;
+    flex: 0 0 auto !important;
+    max-height: none !important;
+    padding: 4px;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  
+  .modal-right-panel {
+    flex: 0 0 auto !important;
+    padding: 8px;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  
+  /* Remove individual scrollbars - use main content scrollbar only */
+  .modal-right-panel::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .modal-right-panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .modal-content-section {
+    overflow: visible !important;
+  }
+  
+  .modal-image {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 150px !important;
+    max-height: 150px !important;
+    object-fit: contain !important;
+  }
+  
+  .modal-header-section {
+    padding: 15px 0px !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  
+  .modal-product-title {
+    font-size: 10px !important;
+    margin: 0 0 6px 0 !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Jersey type button - 10px font on mobile */
+  .modal-jersey-type-button {
+    font-size: 10px !important;
+  }
+  
+  /* Jersey type section - padding and margin on mobile */
+  .modal-jersey-type-section {
+    padding: 0px 0px 8px !important;
+    margin: 0px 0px 8px !important;
+  }
+  
+  /* Size type section - reduce margin on mobile */
+  .modal-size-type-section {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
+  /* Remove vertical scrollbars on mobile */
+  .modal-main-content {
+    overflow-y: visible !important;
+  }
+  
+  .modal-right-panel {
+    overflow-y: visible !important;
+  }
+  
+  .modal-content-section {
+    overflow-y: visible !important;
+  }
+  
+  .modal-product-price {
+    font-size: 0.9rem;
+  }
+  
+  .modal-fabric-button {
+    padding: 5px 6px;
+    font-size: 0.65rem;
+    gap: 2px;
+  }
+  
+  .modal-fabric-fee {
+    font-size: 0.55rem;
+  }
+  
+  .modal-action-buttons {
+    flex-direction: row !important;
+    gap: 5px !important;
+  }
+  
+  .modal-add-cart-button,
+  .modal-buy-now-button {
+    flex: 1 !important;
+    padding: 7px 8px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  /* Reduce quantity button and display size on mobile */
+  .modal-quantity-button {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .modal-quantity-display {
+    font-size: 0.85rem !important;
+    min-width: 18px !important;
+  }
+  
+  .modal-form-group {
+    margin-bottom: 10px;
+  }
+  
+  .modal-form-label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+  }
+  
+  .modal-form-input,
+  .modal-form-select {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .modal-button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .modal-team-member {
+    padding: 8px;
+  }
+  
+  .modal-member-header {
+    font-size: 0.85rem;
+  }
+  
+  .modal-member-form {
+    gap: 6px;
+  }
+  
+  .modal-member-form .modal-form-group {
+    margin-bottom: 6px;
+  }
+
+  /* Hide error messages on mobile - show only red borders */
+  .modal-error-message {
+    display: none !important;
+  }
+
+  /* Adjust padding since we're not showing error messages */
+  .modal-member-input.error {
+    padding-right: 10px !important;
+  }
+
+  .modal-team-name-input.error {
+    padding-right: 10px !important;
+  }
+
+  .modal-single-order-input.error {
+    padding-right: 10px !important;
+  }
+}
+
+/* Extra small mobile styles - Second instance */
+@media (max-width: 360px) {
+  .modal-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 4px;
+  }
+  
+  .modal-close-button {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    top: 10px;
+    right: 10px;
+  }
+  
+  .modal-main-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    min-height: 0;
+  }
+  
+  .modal-left-panel {
+    max-height: none;
+    padding: 4px;
+    overflow: visible;
+  }
+  
+  .modal-right-panel {
+    padding: 8px;
+    overflow: visible !important;
+  }
+  
+  /* Hide right panel scrollbar on mobile - MOBILE ONLY */
+  .modal-right-panel::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .modal-right-panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .modal-image {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 150px !important;
+    max-height: 150px !important;
+    object-fit: contain !important;
+  }
+  
+  .modal-header-section {
+    padding: 15px 0px !important;
+  }
+  
+  .modal-product-title {
+    font-size: 10px !important;
+    margin: 0 0 6px 0 !important;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Description and Review titles - 10px on mobile */
+  .modal-description-title {
+    font-size: 10px !important;
+  }
+  
+  .modal-reviews-title {
+    font-size: 10px !important;
+  }
+  
+  /* Jersey type buttons - 10px on mobile */
+  .modal-member-jersey-type-btn,
+  .modal-member-size-type-btn {
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+  }
+  
+  /* Make size selectors display side by side on mobile - short size on the right */
+  .modal-member-size-selectors {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    align-items: flex-start !important;
+  }
+  
+  .modal-member-size-wrapper {
+    flex: 1 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Ensure short size is on the right */
+  .modal-member-size-wrapper:last-child {
+    margin-left: auto;
+  }
+  
+  .modal-product-price {
+    font-size: 0.9rem;
+  }
+  
+  .modal-fabric-button {
+    padding: 5px 6px;
+    font-size: 0.65rem;
+    gap: 2px;
+  }
+  
+  .modal-fabric-fee {
+    font-size: 0.55rem;
+  }
+  
+  .modal-form-group {
+    margin-bottom: 10px;
+  }
+  
+  .modal-form-label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+  }
+  
+  .modal-form-input,
+  .modal-form-select {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .modal-button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .modal-team-member {
+    padding: 8px;
+  }
+  
+  .modal-member-header {
+    font-size: 0.85rem;
+  }
+  
+  .modal-member-form {
+    gap: 6px;
+  }
+  
+  .modal-member-form .modal-form-group {
+    margin-bottom: 6px;
+  }
+
+  /* Hide error messages on mobile - show only red borders */
+  .modal-error-message {
+    display: none !important;
+  }
+
+  /* Adjust padding since we're not showing error messages */
+  .modal-member-input.error {
+    padding-right: 10px !important;
+  }
+
+  .modal-team-name-input.error {
+    padding-right: 10px !important;
+  }
+
+  .modal-single-order-input.error {
+    padding-right: 10px !important;
+  }
+}

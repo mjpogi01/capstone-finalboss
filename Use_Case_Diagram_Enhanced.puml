@@ -1,0 +1,222 @@
+@startuml Use Case Diagram - Yohanns E-commerce System (Enhanced)
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+skinparam actor {
+  BackgroundColor #E1F5FF
+  BorderColor #0066CC
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam usecase {
+  BackgroundColor #FFF4E6
+  BorderColor #FF9900
+  FontSize 11
+}
+
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #666666
+  FontSize 12
+  FontStyle bold
+}
+
+skinparam arrow {
+  Color #333333
+  Thickness 2
+}
+
+left to right direction
+
+' ============================================
+' ACTORS
+' ============================================
+actor Customer as "👤 Customer"
+actor Admin as "👨‍💼 Admin"
+actor Owner as "👑 Owner"
+actor Artist as "🎨 Artist"
+
+' ============================================
+' CUSTOMER PACKAGE
+' ============================================
+package "Customer Features" #E8F5E9 {
+  usecase "UC1: Register\nAccount" as UC1
+  usecase "UC2: Login" as UC2
+  usecase "UC3: Logout" as UC3
+  usecase "UC4: Browse\nProducts" as UC4
+  usecase "UC5: Search\nProducts" as UC5
+  usecase "UC6: View Product\nDetails" as UC6
+  usecase "UC7: Add to Cart" as UC7
+  usecase "UC8: Manage Cart" as UC8
+  usecase "UC9: Add to\nWishlist" as UC9
+  usecase "UC10: View\nWishlist" as UC10
+  usecase "UC11: Checkout" as UC11
+  usecase "UC12: Place Order" as UC12
+  usecase "UC13: View Order\nHistory" as UC13
+  usecase "UC14: Track Order" as UC14
+  usecase "UC15: Cancel Order" as UC15
+  usecase "UC16: Review Order" as UC16
+  usecase "UC17: View Profile" as UC17
+  usecase "UC18: Edit Profile" as UC18
+  usecase "UC19: Change\nPassword" as UC19
+  usecase "UC20: Contact\nSupport" as UC20
+  usecase "UC21: View\nBranches" as UC21
+  usecase "UC22: View FAQs" as UC22
+  usecase "UC23: View About" as UC23
+  usecase "UC24: View\nHighlights" as UC24
+  usecase "UC25: View Privacy\nPolicy" as UC25
+  usecase "UC26: View Terms" as UC26
+  usecase "UC27: Subscribe\nNewsletter" as UC27
+}
+
+' ============================================
+' ADMIN PACKAGE
+' ============================================
+package "Admin Features" #E3F2FD {
+  usecase "UC28: View\nDashboard" as UC28
+  usecase "UC29: View Analytics\n(Branch-specific)" as UC29
+  usecase "UC30: Manage Orders\n(View/Update Status)" as UC30
+  usecase "UC31: Manage\nWalk-in Orders" as UC31
+  usecase "UC32: Manage Inventory\n(Add/Edit/Delete)" as UC32
+  usecase "UC33: Manage Accounts\n(Users/Admins)" as UC33
+  usecase "UC34: Support Chats\n(Respond)" as UC34
+  usecase "UC35: View Branch\nData" as UC35
+}
+
+' ============================================
+' OWNER PACKAGE
+' ============================================
+package "Owner Features" #FFF3E0 {
+  usecase "UC36: View\nDashboard" as UC36
+  usecase "UC37: View Analytics\n(All Branches)" as UC37
+  usecase "UC38: Manage Orders\n(All Branches)" as UC38
+  usecase "UC39: Manage Walk-in\nOrders (All)" as UC39
+  usecase "UC40: Manage Accounts\n(All Users/Admins)" as UC40
+  usecase "UC41: Support Chats\n(All Branches)" as UC41
+  usecase "UC42: View All\nBranch Data" as UC42
+}
+
+' ============================================
+' ARTIST PACKAGE
+' ============================================
+package "Artist Features" #F3E5F5 {
+  usecase "UC43: View\nDashboard" as UC43
+  usecase "UC44: View Tasks" as UC44
+  usecase "UC45: Update Task\nStatus" as UC45
+  usecase "UC46: View Workload\nOverview" as UC46
+  usecase "UC47: Manage\nProfile" as UC47
+  usecase "UC48: Customer Chats\n(Communicate)" as UC48
+}
+
+' ============================================
+' CUSTOMER CONNECTIONS
+' ============================================
+Customer --> UC1
+Customer --> UC2
+Customer --> UC3
+Customer --> UC4
+Customer --> UC5
+Customer --> UC6
+Customer --> UC7
+Customer --> UC8
+Customer --> UC9
+Customer --> UC10
+Customer --> UC11
+Customer --> UC12
+Customer --> UC13
+Customer --> UC14
+Customer --> UC15
+Customer --> UC16
+Customer --> UC17
+Customer --> UC18
+Customer --> UC19
+Customer --> UC20
+Customer --> UC21
+Customer --> UC22
+Customer --> UC23
+Customer --> UC24
+Customer --> UC25
+Customer --> UC26
+Customer --> UC27
+
+' ============================================
+' ADMIN CONNECTIONS
+' ============================================
+Admin --> UC2
+Admin --> UC3
+Admin --> UC28
+Admin --> UC29
+Admin --> UC30
+Admin --> UC31
+Admin --> UC32
+Admin --> UC33
+Admin --> UC34
+Admin --> UC35
+
+' ============================================
+' OWNER CONNECTIONS
+' ============================================
+Owner --> UC2
+Owner --> UC3
+Owner --> UC36
+Owner --> UC37
+Owner --> UC38
+Owner --> UC39
+Owner --> UC40
+Owner --> UC41
+Owner --> UC42
+
+' ============================================
+' ARTIST CONNECTIONS
+' ============================================
+Artist --> UC2
+Artist --> UC3
+Artist --> UC43
+Artist --> UC44
+Artist --> UC45
+Artist --> UC46
+Artist --> UC47
+Artist --> UC48
+
+' ============================================
+' INCLUDE RELATIONSHIPS (Required)
+' ============================================
+UC7 ..> UC8 : <<include>>
+UC8 ..> UC11 : <<include>>
+UC11 ..> UC12 : <<include>>
+
+' ============================================
+' EXTEND RELATIONSHIPS (Optional)
+' ============================================
+UC12 ..> UC13 : <<extend>>
+UC13 ..> UC14 : <<extend>>
+UC13 ..> UC15 : <<extend>>
+UC13 ..> UC16 : <<extend>>
+UC6 ..> UC7 : <<extend>>
+UC6 ..> UC9 : <<extend>>
+UC30 ..> UC34 : <<extend>>
+UC38 ..> UC41 : <<extend>>
+UC44 ..> UC45 : <<extend>>
+UC44 ..> UC48 : <<extend>>
+
+note right of UC2
+  **Shared Use Case**
+  All actors can login
+end note
+
+note right of UC29
+  **Branch-specific**
+  Admin sees only their branch data
+end note
+
+note right of UC37
+  **All Branches**
+  Owner sees aggregated data
+end note
+
+@enduml
+
+

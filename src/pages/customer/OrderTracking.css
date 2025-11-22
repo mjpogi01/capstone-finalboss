@@ -1,0 +1,476 @@
+/* Order Tracking Page */
+.order-tracking-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  padding: 2rem 0;
+  color: #ffffff;
+}
+
+.tracking-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Order Header */
+.order-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid rgba(0, 191, 255, 0.3);
+}
+
+.order-header h1 {
+  color: #00bfff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  font-family: 'Oswald', sans-serif;
+}
+
+.order-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+/* Order Information Section */
+.order-info-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.order-info-section h2 {
+  color: #00bfff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  font-family: 'Oswald', sans-serif;
+}
+
+.order-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.order-detail label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.order-detail span {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.order-total {
+  color: #00bfff !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+}
+
+.artist-detail {
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.artist-detail label {
+  color: #4ade80 !important;
+  font-weight: 600 !important;
+}
+
+.artist-name {
+  color: #4ade80 !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+}
+
+/* Delivery Address Section */
+.delivery-address-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.delivery-address-section h2 {
+  color: #00bfff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  font-family: 'Oswald', sans-serif;
+}
+
+.address-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(0, 191, 255, 0.1);
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.address-icon {
+  font-size: 2rem;
+  color: #00bfff;
+}
+
+.address-details {
+  flex: 1;
+}
+
+.address-text {
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Order Items Section */
+.order-items-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.order-items-section h2 {
+  color: #00bfff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  font-family: 'Oswald', sans-serif;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.order-item:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: rgba(0, 191, 255, 0.4);
+}
+
+.item-info h4 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.item-info p {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.item-price {
+  color: #00bfff;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* Tracking Status Section */
+.tracking-status-section {
+  margin-bottom: 2rem;
+}
+
+/* Support Section */
+.support-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.support-section h2 {
+  color: #00bfff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  font-family: 'Oswald', sans-serif;
+  text-align: center;
+}
+
+.support-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.support-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(0, 191, 255, 0.1);
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.support-option:hover {
+  background: rgba(0, 191, 255, 0.15);
+  border-color: rgba(0, 191, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.support-icon {
+  font-size: 2rem;
+  color: #00bfff;
+}
+
+.support-details h4 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.support-details p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.support-details span {
+  color: rgba(0, 191, 255, 0.8);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Loading and Error States */
+.loading-container,
+.error-container,
+.not-found-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 12px;
+  padding: 3rem;
+  margin: 2rem 0;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(0, 191, 255, 0.3);
+  border-top: 4px solid #00bfff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon,
+.not-found-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.error-container h3,
+.not-found-container h3 {
+  color: #ff6b6b;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.error-container p,
+.not-found-container p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.retry-btn,
+.back-btn {
+  background: #00bfff;
+  color: #000;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.retry-btn:hover,
+.back-btn:hover {
+  background: #0099cc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 191, 255, 0.4);
+}
+
+/* Tablet Landscape (769px - 1024px, landscape) - Desktop UI */
+@media only screen and (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+  /* Uses desktop styles - minimal overrides if needed */
+}
+
+/* Tablet Portrait (769px - 1024px, portrait) - Mobile UI */
+@media only screen and (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  .tracking-container {
+    padding: 0 1rem;
+  }
+  
+  .order-header h1 {
+    font-size: 2rem;
+  }
+  
+  .order-subtitle {
+    font-size: 1rem;
+  }
+  
+  .order-details-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .order-info-section,
+  .delivery-address-section,
+  .order-items-section,
+  .support-section {
+    padding: 1.5rem;
+  }
+  
+  .address-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .support-options {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .support-option {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tracking-container {
+    padding: 0 1rem;
+  }
+  
+  .order-header h1 {
+    font-size: 2rem;
+  }
+  
+  .order-subtitle {
+    font-size: 1rem;
+  }
+  
+  .order-details-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .order-info-section,
+  .delivery-address-section,
+  .order-items-section,
+  .support-section {
+    padding: 1.5rem;
+  }
+  
+  .address-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .support-options {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .support-option {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-tracking-page {
+    padding: 1rem 0;
+  }
+  
+  .order-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .order-info-section,
+  .delivery-address-section,
+  .order-items-section,
+  .support-section {
+    padding: 1rem;
+  }
+  
+  .order-detail span {
+    font-size: 1rem;
+  }
+  
+  .item-info h4 {
+    font-size: 1rem;
+  }
+  
+  .support-option {
+    padding: 1rem;
+  }
+}

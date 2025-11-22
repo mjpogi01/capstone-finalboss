@@ -1,0 +1,242 @@
+/* ============================================
+   COMMON STYLES FOR ALL CUSTOMER PAGES
+   Standardized margins, padding, and typography
+   ============================================ */
+
+/* Import consistent font families */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Roboto:wght@300;400;500;700&display=swap');
+
+/* Global page wrapper - consistent for all pages */
+.page-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%);
+  color: #ffffff;
+  padding: 100px 0 3rem 0; /* Top padding accounts for fixed header */
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Common container - standardized width and padding */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  width: 100%;
+}
+
+/* Hero section - consistent across all pages */
+.page-hero {
+  text-align: center;
+  margin-bottom: 4rem;
+  padding: 2rem 0;
+}
+
+/* Main page title - standardized */
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #00bfff;
+  text-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Page subtitle/description - standardized */
+.page-subtitle {
+  font-size: 1.2rem;
+  color: #a9d8ff;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+  font-weight: 400;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Content sections - consistent spacing */
+.page-section {
+  margin-bottom: 4rem;
+}
+
+/* Section title - standardized */
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Card styling - consistent across pages */
+.page-card {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-radius: 15px;
+  padding: 2rem;
+  border: 1px solid #333;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-card:hover {
+  border-color: #00bfff;
+  box-shadow: 0 8px 24px rgba(0, 191, 255, 0.2);
+  transform: translateY(-5px);
+}
+
+/* Text content - standardized */
+.page-text {
+  font-size: 1rem;
+  color: #ffffff;
+  line-height: 1.7;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-text-secondary {
+  font-size: 1rem;
+  color: #a9d8ff;
+  line-height: 1.6;
+  font-weight: 400;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Buttons - standardized */
+.page-btn {
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.page-btn-primary {
+  background: #00bfff;
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
+}
+
+.page-btn-primary:hover {
+  background: #0099cc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 191, 255, 0.4);
+}
+
+.page-btn-secondary {
+  background: transparent;
+  color: #00bfff;
+  border: 2px solid #00bfff;
+}
+
+.page-btn-secondary:hover {
+  background: #00bfff;
+  color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 191, 255, 0.4);
+}
+
+/* Grid layout - standardized */
+.page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+  .page-wrapper {
+    padding: 90px 0 2rem 0;
+  }
+
+  .page-container {
+    padding: 0 1.5rem;
+  }
+
+  .page-hero {
+    padding: 1.5rem 0;
+    margin-bottom: 3rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .page-card {
+    padding: 1.5rem;
+  }
+
+  .page-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .page-section {
+    margin-bottom: 3rem;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .page-wrapper {
+    padding: 85px 0 1.5rem 0;
+  }
+
+  .page-container {
+    padding: 0 1rem;
+  }
+
+  .page-hero {
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: 1.8rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+
+  .page-card {
+    padding: 1rem;
+  }
+
+  .page-text,
+  .page-text-secondary {
+    font-size: 0.9rem;
+  }
+
+  .page-btn {
+    padding: 10px 24px;
+    font-size: 0.9rem;
+  }
+
+  .page-section {
+    margin-bottom: 2rem;
+  }
+}
+
+
+
+
+

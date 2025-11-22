@@ -1,0 +1,5 @@
+@echo off
+set SUPABASE_URL=https://xnuzdzjfqhbpcnsetjif.supabase.co
+set SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudXpkempmcWhicGNuc2V0amlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTUwMTE3MywiZXhwIjoyMDc1MDc3MTczfQ.uoLRclXrq6d83GbLqur4Who41AOwjt62nCyuibk1TpE
+node index.js
+

@@ -1,0 +1,392 @@
+/* Loading skeleton styles */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  height: 1rem;
+  width: 100%;
+}
+
+.metric-card.loading .metric-icon .loading-skeleton {
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 50%;
+}
+
+.metric-card.loading .metric-change .loading-skeleton {
+  height: 0.75rem;
+  width: 2rem;
+}
+
+.metric-card.loading .metric-value .loading-skeleton {
+  height: 1.5rem;
+  width: 4rem;
+}
+
+.metric-card.loading .metric-title .loading-skeleton {
+  height: 0.875rem;
+  width: 6rem;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ===========================================
+   METRICS CARDS - Analytics Style
+   Clean cards with top color borders
+   =========================================== */
+
+.metrics-cards-container {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.metrics-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  max-width: 100%;
+  margin: 0;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Color-coded top border like Analytics */
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  transition: height 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: rgba(203, 213, 225, 0.8);
+}
+
+.metric-card:hover::before {
+  height: 5px;
+}
+
+/* Different colors for each card */
+.metric-card.green::before {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.metric-card.blue::before {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.metric-card.purple::before {
+  background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.metric-card-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.metric-icon {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+  font-size: 1.25rem;
+}
+
+.metric-card.green .metric-icon {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #10b981;
+}
+
+.metric-card.blue .metric-icon {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #3b82f6;
+}
+
+.metric-card.purple .metric-icon {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  color: #8b5cf6;
+}
+
+.metric-card:hover .metric-icon {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.metric-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.metric-change {
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid #dcfce7;
+}
+
+.metric-card.blue .metric-change {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #dbeafe;
+}
+
+.metric-card.purple .metric-change {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border-color: #e9d5ff;
+}
+
+.metric-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.metric-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+}
+
+/* Color variations for metric values */
+.metric-card.green .metric-value {
+  color: #10b981;
+}
+
+.metric-card.blue .metric-value {
+  color: #3b82f6;
+}
+
+.metric-card.purple .metric-value {
+  color: #8b5cf6;
+}
+
+.metric-title {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .metrics-cards {
+    gap: 1.25rem;
+  }
+  
+  .metric-card {
+    padding: 1.25rem;
+    min-height: 130px;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .metric-icon {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+  
+  .metric-icon svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-cards-container {
+    margin-bottom: 1.5rem;
+  }
+
+  .metrics-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .metric-card {
+    padding: 1.25rem;
+    min-height: 115px;
+    border-radius: 10px;
+  }
+
+  .metric-header {
+    margin-bottom: 0.875rem;
+  }
+  
+  .metric-value {
+    font-size: 1.625rem;
+  }
+
+  .metric-title {
+    font-size: 0.875rem;
+  }
+  
+  .metric-icon {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+  
+  .metric-icon svg {
+    width: 0.9375rem;
+    height: 0.9375rem;
+  }
+
+  .metric-change {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* ===========================================
+   LARGE SCREEN RESPONSIVE (54 inch displays)
+   =========================================== */
+
+/* 4K / Ultra-Wide Displays (2560px - 3839px) */
+@media (min-width: 2560px) and (max-width: 3839px) {
+  .metric-card {
+    padding: 2rem;
+  }
+  
+  .metric-value {
+    font-size: 2.5rem;
+  }
+  
+  .metric-title {
+    font-size: 1rem;
+  }
+  
+  .metric-icon {
+    font-size: 2rem;
+  }
+}
+
+/* Large 4K Displays (3840px+) */
+@media (min-width: 3840px) {
+  .metric-card {
+    padding: 2.5rem;
+  }
+  
+  .metric-value {
+    font-size: 3rem;
+  }
+  
+  .metric-title {
+    font-size: 1.125rem;
+  }
+  
+  .metric-icon {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-cards-container {
+    margin-bottom: 1.5rem;
+  }
+  
+  .metrics-cards {
+    gap: 0.875rem;
+  }
+  
+  .metric-card {
+    padding: 1rem;
+    min-height: 110px;
+  }
+  
+  .metric-header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .metric-value {
+    font-size: 1.375rem;
+  }
+  
+  .metric-title {
+    font-size: 0.8125rem;
+  }
+  
+  .metric-change {
+    font-size: 0.6875rem;
+    padding: 0.1875rem 0.375rem;
+  }
+  
+  .metric-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  
+  .metric-icon svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .metric-card {
+    border-color: #000000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .metric-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .metric-value {
+    color: #000000;
+  }
+  
+  .metric-title {
+    color: #333333;
+  }
+}

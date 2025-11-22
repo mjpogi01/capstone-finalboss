@@ -1,0 +1,314 @@
+/* ===========================================
+   EARNINGS CHART - Analytics Style
+   Uses Analytics.css for card layout
+   =========================================== */
+
+/* Year select dropdown styled to match time-range-btn */
+.time-range-btn.year-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 12px;
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+
+.time-range-btn.year-select:focus {
+  outline: none;
+  background: #e2e8f0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.chart-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  min-height: 400px;
+  width: 100%;
+}
+
+.chart-loading,
+.chart-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #64748b;
+}
+
+.chart-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chart-loading p,
+.chart-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.chart-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  flex: 1;
+}
+
+.data-point {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.data-point-hover {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.chart-x-axis {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.x-axis-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  flex: 1;
+  font-weight: 500;
+}
+
+/* Tooltip Styles */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1000;
+  margin-bottom: 10px;
+}
+
+.tooltip-content {
+  background: #1f2937;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #1f2937;
+}
+
+.tooltip-month {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #f9fafb;
+}
+
+.tooltip-value {
+  font-weight: 700;
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .earnings-chart {
+    min-height: 450px;
+  }
+
+  .chart-container {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .earnings-chart {
+    min-height: 420px;
+    padding: 1.375rem;
+  }
+
+  .chart-container {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .earnings-chart {
+    min-height: 380px;
+    padding: 1.25rem;
+  }
+  
+  .chart-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.875rem;
+  }
+  
+  .chart-container {
+    min-height: 320px;
+  }
+  
+  .chart-title {
+    font-size: 1.125rem;
+  }
+  
+  .chart-controls {
+    gap: 0.5rem;
+  }
+  
+  .year-select,
+  .location-select {
+    min-width: 100px;
+    font-size: 0.8125rem;
+    padding: 0.4375rem 0.625rem;
+  }
+  
+  .chart-svg {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .earnings-chart {
+    min-height: 320px;
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    gap: 0.875rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 0.875rem;
+  }
+  
+  .chart-controls {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.625rem;
+  }
+  
+  .chart-container {
+    min-height: 200px;
+  }
+  
+  .year-select,
+  .location-select {
+    flex: 1;
+    min-width: auto;
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.625rem;
+  }
+  
+  .chart-svg {
+    min-height: 160px;
+  }
+  
+  .chart-title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+  }
+
+  .x-axis-label {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .earnings-chart {
+    min-height: 300px;
+    padding: 1rem;
+  }
+  
+  .chart-header {
+    padding-bottom: 0.75rem;
+  }
+  
+  .chart-controls {
+    gap: 0.5rem;
+  }
+  
+  .chart-container {
+    min-height: 200px;
+  }
+  
+  .year-select,
+  .location-select {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+  }
+  
+  .chart-svg {
+    min-height: 160px;
+  }
+
+  .x-axis-label {
+    font-size: 0.6875rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .earnings-chart {
+    border-color: #000000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .chart-header {
+    border-bottom-color: #000000;
+  }
+  
+  .chart-title {
+    color: #000000;
+  }
+  
+  .year-select,
+  .location-select {
+    border-color: #000000;
+  }
+
+  .x-axis-label {
+    color: #000000;
+  }
+}

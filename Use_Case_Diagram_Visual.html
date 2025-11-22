@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use Case Diagram - Yohanns E-commerce System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .diagram-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .actor-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .actor-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid;
+        }
+
+        .actor-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .actor-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .customer .actor-header { border-color: #4CAF50; }
+        .customer .actor-icon { background: linear-gradient(135deg, #4CAF50, #45a049); }
+        
+        .admin .actor-header { border-color: #2196F3; }
+        .admin .actor-icon { background: linear-gradient(135deg, #2196F3, #0b7dda); }
+        
+        .owner .actor-header { border-color: #FF9800; }
+        .owner .actor-icon { background: linear-gradient(135deg, #FF9800, #f57c00); }
+        
+        .artist .actor-header { border-color: #9C27B0; }
+        .artist .actor-icon { background: linear-gradient(135deg, #9C27B0, #7b1fa2); }
+
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .use-case {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .use-case:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .customer .use-case { border-left-color: #4CAF50; }
+        .admin .use-case { border-left-color: #2196F3; }
+        .owner .use-case { border-left-color: #FF9800; }
+        .artist .use-case { border-left-color: #9C27B0; }
+
+        .use-case-number {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .use-case-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 1em;
+        }
+
+        .use-case-category {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .relationships {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        .relationships h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .relationship-item {
+            background: white;
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .use-cases-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Use Case Diagram</h1>
+        <p class="subtitle">Yohanns E-commerce System - Complete Use Case Analysis</p>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">4</div>
+                <div class="stat-label">Actors</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">53</div>
+                <div class="stat-label">Total Use Cases</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">27</div>
+                <div class="stat-label">Customer Use Cases</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">9</div>
+                <div class="stat-label">Admin Use Cases</div>
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <!-- CUSTOMER -->
+            <div class="actor-section customer">
+                <div class="actor-header">
+                    <div class="actor-icon">👤</div>
+                    <div class="actor-title">Customer</div>
+                </div>
+                <div class="use-cases-grid">
+                    <div class="use-case">
+                        <div class="use-case-number">UC1-UC3</div>
+                        <div class="use-case-title">Authentication & Account</div>
+                        <div class="use-case-category">Register, Login, Logout</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC4-UC6</div>
+                        <div class="use-case-title">Product Browsing</div>
+                        <div class="use-case-category">Browse, Search, View Details</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC7-UC8</div>
+                        <div class="use-case-title">Cart Management</div>
+                        <div class="use-case-category">Add to Cart, Manage Cart</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC9-UC10</div>
+                        <div class="use-case-title">Wishlist</div>
+                        <div class="use-case-category">Add to Wishlist, View Wishlist</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC11-UC12</div>
+                        <div class="use-case-title">Checkout & Orders</div>
+                        <div class="use-case-category">Checkout, Place Order</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC13-UC16</div>
+                        <div class="use-case-title">Order Management</div>
+                        <div class="use-case-category">View History, Track, Cancel, Review</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC17-UC19</div>
+                        <div class="use-case-title">Profile Management</div>
+                        <div class="use-case-category">View, Edit, Change Password</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC20</div>
+                        <div class="use-case-title">Support</div>
+                        <div class="use-case-category">Contact Support (Chat)</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC21-UC27</div>
+                        <div class="use-case-title">Information Pages</div>
+                        <div class="use-case-category">Branches, FAQs, About, etc.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN -->
+            <div class="actor-section admin">
+                <div class="actor-header">
+                    <div class="actor-icon">👨‍💼</div>
+                    <div class="actor-title">Admin</div>
+                </div>
+                <div class="use-cases-grid">
+                    <div class="use-case">
+                        <div class="use-case-number">UC28</div>
+                        <div class="use-case-title">View Dashboard</div>
+                        <div class="use-case-category">Branch Overview</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC29</div>
+                        <div class="use-case-title">View Analytics</div>
+                        <div class="use-case-category">Branch-specific Data</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC30-UC31</div>
+                        <div class="use-case-title">Order Management</div>
+                        <div class="use-case-category">Manage Orders, Walk-in Orders</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC32</div>
+                        <div class="use-case-title">Inventory Management</div>
+                        <div class="use-case-category">Add/Edit/Delete Products</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC33</div>
+                        <div class="use-case-title">Account Management</div>
+                        <div class="use-case-category">Manage Users/Admins</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC34</div>
+                        <div class="use-case-title">Support Chats</div>
+                        <div class="use-case-category">Respond to Customers</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC35</div>
+                        <div class="use-case-title">View Branch Data</div>
+                        <div class="use-case-category">Branch Information</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OWNER -->
+            <div class="actor-section owner">
+                <div class="actor-header">
+                    <div class="actor-icon">👑</div>
+                    <div class="actor-title">Owner</div>
+                </div>
+                <div class="use-cases-grid">
+                    <div class="use-case">
+                        <div class="use-case-number">UC36</div>
+                        <div class="use-case-title">View Dashboard</div>
+                        <div class="use-case-category">System Overview</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC37</div>
+                        <div class="use-case-title">View Analytics</div>
+                        <div class="use-case-category">All Branches Combined</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC38-UC39</div>
+                        <div class="use-case-title">Order Management</div>
+                        <div class="use-case-category">All Branches Orders</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC40</div>
+                        <div class="use-case-title">Account Management</div>
+                        <div class="use-case-category">All Users/Admins</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC41</div>
+                        <div class="use-case-title">Support Chats</div>
+                        <div class="use-case-category">All Branches Support</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC42</div>
+                        <div class="use-case-title">View All Branch Data</div>
+                        <div class="use-case-category">Complete System Data</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARTIST -->
+            <div class="actor-section artist">
+                <div class="actor-header">
+                    <div class="actor-icon">🎨</div>
+                    <div class="actor-title">Artist</div>
+                </div>
+                <div class="use-cases-grid">
+                    <div class="use-case">
+                        <div class="use-case-number">UC43</div>
+                        <div class="use-case-title">View Dashboard</div>
+                        <div class="use-case-category">Task Overview</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC44</div>
+                        <div class="use-case-title">View Tasks</div>
+                        <div class="use-case-category">Assigned Tasks</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC45</div>
+                        <div class="use-case-title">Update Task Status</div>
+                        <div class="use-case-category">Progress Management</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC46</div>
+                        <div class="use-case-title">View Workload</div>
+                        <div class="use-case-category">Workload Overview</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC47</div>
+                        <div class="use-case-title">Manage Profile</div>
+                        <div class="use-case-category">Artist Profile</div>
+                    </div>
+                    <div class="use-case">
+                        <div class="use-case-number">UC48</div>
+                        <div class="use-case-title">Customer Chats</div>
+                        <div class="use-case-category">Communicate with Customers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relationships">
+            <h3>🔗 Key Relationships</h3>
+            <div class="relationship-item">
+                <strong>Include:</strong> Add to Cart → Manage Cart → Checkout → Place Order
+            </div>
+            <div class="relationship-item">
+                <strong>Extend:</strong> Place Order → View Order History → (Track/Review/Cancel Order)
+            </div>
+            <div class="relationship-item">
+                <strong>Extend:</strong> View Product Details → (Add to Cart / Add to Wishlist)
+            </div>
+            <div class="relationship-item">
+                <strong>Extend:</strong> Manage Orders → Support Chats (Admin/Owner)
+            </div>
+            <div class="relationship-item">
+                <strong>Extend:</strong> View Tasks → (Update Status / Customer Chats) (Artist)
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #4CAF50, #45a049);"></div>
+                <span>Customer Use Cases</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #2196F3, #0b7dda);"></div>
+                <span>Admin Use Cases</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #FF9800, #f57c00);"></div>
+                <span>Owner Use Cases</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #9C27B0, #7b1fa2);"></div>
+                <span>Artist Use Cases</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+

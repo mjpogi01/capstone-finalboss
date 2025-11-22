@@ -1,0 +1,268 @@
+/* ===========================================
+   ORDER NOTIFICATION SYSTEM
+   Beautiful UI notifications for order status updates
+   =========================================== */
+
+.order-notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  width: 100%;
+  pointer-events: none;
+}
+
+.order-notification {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  padding: 0;
+  min-height: auto;
+  width: 100%;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(400px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 3px solid var(--status-color, #3B82F6);
+  overflow: hidden;
+  position: relative;
+}
+
+.order-notification.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.order-notification.exiting {
+  opacity: 0;
+  transform: translateX(400px);
+}
+
+/* Notification Types */
+.order-notification.success {
+  border-left-color: #10B981;
+}
+
+.order-notification.error {
+  border-left-color: #EF4444;
+}
+
+.order-notification.info {
+  border-left-color: #3B82F6;
+}
+
+/* Use unique class names to avoid conflicts with customer notifications */
+.order-notification-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 18px;
+  gap: 12px;
+}
+
+.order-notification-text {
+  flex: 1;
+  min-width: 0;
+  color: #000000;
+}
+
+.order-notification-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 3px;
+  line-height: 1.4;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+.order-notification-message {
+  font-size: 13px;
+  font-weight: 500;
+  color: #000000;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+.order-notification-order-info {
+  font-size: 12px;
+  font-weight: 600;
+  color: #000000;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  display: inline-block;
+  border: 1px solid var(--status-color, #3B82F6);
+}
+
+.order-notification-close {
+  background: transparent;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+
+.order-notification-close:hover {
+  background: #f1f5f9;
+  color: #000000;
+}
+
+.order-notification-progress-bar {
+  height: 3px;
+  background: #e2e8f0;
+  overflow: hidden;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.order-notification-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--status-color, #3B82F6) 0%, var(--status-color, #3B82F6) 100%);
+  transition: width 0.1s linear;
+  border-radius: 0 0 0 12px;
+}
+
+/* Status-specific styling */
+.order-notification[data-status="pending"] {
+  border-left-color: #F59E0B;
+}
+
+.order-notification[data-status="confirmed"] {
+  border-left-color: #3B82F6;
+}
+
+.order-notification[data-status="layout"] {
+  border-left-color: #8B5CF6;
+}
+
+.order-notification[data-status="sizing"] {
+  border-left-color: #EC4899;
+}
+
+.order-notification[data-status="printing"] {
+  border-left-color: #06B6D4;
+}
+
+.order-notification[data-status="press"] {
+  border-left-color: #EF4444;
+}
+
+.order-notification[data-status="prod"] {
+  border-left-color: #10B981;
+}
+
+.order-notification[data-status="packing_completing"] {
+  border-left-color: #6366F1;
+}
+
+.order-notification[data-status="picked_up_delivered"] {
+  border-left-color: #059669;
+}
+
+.order-notification[data-status="cancelled"] {
+  border-left-color: #DC2626;
+}
+
+/* Animation for stacking notifications */
+.order-notification:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.order-notification:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.order-notification:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.order-notification:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .order-notification-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: 100%;
+  }
+
+  .order-notification {
+    border-radius: 10px;
+  }
+
+  .order-notification-content {
+    padding: 12px 14px;
+  }
+
+  .order-notification-title {
+    font-size: 13px;
+    color: #000000;
+    font-weight: 700;
+  }
+
+  .order-notification-message {
+    font-size: 12px;
+    color: #000000;
+    font-weight: 500;
+  }
+
+  .order-notification-order-info {
+    color: #000000;
+  }
+}
+
+/* Force white theme - dark mode disabled */
+@media (prefers-color-scheme: dark) {
+  .order-notification {
+    background: #ffffff !important;
+    border-left-color: var(--status-color, #3B82F6);
+  }
+
+  .order-notification-title {
+    color: #000000;
+  }
+
+  .order-notification-message {
+    color: #000000;
+    font-weight: 500;
+  }
+
+  .order-notification-order-info {
+    color: #000000;
+    border-color: var(--status-color, #3B82F6);
+  }
+
+  .order-notification-close {
+    color: #475569;
+  }
+
+  .order-notification-close:hover {
+    background: #f1f5f9;
+    color: #000000;
+  }
+}
+

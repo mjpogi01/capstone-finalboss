@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use Case Wireframe - Yohanns E-commerce System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .wireframe-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .actor-flow {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .actor-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .customer-title { background: #e8f5e9; color: #2e7d32; }
+        .admin-title { background: #e3f2fd; color: #1565c0; }
+        .owner-title { background: #fff3e0; color: #e65100; }
+        .artist-title { background: #f3e5f5; color: #6a1b9a; }
+
+        .flow-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .flow-step {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 150px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .flow-step::after {
+            content: '→';
+            position: absolute;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+            color: #999;
+        }
+
+        .flow-step:last-child::after {
+            display: none;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .step-desc {
+            font-size: 0.75em;
+            color: #666;
+        }
+
+        .use-case-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px;
+            display: inline-block;
+            font-size: 0.85em;
+            min-width: 120px;
+        }
+
+        .use-case-group {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .customer-group { border-left-color: #4CAF50; }
+        .admin-group { border-left-color: #2196F3; }
+        .owner-group { border-left-color: #FF9800; }
+        .artist-group { border-left-color: #9C27B0; }
+
+        .group-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .relationship-arrow {
+            text-align: center;
+            font-size: 1.5em;
+            color: #999;
+            margin: 10px 0;
+        }
+
+        .legend {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .legend-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+    </style>
+</head>
+<body>
+    <div class="wireframe-container">
+        <h1>📐 Use Case Wireframe - Yohanns E-commerce System</h1>
+
+        <div class="flow-diagram">
+            <!-- CUSTOMER FLOW -->
+            <div class="actor-flow">
+                <div class="actor-title customer-title">👤 CUSTOMER</div>
+                
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="step-title">Browse</div>
+                        <div class="step-desc">Products</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Add to Cart</div>
+                        <div class="step-desc">Select Items</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Checkout</div>
+                        <div class="step-desc">Review Order</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Place Order</div>
+                        <div class="step-desc">Confirm</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Track/Review</div>
+                        <div class="step-desc">Order Status</div>
+                    </div>
+                </div>
+
+                <div class="use-case-group customer-group">
+                    <div class="group-title">All Customer Use Cases:</div>
+                    <div class="use-case-box">Register/Login</div>
+                    <div class="use-case-box">Browse Products</div>
+                    <div class="use-case-box">Search</div>
+                    <div class="use-case-box">View Details</div>
+                    <div class="use-case-box">Add to Cart</div>
+                    <div class="use-case-box">Manage Cart</div>
+                    <div class="use-case-box">Wishlist</div>
+                    <div class="use-case-box">Checkout</div>
+                    <div class="use-case-box">Place Order</div>
+                    <div class="use-case-box">View Orders</div>
+                    <div class="use-case-box">Track Order</div>
+                    <div class="use-case-box">Cancel Order</div>
+                    <div class="use-case-box">Review Order</div>
+                    <div class="use-case-box">Profile</div>
+                    <div class="use-case-box">Support Chat</div>
+                    <div class="use-case-box">View Branches</div>
+                    <div class="use-case-box">FAQs</div>
+                    <div class="use-case-box">About/Highlights</div>
+                    <div class="use-case-box">Newsletter</div>
+                </div>
+            </div>
+
+            <!-- ADMIN FLOW -->
+            <div class="actor-flow">
+                <div class="actor-title admin-title">👨‍💼 ADMIN</div>
+                
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="step-title">Dashboard</div>
+                        <div class="step-desc">Branch Overview</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Analytics</div>
+                        <div class="step-desc">Branch Data</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Manage Orders</div>
+                        <div class="step-desc">Update Status</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Inventory</div>
+                        <div class="step-desc">Products</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Support</div>
+                        <div class="step-desc">Chats</div>
+                    </div>
+                </div>
+
+                <div class="use-case-group admin-group">
+                    <div class="group-title">All Admin Use Cases:</div>
+                    <div class="use-case-box">Dashboard</div>
+                    <div class="use-case-box">Analytics (Branch)</div>
+                    <div class="use-case-box">Manage Orders</div>
+                    <div class="use-case-box">Walk-in Orders</div>
+                    <div class="use-case-box">Inventory</div>
+                    <div class="use-case-box">Manage Accounts</div>
+                    <div class="use-case-box">Support Chats</div>
+                    <div class="use-case-box">Branch Data</div>
+                </div>
+            </div>
+
+            <!-- OWNER FLOW -->
+            <div class="actor-flow">
+                <div class="actor-title owner-title">👑 OWNER</div>
+                
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="step-title">Dashboard</div>
+                        <div class="step-desc">System Overview</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Analytics</div>
+                        <div class="step-desc">All Branches</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Manage Orders</div>
+                        <div class="step-desc">All Branches</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Accounts</div>
+                        <div class="step-desc">All Users</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Support</div>
+                        <div class="step-desc">All Branches</div>
+                    </div>
+                </div>
+
+                <div class="use-case-group owner-group">
+                    <div class="group-title">All Owner Use Cases:</div>
+                    <div class="use-case-box">Dashboard</div>
+                    <div class="use-case-box">Analytics (All)</div>
+                    <div class="use-case-box">Manage Orders (All)</div>
+                    <div class="use-case-box">Walk-in Orders (All)</div>
+                    <div class="use-case-box">Manage Accounts (All)</div>
+                    <div class="use-case-box">Support Chats (All)</div>
+                    <div class="use-case-box">All Branch Data</div>
+                </div>
+            </div>
+
+            <!-- ARTIST FLOW -->
+            <div class="actor-flow">
+                <div class="actor-title artist-title">🎨 ARTIST</div>
+                
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="step-title">Dashboard</div>
+                        <div class="step-desc">Task Overview</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">View Tasks</div>
+                        <div class="step-desc">Assigned Tasks</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Update Status</div>
+                        <div class="step-desc">Progress</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Workload</div>
+                        <div class="step-desc">Overview</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-title">Customer Chats</div>
+                        <div class="step-desc">Communication</div>
+                    </div>
+                </div>
+
+                <div class="use-case-group artist-group">
+                    <div class="group-title">All Artist Use Cases:</div>
+                    <div class="use-case-box">Dashboard</div>
+                    <div class="use-case-box">View Tasks</div>
+                    <div class="use-case-box">Update Task Status</div>
+                    <div class="use-case-box">Workload Overview</div>
+                    <div class="use-case-box">Manage Profile</div>
+                    <div class="use-case-box">Customer Chats</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>🔗 Key Relationships</h3>
+            <div class="legend-item" style="border-left-color: #4CAF50;">
+                <strong>Include (Required):</strong> Add to Cart → Manage Cart → Checkout → Place Order
+            </div>
+            <div class="legend-item" style="border-left-color: #2196F3;">
+                <strong>Extend (Optional):</strong> Place Order → View Order History → (Track/Review/Cancel)
+            </div>
+            <div class="legend-item" style="border-left-color: #FF9800;">
+                <strong>Extend:</strong> View Product Details → (Add to Cart / Add to Wishlist)
+            </div>
+            <div class="legend-item" style="border-left-color: #9C27B0;">
+                <strong>Extend:</strong> Manage Orders → Support Chats (Admin/Owner)
+            </div>
+            <div class="legend-item" style="border-left-color: #9C27B0;">
+                <strong>Extend:</strong> View Tasks → (Update Status / Customer Chats) (Artist)
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+

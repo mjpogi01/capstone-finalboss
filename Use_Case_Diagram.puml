@@ -1,0 +1,166 @@
+@startuml Use Case Diagram - Yohanns E-commerce System
+
+!define RECTANGLE class
+
+skinparam actor {
+  BackgroundColor #E1F5FF
+  BorderColor #0066CC
+}
+
+skinparam usecase {
+  BackgroundColor #FFF4E6
+  BorderColor #FF9900
+}
+
+skinparam package {
+  BackgroundColor #F0F0F0
+  BorderColor #666666
+}
+
+left to right direction
+
+actor Customer
+actor Admin
+actor Owner
+actor Artist
+
+package "Customer Features" {
+  usecase UC1_Register as "Register Account"
+  usecase UC2_Login as "Login"
+  usecase UC3_Logout as "Logout"
+  usecase UC4_BrowseProducts as "Browse Products"
+  usecase UC5_SearchProducts as "Search Products"
+  usecase UC6_ViewProductDetails as "View Product Details"
+  usecase UC7_AddToCart as "Add to Cart"
+  usecase UC8_ManageCart as "Manage Cart\n(Add/Remove/Update Quantity)"
+  usecase UC9_AddToWishlist as "Add to Wishlist"
+  usecase UC10_ViewWishlist as "View Wishlist"
+  usecase UC11_Checkout as "Checkout"
+  usecase UC12_PlaceOrder as "Place Order"
+  usecase UC13_ViewOrderHistory as "View Order History"
+  usecase UC14_TrackOrder as "Track Order"
+  usecase UC15_CancelOrder as "Cancel Order"
+  usecase UC16_ReviewOrder as "Review Order"
+  usecase UC17_ViewProfile as "View Profile"
+  usecase UC18_EditProfile as "Edit Profile"
+  usecase UC19_ChangePassword as "Change Password"
+  usecase UC20_ContactSupport as "Contact Support\n(Chat)"
+  usecase UC21_ViewBranches as "View Branches"
+  usecase UC22_ViewFAQs as "View FAQs"
+  usecase UC23_ViewAbout as "View About Page"
+  usecase UC24_ViewHighlights as "View Highlights"
+  usecase UC25_ViewPrivacyPolicy as "View Privacy Policy"
+  usecase UC26_ViewTerms as "View Terms and Conditions"
+  usecase UC27_SubscribeNewsletter as "Subscribe to Newsletter"
+}
+
+package "Admin Features" {
+  usecase UC28_ViewDashboard as "View Dashboard"
+  usecase UC29_ViewAnalytics as "View Analytics\n(Branch-specific)"
+  usecase UC30_ManageOrders as "Manage Orders\n(View/Update Status)"
+  usecase UC31_ManageWalkInOrders as "Manage Walk-in Orders"
+  usecase UC32_ManageInventory as "Manage Inventory\n(Add/Edit/Delete Products)"
+  usecase UC33_ManageAccounts as "Manage Accounts\n(Users/Admins)"
+  usecase UC34_SupportChats as "Support Chats\n(Respond to Customers)"
+  usecase UC35_ViewBranchData as "View Branch Data"
+}
+
+package "Owner Features" {
+  usecase UC36_ViewOwnerDashboard as "View Dashboard"
+  usecase UC37_ViewAllAnalytics as "View Analytics\n(All Branches)"
+  usecase UC38_ManageAllOrders as "Manage Orders\n(All Branches)"
+  usecase UC39_ManageAllWalkInOrders as "Manage Walk-in Orders\n(All Branches)"
+  usecase UC40_ManageAllAccounts as "Manage Accounts\n(All Users/Admins)"
+  usecase UC41_SupportChatsOwner as "Support Chats\n(All Branches)"
+  usecase UC42_ViewAllBranchData as "View All Branches Data"
+}
+
+package "Artist Features" {
+  usecase UC43_ViewArtistDashboard as "View Dashboard"
+  usecase UC44_ViewTasks as "View Tasks"
+  usecase UC45_UpdateTaskStatus as "Update Task Status"
+  usecase UC46_ViewWorkload as "View Workload Overview"
+  usecase UC47_ManageArtistProfile as "Manage Profile"
+  usecase UC48_CustomerChats as "Customer Chats\n(Communicate with Customers)"
+}
+
+' Customer connections
+Customer --> UC1_Register
+Customer --> UC2_Login
+Customer --> UC3_Logout
+Customer --> UC4_BrowseProducts
+Customer --> UC5_SearchProducts
+Customer --> UC6_ViewProductDetails
+Customer --> UC7_AddToCart
+Customer --> UC8_ManageCart
+Customer --> UC9_AddToWishlist
+Customer --> UC10_ViewWishlist
+Customer --> UC11_Checkout
+Customer --> UC12_PlaceOrder
+Customer --> UC13_ViewOrderHistory
+Customer --> UC14_TrackOrder
+Customer --> UC15_CancelOrder
+Customer --> UC16_ReviewOrder
+Customer --> UC17_ViewProfile
+Customer --> UC18_EditProfile
+Customer --> UC19_ChangePassword
+Customer --> UC20_ContactSupport
+Customer --> UC21_ViewBranches
+Customer --> UC22_ViewFAQs
+Customer --> UC23_ViewAbout
+Customer --> UC24_ViewHighlights
+Customer --> UC25_ViewPrivacyPolicy
+Customer --> UC26_ViewTerms
+Customer --> UC27_SubscribeNewsletter
+
+' Admin connections
+Admin --> UC2_Login
+Admin --> UC3_Logout
+Admin --> UC28_ViewDashboard
+Admin --> UC29_ViewAnalytics
+Admin --> UC30_ManageOrders
+Admin --> UC31_ManageWalkInOrders
+Admin --> UC32_ManageInventory
+Admin --> UC33_ManageAccounts
+Admin --> UC34_SupportChats
+Admin --> UC35_ViewBranchData
+
+' Owner connections
+Owner --> UC2_Login
+Owner --> UC3_Logout
+Owner --> UC36_ViewOwnerDashboard
+Owner --> UC37_ViewAllAnalytics
+Owner --> UC38_ManageAllOrders
+Owner --> UC39_ManageAllWalkInOrders
+Owner --> UC40_ManageAllAccounts
+Owner --> UC41_SupportChatsOwner
+Owner --> UC42_ViewAllBranchData
+
+' Artist connections
+Artist --> UC2_Login
+Artist --> UC3_Logout
+Artist --> UC43_ViewArtistDashboard
+Artist --> UC44_ViewTasks
+Artist --> UC45_UpdateTaskStatus
+Artist --> UC46_ViewWorkload
+Artist --> UC47_ManageArtistProfile
+Artist --> UC48_CustomerChats
+
+' Relationships between use cases
+UC7_AddToCart ..> UC8_ManageCart : <<include>>
+UC8_ManageCart ..> UC11_Checkout : <<include>>
+UC11_Checkout ..> UC12_PlaceOrder : <<include>>
+UC12_PlaceOrder ..> UC13_ViewOrderHistory : <<extend>>
+UC13_ViewOrderHistory ..> UC14_TrackOrder : <<extend>>
+UC13_ViewOrderHistory ..> UC16_ReviewOrder : <<extend>>
+UC13_ViewOrderHistory ..> UC15_CancelOrder : <<extend>>
+UC6_ViewProductDetails ..> UC7_AddToCart : <<extend>>
+UC6_ViewProductDetails ..> UC9_AddToWishlist : <<extend>>
+UC30_ManageOrders ..> UC34_SupportChats : <<extend>>
+UC38_ManageAllOrders ..> UC41_SupportChatsOwner : <<extend>>
+UC44_ViewTasks ..> UC45_UpdateTaskStatus : <<extend>>
+UC44_ViewTasks ..> UC48_CustomerChats : <<extend>>
+
+@enduml
+
+

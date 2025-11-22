@@ -1,0 +1,390 @@
+.searchable-select-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* Ensure dropdown always stacks above surrounding content */
+.searchable-select-wrapper:has(.searchable-select.open),
+.form-group:has(.searchable-select.open) {
+  position: relative;
+  z-index: 9999;
+  overflow: visible;
+}
+
+.searchable-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #1a202c;
+  border: 1.5px solid #4a5568;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 99999;
+  max-height: 250px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-x: hidden;
+  animation: slideDown 0.2s ease;
+  box-sizing: border-box;
+  transform: translateZ(0);
+}
+
+.searchable-select-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.searchable-select {
+  position: relative;
+  background: #1a202c;
+  border: 1.5px solid #4a5568;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  color: #e2e8f0;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.searchable-select:hover:not(.disabled) {
+  border-color: #63b3ed;
+}
+
+.searchable-select:focus,
+.searchable-select.open {
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
+}
+
+.searchable-select.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #0f1419;
+}
+
+.searchable-select.error {
+  border-color: #fc8181;
+}
+
+.searchable-select.error:focus,
+.searchable-select.error.open {
+  border-color: #fc8181;
+  box-shadow: 0 0 0 3px rgba(252, 129, 129, 0.2);
+}
+
+.searchable-select-display {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchable-select-placeholder {
+  color: #718096;
+}
+
+.searchable-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.searchable-select-clear {
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+}
+
+.searchable-select-clear:hover {
+  background: rgba(160, 174, 192, 0.1);
+  color: #e2e8f0;
+}
+
+.searchable-select-chevron {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  transition: transform 0.2s ease;
+}
+
+.searchable-select-chevron.open {
+  transform: rotate(180deg);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.searchable-select-search {
+  position: relative;
+  padding: 8px;
+  border-bottom: 1px solid #4a5568;
+  background: #0f1419;
+  display: flex;
+  align-items: center;
+}
+
+.searchable-select-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: #1a202c;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.searchable-select-search-input:focus {
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
+}
+
+.searchable-select-search-input::placeholder {
+  color: #718096;
+}
+
+.searchable-select-options {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 200px;
+  padding: 2px 0;
+}
+
+/* Custom scrollbar */
+.searchable-select-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.searchable-select-options::-webkit-scrollbar-track {
+  background: #0f1419;
+}
+
+.searchable-select-options::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 4px;
+}
+
+.searchable-select-options::-webkit-scrollbar-thumb:hover {
+  background: #63b3ed;
+}
+
+.searchable-select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+}
+
+.searchable-select-option:hover,
+.searchable-select-option.highlighted {
+  background: #2c5282;
+  color: #ffffff;
+}
+
+.searchable-select-option.selected {
+  background: #1e3a5f;
+  color: #63b3ed;
+  font-weight: 500;
+}
+
+.searchable-select-option.selected:hover,
+.searchable-select-option.selected.highlighted {
+  background: #2c5282;
+}
+
+.searchable-select-check {
+  color: #63b3ed;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.searchable-select-no-results {
+  padding: 20px 16px;
+  text-align: center;
+  color: #718096;
+  font-size: 0.75rem;
+}
+
+/* Dark theme overrides for checkout modal */
+.checkout-modal .address-form .searchable-select {
+  background: #0f1419;
+  color: #ffffff;
+  border-color: #4a5568;
+  height: 36px;
+}
+
+.checkout-modal .address-form .searchable-select:focus,
+.checkout-modal .address-form .searchable-select.open {
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
+}
+
+.checkout-modal .address-form .searchable-select.disabled {
+  background-color: #0a0e12;
+}
+
+.checkout-modal .address-form .searchable-select-dropdown {
+  background: #0f1419;
+  border-color: #4a5568;
+}
+
+.checkout-modal .address-form .searchable-select-search {
+  background: #0a0e12;
+}
+
+.checkout-modal .address-form .searchable-select-search-input {
+  background: #1a202c;
+  color: #ffffff;
+  border-color: #4a5568;
+}
+
+.checkout-modal .address-form .searchable-select-search-input:focus {
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
+}
+
+.checkout-modal .address-form .searchable-select-options::-webkit-scrollbar-track {
+  background: #0a0e12;
+}
+
+/* Mobile responsiveness */
+@media only screen and (max-width: 768px) {
+  /* Mobile: Fix dropdown alignment and smooth animation */
+  .searchable-select-dropdown {
+    max-height: 250px !important;
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-width: 100% !important;
+    border-radius: 5px !important;
+    animation: slideDownMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+  }
+  
+  @keyframes slideDownMobile {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .searchable-select-wrapper {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    position: relative !important;
+  }
+
+  .searchable-select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 7px 10px;
+    font-size: 0.75rem;
+    height: 32px;
+    border-radius: 5px;
+  }
+
+  .searchable-select-options {
+    max-height: 200px;
+  }
+
+  .searchable-select-label {
+    font-size: 0.7rem;
+    margin-bottom: 3px;
+  }
+
+  .searchable-select-search {
+    padding: 6px;
+  }
+
+  .searchable-select-search-input {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+
+  .searchable-select-options {
+    padding: 2px 0;
+  }
+
+  .searchable-select-option {
+    padding: 7px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ============================================
+   ADDRESS FORM DROPDOWNS - MAXIMUM Z-INDEX
+   Unique Identifier: cdfm- prefix to avoid conflicts
+   ============================================ */
+
+/* Address Form Dropdowns - Maximum Z-Index to Appear in Front */
+.cdfm-address-form .searchable-select-dropdown,
+.cdfm-card .cdfm-address-form .searchable-select-dropdown,
+.cdfm-address-form-fields .searchable-select-dropdown,
+.cdfm-modal .cdfm-address-form .searchable-select-dropdown,
+div.cdfm-address-form .searchable-select-dropdown {
+  z-index: 99999999 !important;
+  position: absolute !important;
+}
+
+.cdfm-address-form .searchable-select-wrapper,
+.cdfm-card .cdfm-address-form .searchable-select-wrapper,
+div.cdfm-address-form .searchable-select-wrapper {
+  z-index: 99999998 !important;
+  position: relative !important;
+}
+
+.cdfm-address-form .cdfm-form-group:has(.searchable-select.open),
+.cdfm-card .cdfm-address-form .cdfm-form-group:has(.searchable-select.open),
+div.cdfm-address-form .cdfm-form-group:has(.searchable-select.open) {
+  z-index: 99999997 !important;
+  position: relative !important;
+}

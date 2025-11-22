@@ -1,0 +1,777 @@
+/* ===================================
+   STOCK MANAGEMENT DASHBOARD
+   Modern, Clean, Professional Design
+   Unique class names to avoid conflicts
+   =================================== */
+
+.stock-mgmt-dashboard {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Compact version when inside dashboard-grid */
+.dashboard-grid .stock-mgmt-dashboard,
+.stock-mgmt-compact {
+  padding: 1rem;
+  max-width: 100%;
+  width: 100%;
+  background: white !important;
+  min-height: 300px;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: block !important;
+  visibility: visible !important;
+}
+
+.stock-mgmt-compact .stock-mgmt-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.stock-mgmt-compact .stock-mgmt-title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.stock-mgmt-compact .stock-mgmt-table {
+  font-size: 0.875rem;
+}
+
+.stock-mgmt-compact .stock-mgmt-table th,
+.stock-mgmt-compact .stock-mgmt-table td {
+  padding: 0.75rem 0.5rem;
+}
+
+.stock-mgmt-compact .stock-mgmt-thumbnail {
+  width: 40px;
+  height: 40px;
+}
+
+.stock-mgmt-compact .stock-mgmt-item-name {
+  font-size: 0.875rem;
+}
+
+.dashboard-grid .stock-mgmt-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.dashboard-grid .stock-mgmt-content-wrapper {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.dashboard-grid .stock-mgmt-analytics-card {
+  margin-top: 1rem;
+}
+
+.dashboard-grid .stock-mgmt-controls {
+  margin-bottom: 1rem;
+}
+
+/* Header */
+.stock-mgmt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.stock-mgmt-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stock-mgmt-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.stock-mgmt-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.stock-mgmt-add-btn:active {
+  transform: translateY(0);
+}
+
+/* Controls */
+.stock-mgmt-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Search Button and Input - Copied from Recent Orders */
+.stock-mgmt-dashboard .header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stock-mgmt-dashboard .search-btn {
+  background: none !important;
+  border: none !important;
+  color: #6b7280 !important;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stock-mgmt-dashboard .search-btn svg {
+  width: 100%;
+  height: 100%;
+}
+
+.stock-mgmt-dashboard .search-btn:hover {
+  background: #f3f4f6 !important;
+}
+
+.stock-mgmt-dashboard .search-btn:active {
+  transform: scale(0.95);
+}
+
+.stock-mgmt-dashboard .search-btn.active {
+  background: #eff6ff !important;
+  color: #3b82f6 !important;
+}
+
+.stock-mgmt-dashboard .search-input,
+.stock-mgmt-dashboard .header-actions .search-input {
+  padding: 0.5rem 0.75rem !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  width: 250px;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.stock-mgmt-dashboard .search-input::placeholder,
+.stock-mgmt-dashboard .header-actions .search-input::placeholder {
+  color: #9ca3af !important;
+}
+
+.stock-mgmt-dashboard .search-input:focus,
+.stock-mgmt-dashboard .header-actions .search-input:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.stock-mgmt-filter-group {
+  position: relative;
+}
+
+.stock-mgmt-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.stock-mgmt-filter-toggle:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.stock-mgmt-filter-toggle.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.stock-mgmt-filter-badge {
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+.stock-mgmt-filters-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.stock-mgmt-filter-row {
+  margin-bottom: 1rem;
+}
+
+.stock-mgmt-filter-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.stock-mgmt-filter-row label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.stock-mgmt-filter-select {
+  width: 100%;
+  padding: 0.625rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  color: #1f2937;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stock-mgmt-filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.stock-mgmt-clear-filters {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.625rem;
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stock-mgmt-clear-filters:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Content Wrapper */
+.stock-mgmt-content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Table Container */
+.stock-mgmt-table-container {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.stock-mgmt-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.stock-mgmt-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.stock-mgmt-table thead {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.stock-mgmt-table th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.stock-mgmt-table th:nth-child(1) {
+  width: 25%;
+}
+
+.stock-mgmt-table th:nth-child(2) {
+  width: 10%;
+}
+
+.stock-mgmt-table th:nth-child(3) {
+  width: 15%;
+}
+
+.stock-mgmt-table th:nth-child(4) {
+  width: 10%;
+}
+
+.stock-mgmt-table th:nth-child(5) {
+  width: 12%;
+}
+
+.stock-mgmt-table th:nth-child(6) {
+  width: 13%;
+}
+
+.stock-mgmt-table th:nth-child(7) {
+  width: 10%;
+}
+
+.stock-mgmt-table th:nth-child(8) {
+  width: 5%;
+}
+
+.stock-mgmt-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s ease;
+}
+
+.stock-mgmt-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.stock-mgmt-table td {
+  padding: 1.25rem 1.25rem;
+  font-size: 0.95rem;
+  color: #4b5563;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stock-mgmt-table td:first-child {
+  white-space: normal;
+}
+
+/* Item Cell */
+.stock-mgmt-item-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stock-mgmt-thumbnail {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 2px solid #e5e7eb;
+}
+
+.stock-mgmt-item-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Quantity Cell */
+.stock-mgmt-quantity-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 120px;
+}
+
+.stock-mgmt-progress-bar-wrapper {
+  flex: 1;
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.stock-mgmt-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.stock-mgmt-quantity-value {
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Status Badges */
+.stock-mgmt-status-badge {
+  display: inline-block;
+  padding: 0.375rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.stock-mgmt-status-in {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.stock-mgmt-status-low {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stock-mgmt-status-out {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Actions */
+.stock-mgmt-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stock-mgmt-action-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.stock-mgmt-edit-btn {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.stock-mgmt-edit-btn:hover {
+  background: #bfdbfe;
+  transform: scale(1.05);
+}
+
+.stock-mgmt-restock-btn {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.stock-mgmt-restock-btn:hover {
+  background: #a7f3d0;
+  transform: scale(1.05);
+}
+
+.stock-mgmt-delete-btn {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.stock-mgmt-delete-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+/* Analytics Card */
+.stock-mgmt-analytics-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  height: fit-content;
+}
+
+.stock-mgmt-analytics-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.stock-mgmt-analytics-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.stock-mgmt-analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.stock-mgmt-analytics-section {
+  width: 100%;
+}
+
+.stock-mgmt-analytics-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Low Stock List */
+.stock-mgmt-low-stock-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stock-mgmt-low-stock-item {
+  padding: 0;
+}
+
+.stock-mgmt-low-stock-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.stock-mgmt-low-stock-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stock-mgmt-low-stock-qty {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.stock-mgmt-low-stock-qty.low {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stock-mgmt-low-stock-qty.out {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.stock-mgmt-low-stock-bar-wrapper {
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stock-mgmt-low-stock-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.stock-mgmt-no-low-stock {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+/* Chart */
+.stock-mgmt-chart-container {
+  margin-top: 0.5rem;
+}
+
+.stock-mgmt-mini-chart {
+  position: relative;
+  width: 100%;
+  height: 120px;
+}
+
+.stock-mgmt-chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.stock-mgmt-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Loading State */
+.stock-mgmt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.stock-mgmt-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: stock-mgmt-spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes stock-mgmt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty State */
+.stock-mgmt-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.stock-mgmt-empty p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .stock-mgmt-content-wrapper {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .stock-mgmt-content-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-mgmt-analytics-card {
+    margin-top: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .stock-mgmt-dashboard {
+    padding: 1rem;
+  }
+
+  .stock-mgmt-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .stock-mgmt-title {
+    font-size: 1.5rem;
+  }
+
+  .stock-mgmt-controls {
+    flex-direction: column;
+  }
+
+  .stock-mgmt-dashboard .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stock-mgmt-dashboard .search-input,
+  .stock-mgmt-dashboard .header-actions .search-input {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .stock-mgmt-table {
+    font-size: 0.875rem;
+  }
+
+  .stock-mgmt-table th,
+  .stock-mgmt-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .stock-mgmt-item-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .stock-mgmt-thumbnail {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stock-mgmt-quantity-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+

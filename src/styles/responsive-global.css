@@ -1,0 +1,240 @@
+/* ============================================
+   GLOBAL RESPONSIVE UTILITIES
+   For all customer-facing pages
+   ============================================ */
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Responsive Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Responsive Videos */
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Touch-friendly buttons on mobile */
+@media (max-width: 768px) {
+  button,
+  a.button,
+  .btn {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px 20px;
+  }
+}
+
+/* Small mobile devices (320px - 480px) */
+@media (max-width: 480px) {
+  /* Ensure text is readable on small screens */
+  body {
+    font-size: 14px;
+  }
+  
+  /* Reduce large headings on small screens */
+  h1 {
+    font-size: 1.75rem !important;
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Extra small devices (< 360px) */
+@media (max-width: 360px) {
+  body {
+    font-size: 13px;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Reduce vertical spacing in landscape */
+  .page-hero,
+  .about-hero,
+  .contacts-hero,
+  .faqs-hero,
+  .yohanns-branches-hero,
+  .title-section {
+    padding: 1rem 0 !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* Tablet landscape (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .container,
+  .page-container,
+  .yohanns-branches-container,
+  .contacts-container,
+  .faqs-wrapper {
+    padding: 0 2rem;
+  }
+}
+
+/* Large tablets and small desktops (1024px - 1280px) */
+@media (min-width: 1024px) and (max-width: 1280px) {
+  .container,
+  .page-container {
+    max-width: 960px;
+  }
+}
+
+/* Desktop (> 1280px) */
+@media (min-width: 1280px) {
+  .container,
+  .page-container {
+    max-width: 1200px;
+  }
+}
+
+/* Ultra-wide screens (> 1920px) */
+@media (min-width: 1920px) {
+  .container,
+  .page-container {
+    max-width: 1400px;
+  }
+}
+
+/* Grid responsive utilities */
+.responsive-grid {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.responsive-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.responsive-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.responsive-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-grid-3,
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .responsive-grid {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-grid-2,
+  .responsive-grid-3,
+  .responsive-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .responsive-grid {
+    gap: 0.75rem;
+  }
+}
+
+/* Responsive spacing utilities */
+.responsive-section {
+  padding: 4rem 0;
+}
+
+@media (max-width: 768px) {
+  .responsive-section {
+    padding: 3rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-section {
+    padding: 2rem 0;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive text alignment */
+@media (max-width: 768px) {
+  .desktop-left-mobile-center {
+    text-align: center !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-left-mobile-center {
+    text-align: left !important;
+  }
+}
+
+/* Flex responsive utilities */
+.responsive-flex {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .responsive-flex {
+    flex-direction: column;
+  }
+}
+
+/* Safe area for notched devices (iPhone X, etc.) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+
+
+
+

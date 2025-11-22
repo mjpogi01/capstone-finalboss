@@ -1,0 +1,339 @@
+/* ===========================================
+   STOCKS TABLE - Analytics Style
+   Clean card with simple styling
+   =========================================== */
+
+.stocks-table {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  height: fit-content;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  overflow: hidden;
+}
+
+.stocks-table:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.filter-btn {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.filter-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.table-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-header-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 0.5rem;
+}
+
+.header-cell {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
+}
+
+.table-row:hover {
+  background: #f8fafc;
+  border-radius: 8px;
+  margin: 0 -0.5rem;
+  padding: 0.75rem 0.5rem;
+  transform: translateY(-1px);
+}
+
+.table-cell {
+  display: flex;
+  align-items: center;
+}
+
+.item-cell {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.status-cell {
+  justify-content: flex-end;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+}
+
+.status-badge.green {
+  background: #ecfdf5;
+  color: #16a34a;
+  border-color: #dcfce7;
+}
+
+.status-badge.red {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .stocks-table {
+    padding: 1.25rem;
+  }
+  
+  .table-header {
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+  
+  .table-title {
+    font-size: 1.125rem;
+  }
+  
+  .filter-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .filter-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stocks-table {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+
+  .table-header {
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+  
+  .table-header-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .table-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 0;
+  }
+
+  .table-row:hover {
+    margin: 0 -0.5rem;
+    padding: 0.875rem 0.5rem;
+  }
+  
+  .status-cell {
+    justify-content: flex-end;
+  }
+  
+  .table-title {
+    font-size: 1.0625rem;
+  }
+  
+  .item-cell {
+    font-size: 0.875rem;
+    flex: 1;
+  }
+  
+  .status-badge {
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stocks-table {
+    padding: 0.875rem;
+  }
+  
+  .table-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .table-title {
+    font-size: 0.9375rem;
+  }
+  
+  .filter-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0.375rem;
+  }
+  
+  .filter-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .header-cell {
+    font-size: 0.6875rem;
+  }
+  
+  .item-cell {
+    font-size: 0.75rem;
+  }
+  
+  .status-badge {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.5rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .stocks-table {
+    border-color: #000000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .table-header {
+    border-bottom-color: #000000;
+  }
+  
+  .table-title {
+    color: #000000;
+  }
+  
+  .filter-btn {
+    border-color: #000000;
+    color: #000000;
+  }
+  
+  .header-cell {
+    color: #000000;
+  }
+  
+  .item-cell {
+    color: #000000;
+  }
+  
+  .status-badge.green {
+    background: #ffffff;
+    color: #000000;
+    border-color: #000000;
+  }
+  
+  .status-badge.red {
+    background: #ffffff;
+    color: #000000;
+    border-color: #000000;
+  }
+}
+
+/* ===========================================
+   LARGE SCREEN RESPONSIVE (54 inch displays)
+   =========================================== */
+
+/* 4K / Ultra-Wide Displays (2560px - 3839px) */
+@media (min-width: 2560px) and (max-width: 3839px) {
+  .stocks-table {
+    padding: 2rem;
+  }
+  
+  .table-title {
+    font-size: 1.25rem;
+  }
+  
+  .stocks-data-table {
+    font-size: 0.9375rem;
+  }
+  
+  .stocks-data-table th,
+  .stocks-data-table td {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* Large 4K Displays (3840px+) */
+@media (min-width: 3840px) {
+  .stocks-table {
+    padding: 2.5rem;
+  }
+  
+  .table-title {
+    font-size: 1.5rem;
+  }
+  
+  .stocks-data-table {
+    font-size: 1rem;
+  }
+  
+  .stocks-data-table th,
+  .stocks-data-table td {
+    padding: 1.5rem 1.25rem;
+  }
+}

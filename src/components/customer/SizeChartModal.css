@@ -1,0 +1,134 @@
+.sizechart-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sizechart-modal {
+  position: relative;
+  width: 90vw;
+  max-width: 1000px;
+  max-height: 85vh;
+  background: #0b0f19;
+  border: 2px solid #00bfff;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sizechart-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.sizechart-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 191, 255, 0.25);
+}
+
+.sizechart-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.sizechart-content {
+  padding: 16px;
+  overflow: auto;
+}
+
+.sizechart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.sizechart-item {
+  background: #0f1422;
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.sizechart-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  cursor: zoom-in;
+}
+
+.sizechart-empty {
+  color: #a0aec0;
+  text-align: center;
+  padding: 24px 0;
+}
+
+@media (max-width: 768px) {
+  .sizechart-modal { width: 95vw; }
+}
+
+/* Zoom overlay */
+.sizechart-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 6100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sizechart-zoom-container {
+  position: relative;
+  max-width: 95vw;
+  max-height: 90vh;
+  padding: 8px;
+  background: #0b0f19;
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  border-radius: 10px;
+}
+
+.sizechart-zoom-container img {
+  display: block;
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  cursor: zoom-out;
+  border-radius: 6px;
+}
+
+.sizechart-zoom-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+

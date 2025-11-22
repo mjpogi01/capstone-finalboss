@@ -1,0 +1,287 @@
+/* Data Deletion Page Styles - Based on Privacy Policy */
+
+.data-deletion-container {
+  min-height: 100vh;
+  background: #0a0a0a;
+  padding: 2rem 0;
+  color: #ffffff;
+}
+
+.data-deletion-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.data-deletion-hero {
+  text-align: center;
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 3rem;
+}
+
+.data-deletion-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-family: 'Poppins', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.data-deletion-subtitle {
+  font-size: 1.1rem;
+  color: #cccccc;
+  margin-bottom: 1rem;
+  font-family: 'Inter', sans-serif;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.data-deletion-effective-date {
+  font-size: 0.9rem;
+  color: #999999;
+  font-style: italic;
+  font-family: 'Inter', sans-serif;
+}
+
+.data-deletion-content {
+  max-width: 900px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+.data-deletion-section {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.data-deletion-section:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #1f1f1f;
+}
+
+.data-deletion-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.data-deletion-text {
+  font-size: 1rem;
+  color: #cccccc;
+  margin-bottom: 1rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.data-deletion-list {
+  margin: 1rem 0;
+  padding-left: 2rem;
+  color: #cccccc;
+  font-family: 'Inter', sans-serif;
+}
+
+.data-deletion-list li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.data-deletion-list li::before {
+  content: "•";
+  color: #ffffff;
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+.data-deletion-list li strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.data-deletion-contact-info {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.data-deletion-contact-info p {
+  margin: 0.5rem 0;
+  color: #cccccc;
+  font-family: 'Inter', sans-serif;
+}
+
+.data-deletion-contact-info strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.data-deletion-contact {
+  text-align: center;
+  padding: 3rem 2rem;
+  margin-top: 4rem;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-deletion-contact-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.data-deletion-contact-description {
+  font-size: 1rem;
+  color: #cccccc;
+  margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.data-deletion-contact-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.data-deletion-contact-button {
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-deletion-contact-button:focus,
+.data-deletion-contact-button:active {
+  outline: none;
+}
+
+.data-deletion-contact-button.primary {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.data-deletion-contact-button.primary:hover {
+  background: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.data-deletion-contact-button.secondary {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.data-deletion-contact-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .data-deletion-container {
+    padding: 1rem 0;
+  }
+
+  .data-deletion-wrapper {
+    padding: 0 1rem;
+  }
+
+  .data-deletion-hero {
+    padding: 2rem 0 1.5rem;
+  }
+
+  .data-deletion-title {
+    font-size: 2rem;
+  }
+
+  .data-deletion-subtitle {
+    font-size: 1rem;
+  }
+
+  .data-deletion-section {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .data-deletion-section-title {
+    font-size: 1.25rem;
+  }
+
+  .data-deletion-text,
+  .data-deletion-list li {
+    font-size: 0.95rem;
+  }
+
+  .data-deletion-contact {
+    padding: 2rem 1.5rem;
+  }
+
+  .data-deletion-contact-title {
+    font-size: 1.5rem;
+  }
+
+  .data-deletion-contact-buttons {
+    flex-direction: column;
+  }
+
+  .data-deletion-contact-button {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-deletion-title {
+    font-size: 1.75rem;
+  }
+
+  .data-deletion-section {
+    padding: 1.25rem;
+  }
+
+  .data-deletion-section-title {
+    font-size: 1.1rem;
+  }
+
+  .data-deletion-content {
+    line-height: 1.6;
+  }
+
+  .data-deletion-text,
+  .data-deletion-list li {
+    font-size: 0.9rem;
+  }
+
+  .data-deletion-contact {
+    padding: 1.5rem 1rem;
+  }
+
+  .data-deletion-contact-title {
+    font-size: 1.25rem;
+  }
+
+  .data-deletion-contact-description {
+    font-size: 0.9rem;
+  }
+}
+
