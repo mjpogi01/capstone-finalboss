@@ -216,9 +216,32 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
+    // Check if email service is configured before proceeding
+    if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+      console.warn('⚠️ Email service not configured - cannot send custom password reset email');
+      console.warn('   RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set' : 'NOT SET');
+      console.warn('   RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL ? 'Set' : 'NOT SET');
+      // Fallback to Supabase's default email
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: redirectTo
+      });
+      
+      if (resetError) {
+        console.error('❌ Supabase password reset also failed:', resetError.message);
+      } else {
+        console.log('✅ Supabase password reset email sent (fallback)');
+      }
+      
+      return res.json({ 
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been sent.'
+      });
+    }
+
     // Generate recovery token using Admin API (this doesn't send email)
     // We'll use generateLink to create the reset link with token
     try {
+      console.log(`🔗 Generating recovery link for: ${normalizedEmail}`);
       const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
         type: 'recovery',
         email: normalizedEmail,
@@ -227,8 +250,9 @@ router.post('/reset-password', async (req, res) => {
         }
       });
 
-      if (linkError || !linkData || !linkData.properties || !linkData.properties.action_link) {
-        console.error('Failed to generate recovery link:', linkError);
+      if (linkError) {
+        console.error('❌ Failed to generate recovery link:', linkError);
+        console.error('   Error details:', JSON.stringify(linkError, null, 2));
         // Fallback: use resetPasswordForEmail but note that it will send Supabase's email
         console.warn('⚠️ Falling back to resetPasswordForEmail (will send Supabase email)');
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
@@ -236,17 +260,35 @@ router.post('/reset-password', async (req, res) => {
         });
         
         if (resetError) {
+          console.error('❌ Fallback resetPasswordForEmail also failed:', resetError.message);
           // Still return success for security
           return res.json({ 
             success: true,
             message: 'If an account exists with this email, a password reset link has been sent.'
           });
+        } else {
+          console.log('✅ Supabase password reset email sent (fallback)');
+        }
+      } else if (!linkData || !linkData.properties || !linkData.properties.action_link) {
+        console.error('❌ Invalid recovery link data:', linkData);
+        // Fallback: use resetPasswordForEmail
+        console.warn('⚠️ Falling back to resetPasswordForEmail (will send Supabase email)');
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo: redirectTo
+        });
+        
+        if (resetError) {
+          console.error('❌ Fallback resetPasswordForEmail also failed:', resetError.message);
+        } else {
+          console.log('✅ Supabase password reset email sent (fallback)');
         }
       } else {
         // We have the recovery link with token - send only our custom email
         const resetLink = linkData.properties.action_link;
+        console.log(`✅ Recovery link generated: ${resetLink.substring(0, 50)}...`);
         
         // Send our custom styled email template with the actual reset link
+        console.log(`📧 Attempting to send password reset email to: ${normalizedEmail}`);
         const emailResult = await emailService.sendPasswordResetEmail(
           normalizedEmail,
           resetLink, // Full link with token
@@ -254,7 +296,7 @@ router.post('/reset-password', async (req, res) => {
         );
 
         if (emailResult.success) {
-          console.log(`✅ Custom password reset email sent to: ${normalizedEmail}`);
+          console.log(`✅ Custom password reset email sent successfully to: ${normalizedEmail}`);
           console.log(`📧 Email Details:`);
           console.log(`   - Recipient: ${normalizedEmail}`);
           console.log(`   - Subject: Reset Your Password - Yohanns`);
@@ -262,16 +304,37 @@ router.post('/reset-password', async (req, res) => {
           console.log(`   - Timestamp: ${new Date().toISOString()}`);
           console.log(`   - Reset link generated (Supabase email disabled)`);
         } else {
-          console.error('⚠️ Failed to send custom password reset email:', emailResult.error);
+          console.error('❌ Failed to send custom password reset email:', emailResult.error);
+          console.error('   Email service error details:', JSON.stringify(emailResult, null, 2));
+          // Try fallback to Supabase email
+          console.warn('⚠️ Attempting fallback to Supabase email...');
+          const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+            redirectTo: redirectTo
+          });
+          if (resetError) {
+            console.error('❌ Supabase fallback also failed:', resetError.message);
+          } else {
+            console.log('✅ Supabase password reset email sent (fallback)');
+          }
         }
       }
     } catch (tokenError) {
-      console.error('❌ Error generating recovery token:', tokenError);
+      console.error('❌ Exception generating recovery token:', tokenError);
+      console.error('   Stack:', tokenError.stack);
       // Fallback: use resetPasswordForEmail
       console.warn('⚠️ Falling back to resetPasswordForEmail (will send Supabase email)');
-      await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: redirectTo
-      });
+      try {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo: redirectTo
+        });
+        if (resetError) {
+          console.error('❌ Supabase fallback also failed:', resetError.message);
+        } else {
+          console.log('✅ Supabase password reset email sent (fallback)');
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback exception:', fallbackError);
+      }
     }
     
     // Always return success (security best practice - don't reveal if user exists)
