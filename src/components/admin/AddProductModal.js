@@ -2693,14 +2693,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                             boxSizing: 'border-box'
                           }}>
                             <span style={{ 
-                              minWidth: '80px', 
+                              minWidth: '100px', 
                               maxWidth: '200px',
                               flex: '0 1 auto',
                               fontWeight: 500, 
                               fontSize: '0.875rem', 
                               color: '#111827',
                               wordBreak: 'break-word'
-                            }}>{size}</span>
+                            }}>Size: {size}</span>
                             <div style={{ 
                               display: 'flex', 
                               alignItems: 'center', 
@@ -2776,7 +2776,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                 padding: '0.25rem 0.5rem',
                                 borderRadius: '4px',
                                 transition: 'all 0.2s ease',
-                                flex: '0 0 auto'
+                                flex: '0 0 auto',
+                                marginLeft: 'auto'
                               }}
                               onMouseEnter={(e) => {
                                 e.target.style.background = '#fef2f2';
