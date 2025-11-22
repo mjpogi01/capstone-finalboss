@@ -147,6 +147,14 @@ class AuthService {
         throw new Error(error.message || 'Sign in failed');
       }
 
+      // Check if email is confirmed before allowing sign in
+      const isEmailConfirmed = data.user?.email_confirmed_at || data.user?.confirmed_at;
+      if (!isEmailConfirmed) {
+        // Sign out immediately if email is not confirmed
+        await supabase.auth.signOut();
+        throw new Error('Please verify your email before signing in. Check your inbox for the verification code.');
+      }
+
       return {
         user: data.user,
         session: data.session
