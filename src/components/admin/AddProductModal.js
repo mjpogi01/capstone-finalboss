@@ -2670,7 +2670,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                       <div className="apm-form-inline-error">{sizeInputError}</div>
                     )}
                     {availableSizes.length > 0 && (
-                      <div className="apm-available-sizes-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
+                      <div className="apm-available-sizes-list" style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '0.75rem', 
+                        marginTop: '0.75rem',
+                        width: '100%',
+                        maxWidth: '100%'
+                      }}>
                         {availableSizes.map(size => (
                           <div key={size} style={{ 
                             display: 'flex', 
@@ -2679,11 +2686,36 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                             padding: '0.75rem',
                             background: '#f8fafc',
                             borderRadius: '6px',
-                            border: '1px solid #e5e7eb'
+                            border: '1px solid #e5e7eb',
+                            width: '100%',
+                            maxWidth: '100%',
+                            flexWrap: 'wrap',
+                            boxSizing: 'border-box'
                           }}>
-                            <span style={{ flex: '0 0 150px', fontWeight: 500, fontSize: '0.875rem', color: '#111827' }}>{size}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                              <label style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap', fontWeight: 500 }}>Price: <span style={{ color: '#ef4444' }}>*</span></label>
+                            <span style={{ 
+                              minWidth: '80px', 
+                              maxWidth: '200px',
+                              flex: '0 1 auto',
+                              fontWeight: 500, 
+                              fontSize: '0.875rem', 
+                              color: '#111827',
+                              wordBreak: 'break-word'
+                            }}>{size}</span>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.5rem', 
+                              flex: '1 1 auto',
+                              minWidth: '200px',
+                              flexWrap: 'wrap'
+                            }}>
+                              <label style={{ 
+                                fontSize: '0.75rem', 
+                                color: '#6b7280', 
+                                whiteSpace: 'nowrap', 
+                                fontWeight: 500,
+                                flex: '0 0 auto'
+                              }}>Price: <span style={{ color: '#ef4444' }}>*</span></label>
                               <input
                                 type="number"
                                 value={trophyPrices[size] || ''}
@@ -2693,15 +2725,24 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                 min="0"
                                 required
                                 style={{ 
-                                  width: '120px', 
+                                  flex: '1 1 120px',
+                                  minWidth: '100px',
+                                  maxWidth: '200px',
                                   padding: '0.5rem', 
                                   border: '1px solid #d1d5db', 
                                   borderRadius: '6px', 
                                   fontSize: '0.875rem',
-                                  background: '#ffffff'
+                                  background: '#ffffff',
+                                  boxSizing: 'border-box'
                                 }}
                               />
-                              <label style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap', fontWeight: 500, marginLeft: '0.5rem' }}>Stock:</label>
+                              <label style={{ 
+                                fontSize: '0.75rem', 
+                                color: '#6b7280', 
+                                whiteSpace: 'nowrap', 
+                                fontWeight: 500,
+                                flex: '0 0 auto'
+                              }}>Stock:</label>
                               <input
                                 type="number"
                                 value={sizeStocks[size] !== null && sizeStocks[size] !== undefined ? sizeStocks[size] : ''}
@@ -2709,12 +2750,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                 placeholder="0"
                                 min="0"
                                 style={{ 
-                                  width: '100px', 
+                                  flex: '1 1 100px',
+                                  minWidth: '80px',
+                                  maxWidth: '150px',
                                   padding: '0.5rem', 
                                   border: '1px solid #d1d5db', 
                                   borderRadius: '6px', 
                                   fontSize: '0.875rem',
-                                  background: '#ffffff'
+                                  background: '#ffffff',
+                                  boxSizing: 'border-box'
                                 }}
                               />
                             </div>
