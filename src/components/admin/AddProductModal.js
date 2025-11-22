@@ -1442,6 +1442,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     }));
   };
 
+  // Handle stock quantity change for a specific size (trophies only)
+  const handleSizeStockChange = (size, stockQuantity) => {
+    setSizeStocks(prev => ({
+      ...prev,
+      [size]: stockQuantity === '' ? null : parseInt(stockQuantity) || 0
+    }));
+  };
+
   // Remove trophy price when size is removed
   const handleRemoveTrophySize = (sizeToRemove) => {
     setAvailableSizes(prev => prev.filter(size => size !== sizeToRemove));
