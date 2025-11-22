@@ -25,9 +25,17 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          setUser(session.user);
-          // Mark that we've loaded the initial session
-          isInitialSessionRef.current = true;
+          // Only set user if email is confirmed
+          if (session.user.email_confirmed_at || session.user.confirmed_at) {
+            setUser(session.user);
+            // Mark that we've loaded the initial session
+            isInitialSessionRef.current = true;
+          } else {
+            // Email not confirmed - sign out to prevent unverified access
+            console.log('⚠️ User email not confirmed, signing out');
+            await supabase.auth.signOut();
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -44,6 +52,17 @@ export const AuthProvider = ({ children }) => {
         console.log('🔐 Auth state changed:', event, session?.user?.email, session?.user?.id);
         
         if (event === 'SIGNED_IN' && session?.user) {
+          // Check if email is confirmed before allowing authentication
+          const isEmailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
+          
+          if (!isEmailConfirmed) {
+            console.log('⚠️ User signed in but email not confirmed, signing out');
+            // Sign out immediately if email is not confirmed
+            await supabase.auth.signOut();
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
           // Check if manual login flag is set (user manually logged in via form or OAuth)
           const manualLogin = localStorage.getItem('manualLogin');
           
@@ -125,7 +144,19 @@ export const AuthProvider = ({ children }) => {
           // Note: We don't remove lastLoginTime here to track returning users
         }
         
-        setUser(session?.user || null);
+        // Only set user if session exists AND email is confirmed
+        if (session?.user) {
+          const isEmailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
+          if (isEmailConfirmed) {
+            setUser(session.user);
+          } else {
+            // Email not confirmed - don't set user
+            console.log('⚠️ Session exists but email not confirmed, not setting user');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
         setIsLoading(false);
       }
     );

@@ -35,6 +35,13 @@ class AuthService {
         throw new Error(error.message || 'Sign up failed');
       }
 
+      // IMPORTANT: Sign out immediately if email is not confirmed
+      // This prevents unverified users from being authenticated
+      if (data.user && !data.user.email_confirmed_at && !data.user.confirmed_at) {
+        console.log('⚠️ Email not confirmed, signing out to prevent unverified access');
+        await supabase.auth.signOut();
+      }
+
       // Store user data temporarily for after verification
       const tempUserData = {
         userId: data.user?.id,
@@ -48,7 +55,7 @@ class AuthService {
 
       return {
         user: data.user,
-        session: data.session,
+        session: null, // Don't return session if email not confirmed
         needsVerification: true,
         userData: tempUserData // Store for after verification
       };

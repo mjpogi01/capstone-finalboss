@@ -11,6 +11,7 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import TermsAndConditionsModal from "./TermsAndConditionsModal";
 import EmailVerificationModal from "./EmailVerificationModal";
 import authService from "../../services/authService";
+import { supabase } from '../../lib/supabase';
 import { quickValidateEmail, validateEmailWithBackend } from "../../utils/emailValidator";
 
 const SignUpModal = ({ isOpen, onClose, onOpenSignIn }) => {
@@ -180,6 +181,29 @@ const SignUpModal = ({ isOpen, onClose, onOpenSignIn }) => {
           pendingUserData.userId,
           pendingUserData
         );
+      }
+
+      // IMPORTANT: Sign in the user after email verification
+      // The backend has confirmed the email, now we need to authenticate the user
+      if (pendingUserData && pendingUserData.email && pendingUserData.password) {
+        try {
+          const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
+            email: pendingUserData.email,
+            password: pendingUserData.password
+          });
+
+          if (signInError) {
+            console.error('Error signing in after verification:', signInError);
+            showError('Error', 'Email verified but sign in failed. Please try signing in manually.');
+          } else if (session?.user) {
+            console.log('✅ User signed in after email verification');
+            // Set manual login flag to show welcome notification
+            localStorage.setItem('manualLogin', 'true');
+          }
+        } catch (signInErr) {
+          console.error('Error signing in after verification:', signInErr);
+          showError('Error', 'Email verified but sign in failed. Please try signing in manually.');
+        }
       }
 
       // Close verification modal
