@@ -180,35 +180,84 @@ router.post('/reset-password', async (req, res) => {
     let user = null;
     let userName = null;
     try {
+      console.log(`🔍 Looking up user: ${normalizedEmail}`);
+      
       // Try getUserByEmail first if available
       let userData = null;
       let getUserError = null;
       
       if (supabase.auth.admin.getUserByEmail) {
-        const result = await supabase.auth.admin.getUserByEmail(normalizedEmail);
-        userData = result.data;
-        getUserError = result.error;
+        console.log('📞 Trying getUserByEmail...');
+        try {
+          const result = await supabase.auth.admin.getUserByEmail(normalizedEmail);
+          userData = result.data;
+          getUserError = result.error;
+          
+          if (getUserError) {
+            console.log('❌ getUserByEmail error:', getUserError.message);
+          } else if (userData && userData.user) {
+            console.log('✅ getUserByEmail found user:', userData.user.id);
+          } else {
+            console.log('⚠️ getUserByEmail returned no user data');
+          }
+        } catch (e) {
+          console.log('❌ getUserByEmail exception:', e.message);
+          getUserError = e;
+        }
+      } else {
+        console.log('⚠️ getUserByEmail method not available');
       }
       
       // If getUserByEmail doesn't exist or failed, fall back to listUsers
       if (getUserError || !userData || !userData.user) {
+        console.log('📋 Falling back to listUsers...');
         // Fallback: use listUsers to find user by email
         const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
         
-        if (!listError && usersData && usersData.users) {
-          const foundUser = usersData.users.find(
+        if (listError) {
+          console.error('❌ listUsers error:', listError.message);
+        } else if (usersData && usersData.users) {
+          console.log(`📊 Found ${usersData.users.length} total users, searching for: ${normalizedEmail}`);
+          
+          // Try exact match first
+          let foundUser = usersData.users.find(
             u => u.email && u.email.toLowerCase() === normalizedEmail
           );
           
+          // If not found, try case-insensitive search
+          if (!foundUser) {
+            console.log('🔍 Exact match not found, trying case-insensitive search...');
+            foundUser = usersData.users.find(
+              u => u.email && u.email.toLowerCase().trim() === normalizedEmail
+            );
+          }
+          
+          // Debug: log first few user emails to see format
+          if (!foundUser && usersData.users.length > 0) {
+            console.log('📧 Sample user emails (first 5):', 
+              usersData.users.slice(0, 5).map(u => ({ 
+                email: u.email, 
+                normalized: u.email?.toLowerCase().trim(),
+                id: u.id 
+              }))
+            );
+          }
+          
           if (foundUser) {
+            console.log('✅ Found user via listUsers:', foundUser.id);
             user = foundUser;
             userName = foundUser.user_metadata?.full_name || 
                       foundUser.user_metadata?.name ||
                       foundUser.email?.split('@')[0] || null;
+          } else {
+            console.log('❌ User not found in listUsers results');
           }
+        } else {
+          console.log('⚠️ listUsers returned no data');
         }
       } else {
         // getUserByEmail worked
+        console.log('✅ Using user from getUserByEmail');
         user = userData.user;
         userName = userData.user.user_metadata?.full_name || 
                    userData.user.user_metadata?.name ||
