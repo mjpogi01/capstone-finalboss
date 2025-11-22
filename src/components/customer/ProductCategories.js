@@ -85,7 +85,11 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
       const averageRating = totalRating / reviews.length;
       return averageRating.toFixed(1); // Always show 1 decimal place
     } catch (error) {
-      console.error('Error calculating rating for product', productId, error);
+      // Silently handle errors - products without reviews are normal
+      // Only log if it's not a 404 (which means no reviews found)
+      if (error.message && !error.message.includes('404')) {
+        console.warn('Error calculating rating for product', productId, error);
+      }
       return null; // No rating available on error
     }
   };

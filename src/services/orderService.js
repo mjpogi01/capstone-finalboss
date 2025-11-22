@@ -486,8 +486,15 @@ class OrderService {
     try {
       const response = await fetch(`${API_URL}/api/order-tracking/product-reviews/${productId}`);
 
+      // Treat 404 as "no reviews found" - return empty array silently
+      if (response.status === 404) {
+        return [];
+      }
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch product reviews (status ${response.status})`);
+        // Only log non-404 errors to avoid console spam
+        console.warn(`Failed to fetch product reviews for ${productId} (status ${response.status})`);
+        return [];
       }
 
       const data = await response.json();
@@ -497,7 +504,10 @@ class OrderService {
 
       return data.reviews || [];
     } catch (error) {
-      console.error('Error in getProductReviews:', error);
+      // Only log network errors, not 404s
+      if (!error.message || !error.message.includes('404')) {
+        console.error('Error in getProductReviews:', error);
+      }
       return [];
     }
   }

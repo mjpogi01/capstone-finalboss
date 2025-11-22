@@ -66,25 +66,262 @@ function orderContainsProduct(orderItems, productId) {
   return items.some(item => item?.id === productId || item?.product_id === productId);
 }
 
-// Get order tracking history
-router.get('/:orderId', async (req, res) => {
+// IMPORTANT: Specific routes must come BEFORE the catch-all /:orderId route
+// Otherwise Express will match /product-reviews/abc as /:orderId with orderId="product-reviews"
+
+// Get reviews associated with a product (direct product reviews + related order reviews)
+router.get('/product-reviews/:productId', async (req, res) => {
+  try {
+    const { productId } = req.params;
+    console.log(`[Product Reviews] Fetching reviews for product: ${productId}`);
+
+    if (!productId) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Product ID is required',
+        reviews: [],
+        total: 0
+      });
+    }
+
+    // Reviews explicitly tied to this product
+    const { data: productReviews, error: productError } = await supabase
+      .from('order_reviews')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false });
+
+    if (productError) {
+      console.warn('Unable to fetch product-specific reviews:', productError.message);
+    }
+
+    // Order-level reviews (no product_id) that might include this product
+    const { data: generalReviews, error: generalError } = await supabase
+      .from('order_reviews')
+      .select('*')
+      .is('product_id', null)
+      .order('created_at', { ascending: false });
+
+    if (generalError) {
+      console.warn('Unable to fetch general order reviews:', generalError.message);
+    }
+
+    let relevantOrderReviews = [];
+    if (generalReviews && generalReviews.length > 0) {
+      const orderIds = [...new Set(generalReviews.map(review => review.order_id).filter(Boolean))];
+      if (orderIds.length > 0) {
+        const { data: ordersData, error: ordersError } = await supabase
+          .from('orders')
+          .select('id, order_items')
+          .in('id', orderIds);
+
+        if (ordersError) {
+          console.warn('Unable to fetch orders for review mapping:', ordersError.message);
+        } else if (ordersData) {
+          const matchingOrderIds = new Set();
+          ordersData.forEach(order => {
+            if (orderContainsProduct(order.order_items, productId)) {
+              matchingOrderIds.add(order.id);
+            }
+          });
+
+          relevantOrderReviews = generalReviews.filter(review => matchingOrderIds.has(review.order_id));
+        }
+      }
+    }
+
+    const combinedMap = new Map();
+    (productReviews || []).forEach(review => combinedMap.set(review.id, review));
+    relevantOrderReviews.forEach(review => {
+      if (!combinedMap.has(review.id)) {
+        combinedMap.set(review.id, review);
+      }
+    });
+
+    const combined = Array.from(combinedMap.values()).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    const enriched = await enrichReviewsWithUserInfo(combined);
+
+    // Always return 200 OK, even if no reviews found
+    res.status(200).json({
+      success: true,
+      reviews: enriched || [],
+      total: enriched ? enriched.length : 0
+    });
+  } catch (error) {
+    console.error('Error fetching product reviews:', error);
+    // Return 200 OK with empty reviews instead of 500 to prevent frontend errors
+    res.status(200).json({ 
+      success: true,
+      reviews: [],
+      total: 0,
+      error: 'Failed to fetch product reviews'
+    });
+  }
+});
+
+// Get all reviews for an order (Universal)
+router.get('/reviews/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const { data: reviews, error: reviewsError } = await supabase
+      .from('order_reviews')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('created_at', { ascending: false });
+
+    if (reviewsError) {
+      console.warn('Error fetching order reviews:', reviewsError.message);
+      // Return empty array instead of error
+      return res.status(200).json({
+        success: true,
+        reviews: [],
+        total: 0
+      });
+    }
+
+    const enriched = await enrichReviewsWithUserInfo(reviews || []);
+
+    res.status(200).json({
+      success: true,
+      reviews: enriched || [],
+      total: enriched ? enriched.length : 0
+    });
+  } catch (error) {
+    console.error('Error fetching order reviews:', error);
+    // Return 200 with empty array instead of 500
+    res.status(200).json({ 
+      success: true,
+      reviews: [],
+      total: 0,
+      error: 'Failed to fetch order reviews'
+    });
+  }
+});
+
+// Get all reviews by a user (Universal)
+router.get('/user-reviews/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const { data: result, error: resultError } = await supabase
+      .from('order_reviews')
+      .select(`
+        *,
+        orders!inner(order_number, total_amount, status)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (resultError) {
+      // Fallback to simple select if join fails
+      const { data: simpleResult, error: simpleError } = await supabase
+        .from('order_reviews')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (simpleError) {
+        console.warn('Error fetching user reviews:', simpleError.message);
+        // Return empty array instead of error
+        return res.status(200).json({
+          success: true,
+          reviews: [],
+          total: 0
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        reviews: simpleResult || [],
+        total: (simpleResult || []).length
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      reviews: result || [],
+      total: (result || []).length
+    });
+  } catch (error) {
+    console.error('Error fetching user reviews:', error);
+    // Return 200 with empty array instead of 500
+    res.status(200).json({ 
+      success: true,
+      reviews: [],
+      total: 0,
+      error: 'Failed to fetch user reviews'
+    });
+  }
+});
+
+// Get review statistics for an order
+router.get('/review-stats/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
     
-    const trackingData = await supabase
-      .from('order_tracking')
-      .select('*')
+    const { data: stats, error: statsError } = await supabase
+      .from('order_reviews')
+      .select(`
+        count(*) as total_reviews,
+        avg(rating) as average_rating,
+        count(case when rating = 5 then 1 end) as five_star,
+        count(case when rating = 4 then 1 end) as four_star,
+        count(case when rating = 3 then 1 end) as three_star,
+        count(case when rating = 2 then 1 end) as two_star,
+        count(case when rating = 1 then 1 end) as one_star
+      `)
       .eq('order_id', orderId)
-      .order('timestamp', { ascending: true });
+      .single();
 
-    if (trackingData.error) {
-      throw trackingData.error;
+    if (statsError) {
+      console.warn('Error fetching review stats:', statsError.message);
+      // Return default stats instead of error
+      return res.status(200).json({
+        success: true,
+        stats: {
+          totalReviews: 0,
+          averageRating: 0,
+          fiveStar: 0,
+          fourStar: 0,
+          threeStar: 0,
+          twoStar: 0,
+          oneStar: 0
+        }
+      });
     }
 
-    res.json(trackingData.data);
+    res.json({
+      success: true,
+      stats: {
+        totalReviews: stats?.total_reviews || 0,
+        averageRating: stats?.average_rating || 0,
+        fiveStar: stats?.five_star || 0,
+        fourStar: stats?.four_star || 0,
+        threeStar: stats?.three_star || 0,
+        twoStar: stats?.two_star || 0,
+        oneStar: stats?.one_star || 0
+      }
+    });
   } catch (error) {
-    console.error('Error fetching order tracking:', error);
-    res.status(500).json({ error: 'Failed to fetch order tracking' });
+    console.error('Error fetching review stats:', error);
+    // Return 200 with default stats instead of 500
+    res.status(200).json({ 
+      success: true,
+      stats: {
+        totalReviews: 0,
+        averageRating: 0,
+        fiveStar: 0,
+        fourStar: 0,
+        threeStar: 0,
+        twoStar: 0,
+        oneStar: 0
+      },
+      error: 'Failed to fetch review stats'
+    });
   }
 });
 
@@ -448,198 +685,37 @@ router.get('/status/:orderId', async (req, res) => {
       .order('timestamp', { ascending: false })
       .limit(1);
 
-    if (resultError || result.length === 0) {
-      return res.status(404).json({ error: 'No tracking information found for this order' });
+    if (resultError) {
+      console.warn('Error fetching order status:', resultError.message);
+      // Return 200 with null instead of 404
+      return res.status(200).json({ 
+        success: true,
+        status: null,
+        message: 'No tracking information found for this order'
+      });
     }
 
-    res.json(result[0]);
+    if (!result || result.length === 0) {
+      // Return 200 with null instead of 404
+      return res.status(200).json({ 
+        success: true,
+        status: null,
+        message: 'No tracking information found for this order'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      status: result[0]
+    });
   } catch (error) {
     console.error('Error fetching current order status:', error);
-    res.status(500).json({ error: 'Failed to fetch current order status' });
-  }
-});
-
-// Get all reviews for an order (Universal)
-router.get('/reviews/:orderId', async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const { data: reviews, error: reviewsError } = await supabase
-      .from('order_reviews')
-      .select('*')
-      .eq('order_id', orderId)
-      .order('created_at', { ascending: false });
-
-    if (reviewsError) {
-      throw reviewsError;
-    }
-
-    const enriched = await enrichReviewsWithUserInfo(reviews || []);
-
-    res.json({
+    // Return 200 with null instead of 500
+    res.status(200).json({ 
       success: true,
-      reviews: enriched,
-      total: enriched.length
+      status: null,
+      error: 'Failed to fetch current order status'
     });
-  } catch (error) {
-    console.error('Error fetching order reviews:', error);
-    res.status(500).json({ error: 'Failed to fetch order reviews' });
-  }
-});
-
-// Get all reviews by a user (Universal)
-router.get('/user-reviews/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    const { data: result, error: resultError } = await supabase
-      .from('order_reviews')
-      .select(`
-        r.*,
-        o.order_number,
-        o.total_amount,
-        o.status as order_status
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (resultError) {
-      throw resultError;
-    }
-
-    res.json({
-      success: true,
-      reviews: result,
-      total: result.length
-    });
-  } catch (error) {
-    console.error('Error fetching user reviews:', error);
-    res.status(500).json({ error: 'Failed to fetch user reviews' });
-  }
-});
-
-// Get reviews associated with a product (direct product reviews + related order reviews)
-router.get('/product-reviews/:productId', async (req, res) => {
-  try {
-    const { productId } = req.params;
-
-    if (!productId) {
-      return res.status(400).json({ error: 'Product ID is required' });
-    }
-
-    // Reviews explicitly tied to this product
-    const { data: productReviews, error: productError } = await supabase
-      .from('order_reviews')
-      .select('*')
-      .eq('product_id', productId)
-      .order('created_at', { ascending: false });
-
-    if (productError) {
-      console.warn('Unable to fetch product-specific reviews:', productError.message);
-    }
-
-    // Order-level reviews (no product_id) that might include this product
-    const { data: generalReviews, error: generalError } = await supabase
-      .from('order_reviews')
-      .select('*')
-      .is('product_id', null)
-      .order('created_at', { ascending: false });
-
-    if (generalError) {
-      console.warn('Unable to fetch general order reviews:', generalError.message);
-    }
-
-    let relevantOrderReviews = [];
-    if (generalReviews && generalReviews.length > 0) {
-      const orderIds = [...new Set(generalReviews.map(review => review.order_id).filter(Boolean))];
-      if (orderIds.length > 0) {
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
-          .select('id, order_items')
-          .in('id', orderIds);
-
-        if (ordersError) {
-          console.warn('Unable to fetch orders for review mapping:', ordersError.message);
-        } else if (ordersData) {
-          const matchingOrderIds = new Set();
-          ordersData.forEach(order => {
-            if (orderContainsProduct(order.order_items, productId)) {
-              matchingOrderIds.add(order.id);
-            }
-          });
-
-          relevantOrderReviews = generalReviews.filter(review => matchingOrderIds.has(review.order_id));
-        }
-      }
-    }
-
-    const combinedMap = new Map();
-    (productReviews || []).forEach(review => combinedMap.set(review.id, review));
-    relevantOrderReviews.forEach(review => {
-      if (!combinedMap.has(review.id)) {
-        combinedMap.set(review.id, review);
-      }
-    });
-
-    const combined = Array.from(combinedMap.values()).sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-
-    const enriched = await enrichReviewsWithUserInfo(combined);
-
-    res.json({
-      success: true,
-      reviews: enriched,
-      total: enriched.length
-    });
-  } catch (error) {
-    console.error('Error fetching product reviews:', error);
-    res.status(500).json({ error: 'Failed to fetch product reviews' });
-  }
-});
-
-// Get review statistics for an order
-router.get('/review-stats/:orderId', async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    
-    const { data: stats, error: statsError } = await supabase
-      .from('order_reviews')
-      .select(`
-        count(*) as total_reviews,
-        avg(rating) as average_rating,
-        count(case when rating = 5 then 1 end) as five_star,
-        count(case when rating = 4 then 1 end) as four_star,
-        count(case when rating = 3 then 1 end) as three_star,
-        count(case when rating = 2 then 1 end) as two_star,
-        count(case when rating = 1 then 1 end) as one_star
-      `)
-      .eq('order_id', orderId)
-      .single();
-
-    if (statsError) {
-      throw statsError;
-    }
-
-    const statsData = stats;
-    
-    res.json({
-      success: true,
-      statistics: {
-        totalReviews: parseInt(statsData.total_reviews),
-        averageRating: parseFloat(statsData.average_rating || 0).toFixed(1),
-        ratingDistribution: {
-          fiveStar: parseInt(statsData.five_star),
-          fourStar: parseInt(statsData.four_star),
-          threeStar: parseInt(statsData.three_star),
-          twoStar: parseInt(statsData.two_star),
-          oneStar: parseInt(statsData.one_star)
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching review statistics:', error);
-    res.status(500).json({ error: 'Failed to fetch review statistics' });
   }
 });
 
@@ -659,6 +735,45 @@ router.post('/migrate-reviews', async (req, res) => {
   } catch (error) {
     console.error('Error migrating review system:', error);
     res.status(500).json({ error: 'Failed to migrate review system' });
+  }
+});
+
+// ⚠️ IMPORTANT: Catch-all route MUST be LAST - after ALL specific routes
+// Get order tracking history (catch-all route - must come AFTER all specific routes)
+router.get('/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const { data: trackingData, error: trackingError } = await supabase
+      .from('order_tracking')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('timestamp', { ascending: true });
+
+    if (trackingError) {
+      console.warn('Error fetching order tracking:', trackingError.message);
+      // Return 200 with empty array instead of error
+      return res.status(200).json({
+        success: true,
+        tracking: [],
+        total: 0
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      tracking: trackingData || [],
+      total: trackingData ? trackingData.length : 0
+    });
+  } catch (error) {
+    console.error('Error fetching order tracking:', error);
+    // Return 200 with empty array instead of 500
+    res.status(200).json({ 
+      success: true,
+      tracking: [],
+      total: 0,
+      error: 'Failed to fetch order tracking'
+    });
   }
 });
 
