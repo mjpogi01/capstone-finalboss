@@ -208,52 +208,53 @@ router.post('/reset-password', async (req, res) => {
         console.log('⚠️ getUserByEmail method not available');
       }
       
-      // If getUserByEmail doesn't exist or failed, fall back to listUsers
+      // If getUserByEmail doesn't exist or failed, fall back to listUsers with pagination
       if (getUserError || !userData || !userData.user) {
-        console.log('📋 Falling back to listUsers...');
-        // Fallback: use listUsers to find user by email
-        const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
+        console.log('📋 Falling back to listUsers with pagination...');
+        // Paginate through all users to find the email
+        let page = 1;
+        const perPage = 1000;
+        let hasMore = true;
+        let foundUser = null;
         
-        if (listError) {
-          console.error('❌ listUsers error:', listError.message);
-        } else if (usersData && usersData.users) {
-          console.log(`📊 Found ${usersData.users.length} total users, searching for: ${normalizedEmail}`);
+        while (hasMore && !foundUser) {
+          const { data: usersData, error: listError } = await supabase.auth.admin.listUsers({
+            page,
+            perPage
+          });
           
-          // Try exact match first
-          let foundUser = usersData.users.find(
-            u => u.email && u.email.toLowerCase() === normalizedEmail
-          );
+          if (listError) {
+            console.error(`❌ listUsers error (page ${page}):`, listError.message);
+            break;
+          }
           
-          // If not found, try case-insensitive search
-          if (!foundUser) {
-            console.log('🔍 Exact match not found, trying case-insensitive search...');
+          if (usersData && usersData.users) {
+            console.log(`📊 Page ${page}: Found ${usersData.users.length} users, searching for: ${normalizedEmail}`);
+            
+            // Try exact match
             foundUser = usersData.users.find(
               u => u.email && u.email.toLowerCase().trim() === normalizedEmail
             );
-          }
-          
-          // Debug: log first few user emails to see format
-          if (!foundUser && usersData.users.length > 0) {
-            console.log('📧 Sample user emails (first 5):', 
-              usersData.users.slice(0, 5).map(u => ({ 
-                email: u.email, 
-                normalized: u.email?.toLowerCase().trim(),
-                id: u.id 
-              }))
-            );
-          }
-          
-          if (foundUser) {
-            console.log('✅ Found user via listUsers:', foundUser.id);
-            user = foundUser;
-            userName = foundUser.user_metadata?.full_name || 
-                      foundUser.user_metadata?.name ||
-                      foundUser.email?.split('@')[0] || null;
+            
+            if (foundUser) {
+              console.log('✅ Found user via listUsers (page ${page}):', foundUser.id);
+              user = foundUser;
+              userName = foundUser.user_metadata?.full_name || 
+                        foundUser.user_metadata?.name ||
+                        foundUser.email?.split('@')[0] || null;
+              break;
+            }
+            
+            // Check if there are more pages
+            hasMore = usersData.users.length === perPage;
+            page++;
           } else {
-            console.log('❌ User not found in listUsers results');
+            hasMore = false;
           }
-        } else {
-          console.log('⚠️ listUsers returned no data');
+        }
+        
+        if (!foundUser) {
+          console.log('❌ User not found after searching all pages');
         }
       } else {
         // getUserByEmail worked
@@ -264,7 +265,7 @@ router.post('/reset-password', async (req, res) => {
                    userData.user.email?.split('@')[0] || null;
       }
       
-      // If user still not found, return success anyway (security best practice)
+      // If user not found, return generic message (security - don't reveal if user exists)
       if (!user) {
         console.log('⚠️ User not found for password reset');
         return res.json({ 
@@ -331,13 +332,18 @@ router.post('/reset-password', async (req, res) => {
       
       console.log('✅ User is email-based (not OAuth) - proceeding with password reset');
     } catch (userError) {
-      // Error fetching user - return success anyway (security best practice)
+      // Error fetching user - return generic message (security best practice)
       console.warn('Could not fetch user info for password reset:', userError.message);
       return res.json({ 
         success: true,
         message: 'If an account exists with this email, a password reset link has been sent.'
       });
     }
+    
+    // At this point, we have confirmed:
+    // 1. User exists
+    // 2. User is NOT an OAuth user
+    // So we can proceed with password reset and show confirmation
 
     // Check if email service is configured before proceeding
     if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
@@ -349,16 +355,19 @@ router.post('/reset-password', async (req, res) => {
         redirectTo: redirectTo
       });
       
-      if (resetError) {
-        console.error('❌ Supabase password reset also failed:', resetError.message);
-      } else {
-        console.log('✅ Supabase password reset email sent (fallback)');
-      }
-      
-      return res.json({ 
-        success: true,
-        message: 'If an account exists with this email, a password reset link has been sent.'
-      });
+        if (resetError) {
+          console.error('❌ Supabase password reset also failed:', resetError.message);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to send password reset email. Please try again later.'
+          });
+        } else {
+          console.log('✅ Supabase password reset email sent (fallback)');
+          return res.json({ 
+            success: true,
+            message: 'Password reset email sent successfully. Please check your inbox.'
+          });
+        }
     }
 
     // Generate recovery token using Admin API (this doesn't send email)
