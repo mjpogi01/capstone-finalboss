@@ -968,6 +968,193 @@ class EmailService {
     `;
   }
 
+  // Send password reset email
+  async sendPasswordResetEmail(email, resetLink, userName = null) {
+    try {
+      if (!this._isClientReady()) {
+        return { success: false, error: 'Email service not configured' };
+      }
+
+      const mailOptions = {
+        from: {
+          name: 'Yohanns - Password Reset',
+          address: this.fromAddress
+        },
+        to: email,
+        subject: 'Reset Your Password - Yohanns',
+        html: this.getPasswordResetEmailTemplate(resetLink, userName),
+        text: this.getPasswordResetEmailTextTemplate(resetLink, userName)
+      };
+
+      const result = await this._sendEmailWithRetry(mailOptions, 2);
+      // Additional confirmation for password reset emails
+      console.log(`✅ Password reset email confirmed sent to: ${email}`);
+      console.log(`🔗 Reset link sent (expires in 1 hour)`);
+      console.log(`📧 Email Details:`);
+      console.log(`   - Recipient: ${email}`);
+      console.log(`   - Subject: Reset Your Password - Yohanns`);
+      console.log(`   - Message ID: ${result.id}`);
+      console.log(`   - Timestamp: ${new Date().toISOString()}`);
+      console.log(`   - From: ${this.fromAddress}`);
+      return { success: true, messageId: result.id };
+
+    } catch (error) {
+      console.error('❌ Failed to send password reset email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get password reset email HTML template
+  getPasswordResetEmailTemplate(resetLink, userName = null) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f8f9fa;
+            }
+            .container {
+                background-color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: bold;
+            }
+            .content {
+                padding: 30px;
+            }
+            .reset-button-container {
+                text-align: center;
+                margin: 30px 0;
+            }
+            .reset-button {
+                display: inline-block;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                color: white;
+                padding: 15px 40px;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 16px;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .reset-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(26, 26, 46, 0.3);
+            }
+            .reset-link {
+                background-color: #f8f9fa;
+                border: 2px dashed #1a1a2e;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 30px 0;
+                word-break: break-all;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                color: #666;
+            }
+            .footer {
+                background-color: #1a1a2e;
+                color: white;
+                padding: 20px;
+                text-align: center;
+                font-size: 14px;
+            }
+            .warning {
+                background-color: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 5px;
+                color: #856404;
+            }
+            .warning strong {
+                display: block;
+                margin-bottom: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏀 YOHANNS</h1>
+                <p>Password Reset</p>
+            </div>
+            
+            <div class="content">
+                <h2>Hello ${userName || 'there'}!</h2>
+                
+                <p>We received a request to reset your password for your Yohanns account. Click the button below to create a new password:</p>
+                
+                <div class="reset-button-container">
+                    <a href="${resetLink}" class="reset-button">Reset Password</a>
+                </div>
+                
+                <p style="text-align: center; color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+                
+                <div class="reset-link">${resetLink}</div>
+                
+                <div class="warning">
+                    <strong>⚠️ Important:</strong>
+                    This password reset link will expire in 1 hour. If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+                </div>
+                
+                <p>If you didn't request a password reset, you can safely ignore this email. Your account remains secure.</p>
+                
+                <p>Thank you for choosing Yohanns!</p>
+            </div>
+            
+            <div class="footer">
+                <p><strong>Yohanns - Premium Sports Apparel</strong></p>
+                <p>This is an automated message. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  // Get password reset email text template
+  getPasswordResetEmailTextTemplate(resetLink, userName = null) {
+    return `
+    Password Reset - Yohanns
+    
+    Hello ${userName || 'there'}!
+    
+    We received a request to reset your password for your Yohanns account. Click the link below to create a new password:
+    
+    ${resetLink}
+    
+    ⚠️ Important: This password reset link will expire in 1 hour. If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+    
+    If you didn't request a password reset, you can safely ignore this email. Your account remains secure.
+    
+    Thank you for choosing Yohanns!
+    
+    This is an automated message. Please do not reply to this email.
+    `;
+  }
+
   // Test email functionality
   async sendTestEmail(toEmail) {
     try {

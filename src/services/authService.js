@@ -326,27 +326,25 @@ class AuthService {
     }
   }
 
-  // Reset password (forgot password)
+  // Reset password (forgot password) - uses custom email template
   async resetPasswordForEmail(email) {
     try {
-      let baseUrl;
+      // Use backend endpoint for custom email template
+      const API_URL = process.env.REACT_APP_API_URL || 
+                     (typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':5000') : 'http://localhost:5000');
       
-      if (typeof window !== 'undefined') {
-        const envUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL;
-        baseUrl = envUrl || window.location.origin;
-      } else {
-        baseUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000';
-      }
-      
-      baseUrl = baseUrl.replace(/\/$/, '');
-      const redirectTo = `${baseUrl}/auth/reset-password`;
-      
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTo
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
       });
 
-      if (error) {
-        throw new Error(error.message || 'Failed to send password reset email');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send password reset email');
       }
 
       return { success: true, data };
