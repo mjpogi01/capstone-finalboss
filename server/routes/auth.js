@@ -152,9 +152,19 @@ router.post('/reset-password', async (req, res) => {
     // Check if email service is configured
     if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
       console.warn('⚠️ Email service not configured for password reset');
+      // Get base URL - use environment variable or fail in production
+      const baseUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+      if (!baseUrl && process.env.NODE_ENV === 'production') {
+        console.error('❌ CLIENT_URL or FRONTEND_URL must be set in production!');
+        return res.status(500).json({
+          success: false,
+          error: 'Server configuration error. Please contact support.'
+        });
+      }
+      const redirectUrl = baseUrl ? `${baseUrl.replace(/\/$/, '')}/auth/reset-password` : 'http://localhost:3000/auth/reset-password';
       // Fall back to Supabase's default email
       const { data, error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password`
+        redirectTo: redirectUrl
       });
 
       if (error) {
@@ -172,7 +182,19 @@ router.post('/reset-password', async (req, res) => {
 
     // Generate password reset link using Supabase Admin API
     // This generates the token without sending Supabase's default email
-    let baseUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+    let baseUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+    if (!baseUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('❌ CLIENT_URL or FRONTEND_URL must be set in production!');
+        return res.status(500).json({
+          success: false,
+          error: 'Server configuration error. Please contact support.'
+        });
+      }
+      // Only use localhost in development
+      baseUrl = 'http://localhost:3000';
+      console.warn('⚠️ Using localhost:3000 for password reset (development only)');
+    }
     baseUrl = baseUrl.replace(/\/$/, '');
     const redirectTo = `${baseUrl}/auth/reset-password`;
 

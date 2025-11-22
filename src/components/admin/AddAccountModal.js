@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './AddAccountModal.css';
 import { supabase } from '../../lib/supabase';
+import { getAPI_URL } from '../../config/api';
 
 const AddAccountModal = ({ onClose, onAccountAdded }) => {
   const [formData, setFormData] = useState({
@@ -50,7 +51,7 @@ const AddAccountModal = ({ onClose, onAccountAdded }) => {
         return;
       }
 
-      const response = await fetch('http://localhost:4000/api/admin/users', {
+      const response = await fetch(`${getAPI_URL()}/api/admin/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

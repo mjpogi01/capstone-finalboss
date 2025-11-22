@@ -16,6 +16,7 @@ import {
 import chatService from '../../services/chatService';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { getAPI_URL } from '../../config/api';
 import ConfirmModal from '../shared/ConfirmModal';
 
 const ArtistChatModal = ({ room, isOpen, onClose }) => {
@@ -87,7 +88,7 @@ const ArtistChatModal = ({ room, isOpen, onClose }) => {
       // Get order number from order
       if (room.order_id) {
         try {
-          const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+          const API_BASE_URL = getAPI_URL();
           const { data: { session } } = await supabase.auth.getSession();
           
           if (session) {
@@ -292,7 +293,7 @@ const ArtistChatModal = ({ room, isOpen, onClose }) => {
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await fetch('http://localhost:4000/api/upload', {
+        const response = await fetch(`${getAPI_URL()}/api/upload`, {
           method: 'POST',
           body: formData
         });
@@ -341,7 +342,7 @@ const ArtistChatModal = ({ room, isOpen, onClose }) => {
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await fetch('http://localhost:4000/api/upload', {
+        const response = await fetch(`${getAPI_URL()}/api/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`

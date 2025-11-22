@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { getAPI_URL } from '../../config/api';
 import './AddProductModal.css';
 
 const isTrophyCategory = (category) => typeof category === 'string' && category.toLowerCase() === 'trophies';
@@ -542,7 +543,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/branches');
+        const response = await fetch(`${getAPI_URL()}/api/branches`);
         if (response.ok) {
           const branchesData = await response.json();
           setBranches(branchesData);
@@ -577,7 +578,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           const branchProductsMap = {};
           // Fetch products with same name and category from all branches
           // Use ?all=true to get all products from all branches (no deduplication)
-          const allProductsResponse = await fetch('http://localhost:4000/api/products?all=true');
+          const allProductsResponse = await fetch(`${getAPI_URL()}/api/products?all=true`);
           if (allProductsResponse.ok) {
             const allProducts = await allProductsResponse.json();
             // For trophies, include products with size_stocks even if stock_quantity is null
@@ -1934,7 +1935,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
-      const response = await fetch('http://localhost:4000/api/upload/single', {
+      const response = await fetch(`${getAPI_URL()}/api/upload/single`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -1979,7 +1980,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
-      const response = await fetch('http://localhost:4000/api/upload/single', {
+      const response = await fetch(`${getAPI_URL()}/api/upload/single`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -2405,7 +2406,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               // Update existing product in this branch
               const existingProductId = existingProduct.id;
               console.log(`📦 [AddProductModal] Updating existing product ${existingProductId} in branch ${branchId} with stock: ${branchProductData.stock_quantity}, size_stocks:`, branchProductData.size_stocks);
-              const url = `http://localhost:4000/api/products/${existingProductId}`;
+              const url = `${getAPI_URL()}/api/products/${existingProductId}`;
               const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
@@ -2422,7 +2423,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               // Product doesn't exist in this branch yet, but we're in edit mode
               // Check if there's a product with same name/category in this branch
               console.log(`⚠️ [AddProductModal] No existing product found in branch ${branchId}, but in edit mode. Creating new product.`);
-              const url = 'http://localhost:4000/api/products';
+              const url = `${getAPI_URL()}/api/products`;
               const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -2439,7 +2440,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           } else {
             // Create new product for this branch
             console.log(`📦 [AddProductModal] Creating new product in branch ${branchId}`);
-            const url = 'http://localhost:4000/api/products';
+            const url = `${getAPI_URL()}/api/products`;
             const response = await fetch(url, {
               method: 'POST',
               headers: {
@@ -2483,8 +2484,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       } else {
         // Standard single product creation/update
         const url = isEditMode
-          ? `http://localhost:4000/api/products/${editingProduct.id}`
-          : 'http://localhost:4000/api/products';
+          ? `${getAPI_URL()}/api/products/${editingProduct.id}`
+          : `${getAPI_URL()}/api/products`;
 
         const method = isEditMode ? 'PUT' : 'POST';
 

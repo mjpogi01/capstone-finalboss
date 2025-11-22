@@ -11,7 +11,11 @@ class AuthService {
         const envUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL;
         baseUrl = envUrl || window.location.origin;
       } else {
-        baseUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000';
+        // In SSR or build time, prefer env vars, fallback to localhost only if not in production
+        baseUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL;
+        if (!baseUrl && process.env.NODE_ENV !== 'production') {
+          baseUrl = 'http://localhost:3000';
+        }
       }
       baseUrl = baseUrl.replace(/\/$/, '');
       
@@ -294,7 +298,10 @@ class AuthService {
         }
       } else {
         // Server-side rendering fallback
-        baseUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000';
+        baseUrl = process.env.REACT_APP_CLIENT_URL || process.env.REACT_APP_FRONTEND_URL;
+        if (!baseUrl && process.env.NODE_ENV !== 'production') {
+          baseUrl = 'http://localhost:3000';
+        }
       }
       
       // Ensure we have a valid URL (remove trailing slash if present)

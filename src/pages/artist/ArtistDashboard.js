@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../contexts/NotificationContext';
 import artistDashboardService from '../../services/artistDashboardService';
+import { getAPI_URL } from '../../config/api';
 
 const ArtistDashboard = () => {
   const [activePage, setActivePage] = useState('home');
@@ -69,7 +70,7 @@ const ArtistDashboard = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:4000/api/admin/artists/${user.id}/toggle-status`, {
+      const response = await fetch(`${getAPI_URL()}/api/admin/artists/${user.id}/toggle-status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaUser, FaCalendarAlt, FaComment } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { getAPI_URL } from '../../config/api';
 import './UniversalOrderReview.css';
 
 const UniversalOrderReview = ({ orderId, orderNumber, productId = null, onReviewSubmit }) => {
@@ -24,7 +25,7 @@ const UniversalOrderReview = ({ orderId, orderNumber, productId = null, onReview
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/order-tracking/reviews/${orderId}`);
+      const response = await fetch(`${getAPI_URL()}/api/order-tracking/reviews/${orderId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -39,7 +40,7 @@ const UniversalOrderReview = ({ orderId, orderNumber, productId = null, onReview
 
   const fetchReviewStats = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/order-tracking/review-stats/${orderId}`);
+      const response = await fetch(`${getAPI_URL()}/api/order-tracking/review-stats/${orderId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -73,7 +74,7 @@ const UniversalOrderReview = ({ orderId, orderNumber, productId = null, onReview
     setSubmitting(true);
     setValidationError(false);
     try {
-      const response = await fetch('http://localhost:4000/api/order-tracking/review', {
+      const response = await fetch(`${getAPI_URL()}/api/order-tracking/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

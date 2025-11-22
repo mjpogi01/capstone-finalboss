@@ -3,6 +3,7 @@ import { FaStar, FaTimes, FaCheck } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import orderTrackingService from '../../services/orderTrackingService';
+import { getAPI_URL } from '../../config/api';
 import './SimpleOrderReview.css';
 
 const SimpleOrderReview = ({ orderId, orderNumber, productId = null, onReviewSubmit }) => {
@@ -79,7 +80,7 @@ const SimpleOrderReview = ({ orderId, orderNumber, productId = null, onReviewSub
     setShowReviewPopup(false);
     
     try {
-      const response = await fetch('http://localhost:4000/api/order-tracking/review', {
+      const response = await fetch(`${getAPI_URL()}/api/order-tracking/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

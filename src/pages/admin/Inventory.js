@@ -5,6 +5,7 @@ import './admin-shared.css';
 import Sidebar from '../../components/admin/Sidebar';
 import AddProductModal from '../../components/admin/AddProductModal';
 import { supabase } from '../../lib/supabase';
+import { getAPI_URL } from '../../config/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faPlus, faImage, faChevronDown, faChevronUp, faSearch } from '@fortawesome/free-solid-svg-icons';
 
@@ -46,7 +47,7 @@ const Inventory = () => {
   const fetchProducts = async () => {
     try {
       // Use 'all=true' query parameter to get all products from all branches (no deduplication)
-      const response = await fetch('http://localhost:4000/api/products?all=true');
+      const response = await fetch(`${getAPI_URL()}/api/products?all=true`);
       const data = await response.json();
       const normalizedProducts = normalizeProductsResponse(data);
       setProducts(normalizedProducts);
@@ -583,7 +584,7 @@ const Inventory = () => {
           return;
         }
 
-        const response = await fetch(`http://localhost:4000/api/products/${productId}`, {
+        const response = await fetch(`${getAPI_URL()}/api/products/${productId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,

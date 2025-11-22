@@ -1247,8 +1247,16 @@ class EmailService {
 
   // Get newsletter welcome email template
   getNewsletterWelcomeEmailTemplate(subscriberEmail = '') {
-    // Use localhost for development, otherwise use CLIENT_URL or production URL
-    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://yohanns-sportswear.onrender.com');
+    // Use CLIENT_URL if set, otherwise use localhost only in development
+    let clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('❌ CLIENT_URL must be set in production for email links!');
+        clientUrl = 'https://yourdomain.com'; // Placeholder - should be set in production
+      } else {
+        clientUrl = 'http://localhost:3000';
+      }
+    }
     // Get logo URL from Cloudinary or fallback to client URL
     const logoUrl = process.env.EMAIL_LOGO_URL || 
                     (process.env.CLOUDINARY_CLOUD_NAME 
@@ -1415,8 +1423,16 @@ class EmailService {
   // Get marketing email template
   getMarketingEmailTemplate(marketingData, subscriberEmail = '') {
     const { title, message, discountType, discountValue, promoCode, ctaText, ctaLink, imageUrl, logoUrl } = marketingData;
-    // Use localhost for development, otherwise use CLIENT_URL or production URL
-    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://yohanns-sportswear.onrender.com');
+    // Use CLIENT_URL if set, otherwise use localhost only in development
+    let clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('❌ CLIENT_URL must be set in production for email links!');
+        clientUrl = 'https://yourdomain.com'; // Placeholder - should be set in production
+      } else {
+        clientUrl = 'http://localhost:3000';
+      }
+    }
     // Encode email for unsubscribe link
     const unsubscribeLink = subscriberEmail 
       ? `${clientUrl}/unsubscribe?email=${encodeURIComponent(subscriberEmail)}`
