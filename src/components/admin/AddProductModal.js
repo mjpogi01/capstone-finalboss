@@ -3259,9 +3259,9 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               {(!apparelCategorySelected || simpleCategorySelected) && !trophyCategorySelected ? renderSimplePriceSection() : null}
 
               {/* Show stock quantity for balls, medals, trophies, and non-apparel categories */}
-              {/* Hide single stock quantity field for balls and trophies when they have sizes (use per-size stocks instead) */}
+              {/* Hide single stock quantity field for trophies when they have sizes (use per-size stocks instead) */}
               {(!apparelCategorySelected || simpleCategorySelected || trophyCategorySelected) && 
-               !((trophyCategorySelected || ballCategorySelected) && availableSizes.length > 0) && (
+               !(trophyCategorySelected && availableSizes.length > 0) && (
                 <div className="apm-section-block">
                   <div className="apm-form-group">
                     <label>Stock Quantity (Optional)</label>
