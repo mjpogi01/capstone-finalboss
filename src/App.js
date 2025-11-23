@@ -36,6 +36,8 @@ import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import NotificationContainer from './components/NotificationContainer';
+import { QueryClientProvider } from 'react-query';
+import { queryClient } from './config/queryClient';
 
 const AppContent = () => {
   const location = useLocation();
@@ -219,20 +221,22 @@ const AppContent = () => {
 function App() {
   return (
     <div className="App">
-      <NotificationProvider>
-        <AuthProvider>
-          <ModalProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <Router>
-                  <AppContent />
-                  <NotificationContainer />
-                </Router>
-              </WishlistProvider>
-            </CartProvider>
-          </ModalProvider>
-        </AuthProvider>
-      </NotificationProvider>
+      <QueryClientProvider client={queryClient}>
+        <NotificationProvider>
+          <AuthProvider>
+            <ModalProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <Router>
+                    <AppContent />
+                    <NotificationContainer />
+                  </Router>
+                </WishlistProvider>
+              </CartProvider>
+            </ModalProvider>
+          </AuthProvider>
+        </NotificationProvider>
+      </QueryClientProvider>
     </div>
   );
 }

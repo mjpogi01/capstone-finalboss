@@ -1473,19 +1473,14 @@ router.get('/dashboard', async (req, res) => {
   // Wrap in additional error handler to prevent server crashes
   try {
     const { branch_id } = req.query;
-    console.log('📊 Fetching analytics data (optimized)...');
-    console.log('📊 User info:', {
-      id: req.user?.id,
-      email: req.user?.email,
-      role: req.user?.role,
-      branch_id: req.user?.branch_id,
-      query_branch_id: branch_id
-    });
+    console.log('📊 ========================================');
+    console.log('📊 ANALYTICS DASHBOARD REQUEST RECEIVED');
+    console.log('📊 ========================================');
+    console.log('📊 Fetching analytics data (RPC optimized)...');
 
     let branchContext;
     try {
       branchContext = await resolveBranchContext(req.user);
-      console.log('📊 Branch context resolved:', branchContext);
       
       // For owners: if branch_id is provided in query, create branch context for that branch
       if (req.user?.role === 'owner' && branch_id) {
@@ -1504,7 +1499,6 @@ router.get('/dashboard', async (req, res) => {
                 branchName: branchData.name,
                 normalizedName: normalizeBranchValue(branchData.name)
               };
-              console.log('📊 Owner branch context overridden:', branchContext);
             }
           } catch (err) {
             console.warn('⚠️ Error resolving branch for owner:', err.message);
@@ -1513,8 +1507,84 @@ router.get('/dashboard', async (req, res) => {
       }
     } catch (branchError) {
       console.error('❌ Error resolving branch context:', branchError);
-      console.error('❌ Branch error stack:', branchError.stack);
       return handleAnalyticsError(res, branchError, 'Failed to resolve branch context');
+    }
+
+    // Try to use optimized RPC function first (Session Pooler safe)
+    try {
+      const { data: analyticsData, error: rpcError } = await supabase.rpc('get_analytics_dashboard', {
+        p_branch_id: branchContext?.branchId || null,
+        p_branch_name: branchContext?.branchName || null,
+        p_start_date: null,
+        p_end_date: null
+      });
+
+      if (!rpcError && analyticsData) {
+        console.log('📊 [RPC PATH] Raw analyticsData from RPC:', JSON.stringify(analyticsData, null, 2));
+        console.log('📊 [RPC PATH] orderStatus from RPC:', JSON.stringify(analyticsData.orderStatus, null, 2));
+        
+        // Transform RPC response to match expected format
+        const processedData = {
+          salesOverTime: {
+            monthly: analyticsData.monthlySales || [],
+            yearly: analyticsData.yearlySales || []
+          },
+          salesByBranch: analyticsData.salesByBranch || [],
+          orderStatus: analyticsData.orderStatus || {
+            completed: { count: 0, percentage: 0 },
+            processing: { count: 0, percentage: 0 },
+            pending: { count: 0, percentage: 0 },
+            cancelled: { count: 0, percentage: 0 },
+            total: 0
+          },
+          topProducts: analyticsData.topProducts || [],
+          topCategories: analyticsData.topCategories || [],
+          summary: analyticsData.summary || {
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalCustomers: 0,
+            averageOrderValue: 0
+          },
+          recentOrders: analyticsData.recentOrders || []
+        };
+        
+        console.log('📊 [RPC PATH] Final processedData.orderStatus:', JSON.stringify(processedData.orderStatus, null, 2));
+
+        // Get top products and categories if not included in main RPC
+        if (!analyticsData.topProducts || analyticsData.topProducts.length === 0) {
+          const { data: topProducts } = await supabase.rpc('get_top_products', {
+            p_limit: 10,
+            p_branch_id: branchContext?.branchId || null,
+            p_branch_name: branchContext?.branchName || null
+          });
+          if (topProducts) {
+            processedData.topProducts = topProducts;
+          }
+        }
+
+        if (!analyticsData.topCategories || analyticsData.topCategories.length === 0) {
+          const { data: topCategories } = await supabase.rpc('get_top_categories', {
+            p_limit: 10,
+            p_branch_id: branchContext?.branchId || null,
+            p_branch_name: branchContext?.branchName || null
+          });
+          if (topCategories) {
+            processedData.topCategories = topCategories;
+          }
+        }
+
+        console.log('✅ Analytics data fetched using optimized RPC');
+        return res.json({
+          success: true,
+          data: processedData
+        });
+      } else {
+        console.warn('⚠️ RPC function not available or returned error, falling back to direct queries:', rpcError?.message);
+        // Fall through to original implementation
+      }
+    } catch (rpcException) {
+      console.warn('⚠️ RPC call failed, falling back to direct queries:', rpcException.message);
+      // Fall through to original implementation
     }
 
     const now = new Date();
@@ -1666,28 +1736,44 @@ router.get('/dashboard', async (req, res) => {
         const totalCustomers = customerSet.size;
         
         const CANCELLED_STATUSES = new Set(['cancelled', 'canceled']);
-        const COMPLETED_STATUSES = new Set(['completed', 'delivered', 'picked_up_delivered', 'picked_up', 'finished']);
-        const PROCESSING_STATUSES = new Set(['processing', 'confirmed', 'layout', 'packing_completing', 'in_production', 'ready_for_pickup', 'ready_for_delivery', 'sizing']);
-        const PENDING_STATUSES = new Set(['pending', 'payment_pending', 'awaiting_payment', 'awaiting_confirmation']);
+        // Completed: only picked_up_delivered (orders that are picked up/delivered)
+        const COMPLETED_STATUSES = new Set(['picked_up_delivered']);
+        // Processing: all production stages between pending and picked_up_delivered
+        const PROCESSING_STATUSES = new Set(['confirmed', 'layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing']);
+        const PENDING_STATUSES = new Set(['pending']);
         
         let completedCount = 0;
         let processingCount = 0;
         let pendingCount = 0;
         let cancelledCount = 0;
         
+        // Debug: Log all statuses found
+        console.log('📊 Status counts from orders:', JSON.stringify(statusCounts, null, 2));
+        
         Object.entries(statusCounts).forEach(([status, count]) => {
-          if (CANCELLED_STATUSES.has(status)) {
+          const statusLower = status.toLowerCase().trim();
+          console.log(`🔍 Checking status: "${status}" (normalized: "${statusLower}") - count: ${count}`);
+          
+          if (CANCELLED_STATUSES.has(statusLower)) {
             cancelledCount += count;
-          } else if (COMPLETED_STATUSES.has(status)) {
+            console.log(`  ✓ Categorizing as CANCELLED`);
+          } else if (COMPLETED_STATUSES.has(statusLower)) {
             completedCount += count;
-          } else if (PROCESSING_STATUSES.has(status)) {
+            console.log(`  ✓ Categorizing as COMPLETED`);
+          } else if (PROCESSING_STATUSES.has(statusLower)) {
             processingCount += count;
-          } else if (PENDING_STATUSES.has(status)) {
+            console.log(`  ✓ Categorizing as PROCESSING`);
+          } else if (PENDING_STATUSES.has(statusLower)) {
             pendingCount += count;
+            console.log(`  ✓ Categorizing as PENDING`);
           } else {
+            // Unknown status - default to pending
+            console.log(`  ⚠️  Unknown status, defaulting to PENDING`);
             pendingCount += count;
           }
         });
+        
+        console.log(`📈 Final counts - Completed: ${completedCount}, Processing: ${processingCount}, Pending: ${pendingCount}, Cancelled: ${cancelledCount}`);
         
         const monthlySalesArray = Array.from(monthlySales.entries())
           .sort((a, b) => a[0].localeCompare(b[0]))
@@ -1787,6 +1873,8 @@ router.get('/dashboard', async (req, res) => {
           },
           total: totalOrders
         };
+        
+        console.log('📊 [SUPABASE PATH] Final orderStatusData:', JSON.stringify(orderStatusData, null, 2));
         
         const processedData = {
           salesOverTime: {
@@ -2165,9 +2253,11 @@ router.get('/dashboard', async (req, res) => {
     }
 
     const CANCELLED_STATUSES = new Set(['cancelled', 'canceled']);
-    const COMPLETED_STATUSES = new Set(['completed', 'delivered', 'picked_up_delivered', 'picked_up', 'finished']);
-    const PROCESSING_STATUSES = new Set(['processing', 'confirmed', 'layout', 'packing_completing', 'in_production', 'ready_for_pickup', 'ready_for_delivery', 'sizing']);
-    const PENDING_STATUSES = new Set(['pending', 'payment_pending', 'awaiting_payment', 'awaiting_confirmation']);
+    // Completed: only picked_up_delivered (orders that are picked up/delivered)
+    const COMPLETED_STATUSES = new Set(['picked_up_delivered']);
+    // Processing: all production stages between pending and picked_up_delivered
+    const PROCESSING_STATUSES = new Set(['confirmed', 'layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing']);
+    const PENDING_STATUSES = new Set(['pending']);
 
     let totalOrders = 0;
     let completedCount = 0;
@@ -2175,34 +2265,51 @@ router.get('/dashboard', async (req, res) => {
     let pendingCount = 0;
     let cancelledCount = 0;
 
-    (statusResult.rows || []).forEach(row => {
-      const status = (row.status || '').toString().toLowerCase();
-      const count = Number(row.total) || 0;
+    // Debug: Log status results from SQL
+    console.log('📊 Status results from SQL:', JSON.stringify(statusResult.rows, null, 2));
 
+    (statusResult.rows || []).forEach(row => {
+      const status = (row.status || '').toString().toLowerCase().trim();
+      const count = Number(row.total) || 0;
+      
+      console.log(`🔍 SQL Status: "${row.status}" (normalized: "${status}") - count: ${count}`);
+
+      // Skip cancelled orders from total count
       if (CANCELLED_STATUSES.has(status)) {
         cancelledCount += count;
+        console.log(`  ✓ Categorizing as CANCELLED`);
         return;
       }
 
       totalOrders += count;
 
+      // Check completed first (picked_up_delivered)
       if (COMPLETED_STATUSES.has(status)) {
         completedCount += count;
+        console.log(`  ✓ Categorizing as COMPLETED`);
         return;
       }
 
+      // Then check processing (all production stages)
       if (PROCESSING_STATUSES.has(status)) {
         processingCount += count;
+        console.log(`  ✓ Categorizing as PROCESSING`);
         return;
       }
 
+      // Then check pending
       if (PENDING_STATUSES.has(status)) {
         pendingCount += count;
+        console.log(`  ✓ Categorizing as PENDING`);
         return;
       }
 
+      // Unknown status - default to pending
+      console.log(`  ⚠️  Unknown status, defaulting to PENDING`);
       pendingCount += count;
     });
+    
+    console.log(`📈 SQL Final counts - Completed: ${completedCount}, Processing: ${processingCount}, Pending: ${pendingCount}, Cancelled: ${cancelledCount}`);
 
     const monthlySalesArray = (monthlyResult.rows || [])
       .map(row => {
@@ -2494,6 +2601,8 @@ router.get('/dashboard', async (req, res) => {
       },
       total: totalOrders
     };
+    
+    console.log('📊 [SQL PATH] Final orderStatusData:', JSON.stringify(orderStatusData, null, 2));
 
     const processedData = {
       salesOverTime: {
@@ -2579,6 +2688,7 @@ router.get('/dashboard', async (req, res) => {
 
 // Get sales trends
 router.get('/sales-trends', async (req, res) => {
+  const startTime = Date.now();
   try {
     const { period = '30', branch_id } = req.query;
     const daysAgo = parseInt(period);
@@ -2586,13 +2696,21 @@ router.get('/sales-trends', async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
 
+    console.log(`📊 [Sales Trends] Fetching data for last ${daysAgo} days...`);
+
+    // Only select the columns we need - this is MUCH faster than SELECT *
+    // Excluding order_items JSONB which can be very large
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('created_at, total_amount, pickup_location, status')
       .neq('status', 'cancelled')
+      .neq('status', 'canceled')
       .gte('created_at', startDate.toISOString());
  
     if (error) throw error;
+    
+    const queryTime = Date.now() - startTime;
+    console.log(`📊 [Sales Trends] Fetched ${orders?.length || 0} orders in ${queryTime}ms`);
  
     // For owners: if branch_id is provided in query, create branch context for that branch
     // For admins: use resolveBranchContext (automatically filters by their branch)
@@ -2645,6 +2763,9 @@ router.get('/sales-trends', async (req, res) => {
       }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
+    const totalTime = Date.now() - startTime;
+    console.log(`📊 [Sales Trends] Processed ${trends.length} days of data in ${totalTime}ms total`);
+
     res.json({
       success: true,
       data: trends
@@ -2660,10 +2781,12 @@ router.get('/product-performance', async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    // Only select the columns we need - this is MUCH faster than SELECT *
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('created_at, total_amount, order_items, pickup_location, status, id')
       .neq('status', 'cancelled')
+      .neq('status', 'canceled')
       .gte('created_at', thirtyDaysAgo.toISOString());
 
     if (error) throw error;
@@ -3329,10 +3452,12 @@ router.get('/geographic-distribution', async (req, res) => {
   try {
     console.log('🌍 Fetching geographic distribution data...');
     
+    // Only select the columns we need - this is MUCH faster than SELECT *
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
-      .neq('status', 'cancelled');
+      .select('delivery_address, pickup_location, status')
+      .neq('status', 'cancelled')
+      .neq('status', 'canceled');
 
     if (error) throw error;
 
