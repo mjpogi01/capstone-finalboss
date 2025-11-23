@@ -9,6 +9,8 @@ import { useNotification } from '../../contexts/NotificationContext';
 import orderService from '../../services/orderService';
 import { useAuth } from '../../contexts/AuthContext';
 import productService from '../../services/productService';
+import branchService from '../../services/branchService';
+import { API_URL } from '../../config/api';
 import { loadProductModalPreferences, saveProductModalPreferences, updateProductModalPreferences } from '../../utils/userPreferences';
 import './ProductModal.css';
 
@@ -217,6 +219,11 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
   const [fabricData, setFabricData] = useState(product?.fabric_surcharges || null);
   const [selectedCutType, setSelectedCutType] = useState(existingCartItemData?.cutType || '');
   const [cutTypeData, setCutTypeData] = useState(product?.cut_type_surcharges || null);
+  
+  // Branch selection for balls and trophies
+  const [selectedBranchId, setSelectedBranchId] = useState(existingCartItemData?.branchId || null);
+  const [availableBranches, setAvailableBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Debug: Monitor Buy Now item changes
   useEffect(() => {
@@ -283,6 +290,17 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
           : { teamName: '', surname: '', number: '', jerseySize: 'M', shortsSize: 'M', size: 'M', jerseyType: existingCartItemData.jerseyType || 'full' }
       );
       setJerseyType(existingCartItemData.jerseyType || 'full');
+      // Load ball and trophy details if they exist
+      if (existingCartItemData.ballDetails) {
+        setBallDetails(existingCartItemData.ballDetails);
+      }
+      if (existingCartItemData.trophyDetails) {
+        setTrophyDetails(existingCartItemData.trophyDetails);
+      }
+      // Load branchId if it exists
+      if (existingCartItemData.branchId) {
+        setSelectedBranchId(existingCartItemData.branchId);
+      }
     } else if (isOpen && !existingCartItemData) {
       // Reset to defaults when opening modal for a new product
       setSelectedSize('M');
@@ -300,8 +318,17 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
       setTeamName('');
       setSingleOrderDetails({ teamName: '', surname: '', number: '', jerseySize: 'M', shortsSize: 'M', size: 'M', jerseyType: 'full' });
       setJerseyType('full');
+      // Reset ball and trophy details
+      setBallDetails({ sportType: '', brand: '', ballSize: '', material: '' });
+      setTrophyDetails({ trophyType: '', size: '', material: '', engravingText: '', occasion: '' });
+      setSelectedBranchId(null);
+      setAvailableBranches([]);
     }
   }, [isOpen, existingCartItemData]);
+
+  // Determine product category (must be defined early for use in useEffects)
+  const isBall = useMemo(() => product?.category?.toLowerCase() === 'balls', [product]);
+  const isTrophy = useMemo(() => product?.category?.toLowerCase() === 'trophies', [product]);
 
   // Load reviews for the product
   useEffect(() => {
@@ -309,6 +336,137 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
       loadProductReviews();
     }
   }, [isOpen, product?.id, loadProductReviews]);
+
+  // Fetch branches with stock for balls and trophies when size is selected
+  const fetchBranchesWithStock = useCallback(async (productId, category, selectedSize) => {
+    if (!productId || !category) {
+      setAvailableBranches([]);
+      setSelectedBranchId(null);
+      return;
+    }
+    
+    // For trophies, size is required
+    if (category.toLowerCase() === 'trophies' && !selectedSize) {
+      setAvailableBranches([]);
+      setSelectedBranchId(null);
+      return;
+    }
+
+    setLoadingBranches(true);
+    try {
+      // Fetch all products with branch info (using ?all=true to get all branches)
+      const response = await fetch(`${API_URL}/api/products?all=true`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      const allProducts = await response.json();
+      
+      // Filter products matching this product's name and category
+      const matchingProducts = allProducts.filter(p => 
+        p.id === productId || 
+        (p.name === product?.name && p.category?.toLowerCase() === category.toLowerCase())
+      );
+
+      // Get all branches
+      const allBranches = await branchService.getBranches();
+      
+      // Filter branches that have stock for the selected size
+      const branchesWithStock = [];
+      
+      for (const branch of allBranches) {
+        // Find products for this branch
+        const branchProducts = matchingProducts.filter(p => p.branch_id === branch.id);
+        
+        if (branchProducts.length === 0) continue;
+        
+        let hasStock = false;
+        
+        if (category.toLowerCase() === 'trophies') {
+          // For trophies, check size_stocks
+          for (const branchProduct of branchProducts) {
+            let sizeStocks = branchProduct.size_stocks;
+            if (typeof sizeStocks === 'string') {
+              try {
+                sizeStocks = JSON.parse(sizeStocks);
+              } catch (e) {
+                sizeStocks = null;
+              }
+            }
+            
+            if (sizeStocks && typeof sizeStocks === 'object' && sizeStocks[selectedSize]) {
+              const stockQty = parseInt(sizeStocks[selectedSize]) || 0;
+              if (stockQty > 0) {
+                hasStock = true;
+                branchesWithStock.push({
+                  ...branch,
+                  stockQuantity: stockQty
+                });
+                break;
+              }
+            }
+          }
+        } else if (category.toLowerCase() === 'balls') {
+          // For balls, check stock_quantity (no size filtering)
+          for (const branchProduct of branchProducts) {
+            const stockQty = parseInt(branchProduct.stock_quantity) || 0;
+            if (stockQty > 0) {
+              hasStock = true;
+              branchesWithStock.push({
+                ...branch,
+                stockQuantity: stockQty
+              });
+              break;
+            }
+          }
+        }
+      }
+      
+      setAvailableBranches(branchesWithStock);
+      
+      // Auto-select first branch if available and none selected
+      if (branchesWithStock.length > 0 && !selectedBranchId) {
+        setSelectedBranchId(branchesWithStock[0].id);
+      } else if (branchesWithStock.length === 0) {
+        setSelectedBranchId(null);
+      } else if (selectedBranchId && !branchesWithStock.find(b => b.id === selectedBranchId)) {
+        // If selected branch no longer has stock, reset selection
+        setSelectedBranchId(null);
+      }
+    } catch (error) {
+      console.error('Error fetching branches with stock:', error);
+      setAvailableBranches([]);
+      setSelectedBranchId(null);
+    } finally {
+      setLoadingBranches(false);
+    }
+  }, [product, selectedBranchId]);
+
+  // Reset branch selection when product changes
+  useEffect(() => {
+    if (isOpen && product) {
+      setSelectedBranchId(null);
+      setAvailableBranches([]);
+    }
+  }, [isOpen, product?.id]);
+
+  // Update branches when size changes for balls and trophies
+  useEffect(() => {
+    if (isOpen && product) {
+      if (isBall) {
+        // For balls, fetch branches immediately (no size required)
+        fetchBranchesWithStock(product.id, product.category, null);
+      } else if (isTrophy) {
+        // For trophies, only fetch when size is selected
+        const selectedSize = trophyDetails.size;
+        if (selectedSize) {
+          fetchBranchesWithStock(product.id, product.category, selectedSize);
+        } else {
+          setAvailableBranches([]);
+          setSelectedBranchId(null);
+        }
+      }
+    }
+  }, [isOpen, product, isBall, isTrophy, trophyDetails.size, fetchBranchesWithStock]);
 
   // Refresh reviews when modal opens (in case new reviews were added)
   useEffect(() => {
@@ -338,10 +496,6 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
 
     return DEFAULT_TROPHY_SIZES;
   }, [product]);
-
-  // Determine product category (before early return to use in useMemo)
-  const isBall = useMemo(() => product?.category?.toLowerCase() === 'balls', [product]);
-  const isTrophy = useMemo(() => product?.category?.toLowerCase() === 'trophies', [product]);
   const isApparel = useMemo(() => !isBall && !isTrophy, [isBall, isTrophy]);
   const isJerseyCategory = useMemo(() => {
     if (!product || !isApparel) return false;
@@ -1252,7 +1406,18 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         }
       }
       
-      // Removed ball size validation - balls can be added without size selection
+      if (isBall) {
+        // Validate ball details - only branch is required
+        if (!selectedBranchId) {
+          errors.branchId = 'Please select a branch';
+        }
+        
+        if (Object.keys(errors).length > 0) {
+          setValidationErrors(errors);
+          setIsAddingToCart(false);
+          return;
+        }
+      }
       
       if (isTrophy) {
         // Validate trophy details
@@ -1262,6 +1427,9 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         }
         if (!trophyDetails.occasion || !trophyDetails.occasion.trim()) {
           errors.trophyOccasion = 'Please enter occasion';
+        }
+        if (!selectedBranchId) {
+          errors.branchId = 'Please select a branch';
         }
         
         if (Object.keys(errors).length > 0) {
@@ -1369,6 +1537,7 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         category: product.category, // Include category
         ballDetails: isBall ? ballDetails : null,
         trophyDetails: isTrophy ? trophyDetails : null,
+        branchId: (isBall || isTrophy) ? selectedBranchId : null,
         basePrice: isTeamOrder && isApparel 
           ? teamPricingInfo.members.reduce((sum, m) => sum + (m.basePrice || 0), 0)
           : basePriceForCart,
@@ -1544,7 +1713,12 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         }
       }
       
-      // Removed ball size validation for Buy Now - balls can be purchased without size selection
+      if (isBall) {
+        // Validate ball details - only branch is required
+        if (!selectedBranchId) {
+          errors.branchId = 'Please select a branch before you buy';
+        }
+      }
       
       if (isTrophy) {
         // Validate trophy details
@@ -1553,6 +1727,9 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         }
         if (!trophyDetails.occasion || !trophyDetails.occasion.trim()) {
           errors.trophyOccasion = 'Please enter occasion before you buy';
+        }
+        if (!selectedBranchId) {
+          errors.branchId = 'Please select a branch before you buy';
         }
         
         if (Object.keys(errors).length > 0) {
@@ -1647,6 +1824,7 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         category: product.category,
         ballDetails: isBall ? ballDetails : null,
         trophyDetails: isTrophy ? trophyDetails : null,
+        branchId: (isBall || isTrophy) ? selectedBranchId : null,
         basePrice: isTeamOrder && isApparel 
           ? teamPricingInfo.members.reduce((sum, m) => sum + (m.basePrice || 0), 0)
           : basePriceForCart,
@@ -1737,6 +1915,7 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         category: product.category,
         ballDetails: isBall ? ballDetails : null,
         trophyDetails: isTrophy ? trophyDetails : null,
+        branchId: (isBall || isTrophy) ? selectedBranchId : null,
         basePrice: isTeamOrder && isApparel 
           ? teamPricingInfo.members.reduce((sum, m) => sum + (m.basePrice || 0), 0)
           : basePriceForCart,
@@ -1830,6 +2009,13 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
       const isFromCheckout = orderData?._fromCheckout;
       if (!isFromCheckout) {
         setIsProcessingOrder(false);
+      }
+      
+      // Check if it's a stock error - keep checkout open so user can select different branch
+      if (error.isStockError || error.requiresBranchSelection) {
+        showError('Insufficient Stock', error.message || 'The selected branch does not have enough stock for your order. Please select a different branch.');
+        // Don't close checkout modal - let user select different branch
+        return;
       }
       
       // Check if it's a network error (backend not running)
@@ -2734,7 +2920,48 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
 
             {renderCutTypeOptions()}
 
-            {/* Ball Details Form - Hidden (balls can be added without size selection) */}
+            {/* Ball Details Form - Branch Selection Only */}
+            {isBall && (
+              <div className="modal-ball-details-section">
+                <div className="modal-ball-details-label">🏀 BALL DETAILS</div>
+                <div className="modal-ball-details-form">
+                  {/* Branch Selection for Balls */}
+                  <div className="modal-input-wrapper">
+                    {loadingBranches ? (
+                      <div className="modal-branch-loading">Loading branches...</div>
+                    ) : availableBranches.length > 0 ? (
+                      <>
+                        <label className="modal-branch-label">Select Branch</label>
+                        <select
+                          value={selectedBranchId || ''}
+                          onChange={(e) => {
+                            setSelectedBranchId(e.target.value ? parseInt(e.target.value) : null);
+                            if (validationErrors.branchId) {
+                              setValidationErrors({...validationErrors, branchId: ''});
+                            }
+                          }}
+                          className={`modal-ball-details-input ${validationErrors.branchId ? 'error' : ''}`}
+                        >
+                          <option value="">Select Branch</option>
+                          {availableBranches.map(branch => (
+                            <option key={branch.id} value={branch.id}>
+                              {branch.name} {branch.stockQuantity !== undefined ? `(${branch.stockQuantity} in stock)` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        {validationErrors.branchId && (
+                          <span className="modal-error-message">{validationErrors.branchId}</span>
+                        )}
+                      </>
+                    ) : (
+                      <div className="modal-no-stock-message">
+                        ⚠️ No branches have stock for this product.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Trophy Details Form */}
             {isTrophy && (
@@ -2766,6 +2993,44 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
                       <span className="modal-error-message">{validationErrors.trophySize}</span>
                     )}
                   </div>
+                  
+                  {/* Branch Selection for Trophies */}
+                  {trophyDetails.size && (
+                    <div className="modal-input-wrapper">
+                      {loadingBranches ? (
+                        <div className="modal-branch-loading">Loading branches...</div>
+                      ) : availableBranches.length > 0 ? (
+                        <>
+                          <label className="modal-branch-label">Select Branch</label>
+                          <select
+                            value={selectedBranchId || ''}
+                            onChange={(e) => {
+                              setSelectedBranchId(e.target.value ? parseInt(e.target.value) : null);
+                              if (validationErrors.branchId) {
+                                setValidationErrors({...validationErrors, branchId: ''});
+                              }
+                            }}
+                            className={`modal-trophy-details-input ${validationErrors.branchId ? 'error' : ''}`}
+                          >
+                            <option value="">Select Branch</option>
+                            {availableBranches.map(branch => (
+                              <option key={branch.id} value={branch.id}>
+                                {branch.name} {branch.stockQuantity !== undefined ? `(${branch.stockQuantity} in stock)` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          {validationErrors.branchId && (
+                            <span className="modal-error-message">{validationErrors.branchId}</span>
+                          )}
+                        </>
+                      ) : (
+                        <div className="modal-no-stock-message">
+                          ⚠️ No branches have stock for this size. Please try a different size.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <textarea
                     placeholder="Engraving Text (Optional)"
                     value={trophyDetails.engravingText}

@@ -6,7 +6,18 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Validate environment variables to prevent crashes on startup
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ WARNING: Missing Supabase environment variables!');
+  console.error('   SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+  console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✅ Set' : '❌ Missing');
+  console.error('   Please check your server/.env file');
+  console.error('   Server will continue but database operations will fail');
+  // Don't throw - let the server start but log the error
+  // The error handlers in index.js will catch any subsequent errors
+}
+
+const supabase = createClient(supabaseUrl || '', supabaseServiceKey || '');
 
 // Helper function to execute raw SQL queries using Supabase
 async function query(text, params) {

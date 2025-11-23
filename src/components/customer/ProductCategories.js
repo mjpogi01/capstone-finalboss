@@ -495,12 +495,36 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
                         )}
                       </div>
                       {/* Show quantity for balls and trophies on the right */}
-                      {(product.category?.toLowerCase() === 'balls' || product.category?.toLowerCase() === 'trophies') && 
-                       product.stock_quantity !== undefined && product.stock_quantity !== null && (
-                        <span className="sportswear-stat-item sportswear-stat-right">
-                          Qty: {product.stock_quantity}
-                        </span>
-                      )}
+                      {(() => {
+                        const isBallOrTrophy = product.category?.toLowerCase() === 'balls' || product.category?.toLowerCase() === 'trophies';
+                        if (!isBallOrTrophy) return null;
+                        
+                        // For trophies, calculate total from size_stocks if available
+                        let displayStock = product.stock_quantity;
+                        if (product.category?.toLowerCase() === 'trophies' && product.size_stocks) {
+                          let sizeStocks = product.size_stocks;
+                          if (typeof sizeStocks === 'string') {
+                            try {
+                              sizeStocks = JSON.parse(sizeStocks);
+                            } catch (e) {
+                              sizeStocks = null;
+                            }
+                          }
+                          if (sizeStocks && typeof sizeStocks === 'object') {
+                            displayStock = Object.values(sizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+                          }
+                        }
+                        
+                        // Show quantity if it's defined and not null (allow 0 to be shown)
+                        if (displayStock !== undefined && displayStock !== null) {
+                          return (
+                            <span className="sportswear-stat-item sportswear-stat-right">
+                              Qty: {displayStock}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                     <div className="sportswear-action-buttons">
                       <button 

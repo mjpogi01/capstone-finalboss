@@ -289,17 +289,27 @@ const ArtistChatModal = ({ room, isOpen, onClose }) => {
     try {
       setUploading(true);
       
+      // Get auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Authentication required');
+      }
+      
       const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
         
         const response = await fetch(`${getAPI_URL()}/api/upload`, {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          },
           body: formData
         });
         
         if (!response.ok) {
-          throw new Error('Upload failed');
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+          throw new Error(errorData.error || 'Upload failed');
         }
         
         const data = await response.json();

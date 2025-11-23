@@ -166,3 +166,5 @@ postgresql://postgres.PROJECT_ID:PASSWORD@pooler.supabase.com:5432/postgres?pgbo
 
 **Port:** 5432 (Session mode)
 
+
+

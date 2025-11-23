@@ -197,6 +197,13 @@ const CartModal = () => {
         setIsProcessingOrder(false);
       }
       
+      // Check if it's a stock error - keep checkout open so user can select different branch
+      if (error.isStockError || error.requiresBranchSelection) {
+        showError('Insufficient Stock', error.message || 'The selected branch does not have enough stock for your order. Please select a different branch.');
+        // Don't close checkout modal - let user select different branch
+        return;
+      }
+      
       // Check if it's a network error (backend not running)
       if (error.isNetworkError || error.message?.includes('backend server')) {
         showError('Backend Server Not Running', error.message || 'Please ensure the backend server is running on port 4000. Start it with: npm run server:dev or double-click start-backend.bat');

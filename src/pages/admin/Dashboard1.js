@@ -825,10 +825,19 @@ echarts.use([
       if (result.success && result.data) {
         const data = result.data;
         
-        // Calculate metrics from real data
-        const totalRevenue = data.summary?.totalRevenue || 0;
-        const totalOrders = data.summary?.totalOrders || 0;
-        const totalCustomers = data.summary?.totalCustomers || 0;
+        // Calculate metrics from real data - ensure proper number conversion
+        const totalRevenue = Number(data.summary?.totalRevenue) || 0;
+        const totalOrders = Number(data.summary?.totalOrders) || 0;
+        const totalCustomers = Number(data.summary?.totalCustomers) || 0;
+        
+        console.log('📊 Parsed metrics:', {
+          totalRevenue,
+          totalOrders,
+          totalCustomers,
+          rawTotalRevenue: data.summary?.totalRevenue,
+          rawTotalOrders: data.summary?.totalOrders,
+          rawTotalCustomers: data.summary?.totalCustomers
+        });
         
         // Calculate percentage changes (mock calculation for now)
         const revenueChange = totalRevenue > 0 ? '+12%' : '+0%';
@@ -842,6 +851,18 @@ echarts.use([
           salesTrend: revenueChange,
           customersTrend: customersChange,
           ordersTrend: ordersChange
+        });
+        
+        console.log('📊 Updated dashboard stats:', {
+          totalSales: totalRevenue,
+          totalCustomers,
+          totalOrders
+        });
+      } else {
+        console.warn('⚠️ Dashboard summary response missing data:', {
+          success: result.success,
+          hasData: !!result.data,
+          summary: result.data?.summary
         });
       }
     } catch (error) {
@@ -1110,11 +1131,17 @@ echarts.use([
   };
 
   const formatCurrency = (amount) => {
+    // Ensure amount is a valid number
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || !isFinite(numAmount)) {
+      return '₱0';
+    }
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP',
-      minimumFractionDigits: 0
-    }).format(amount);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numAmount);
   };
 
   // Format time display

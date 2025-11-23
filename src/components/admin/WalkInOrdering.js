@@ -258,6 +258,13 @@ const WalkInOrdering = ({ onClose }) => {
       // Hide processing modal
       setIsProcessingOrder(false);
       
+      // Check if it's a stock error
+      if (error.isStockError || error.requiresBranchSelection) {
+        showError('Insufficient Stock', error.message || 'The selected branch does not have enough stock for your order. Please select a different branch.');
+        // Don't close checkout modal - let user select different branch
+        return;
+      }
+      
       showError('Order Failed', `Failed to place order: ${error.message}. Please try again.`);
     }
   };

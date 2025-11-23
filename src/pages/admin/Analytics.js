@@ -149,7 +149,7 @@ const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [forecastLoading, setForecastLoading] = useState(true);
   const [salesTrendsLoading, setSalesTrendsLoading] = useState(true);
-  const [customerLoading, setCustomerLoading] = useState(true);
+  const [customerLoading, setCustomerLoading] = useState(false); // Start as false - lazy load only when needed
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -179,6 +179,10 @@ const Analytics = () => {
   
   // Refs to store chart instances for resizing
   const chartRefs = useRef({});
+  // Ref to track if data has been loaded to prevent refresh on focus/blur
+  const dataLoadedRef = useRef(false);
+  // Ref to track the user ID to prevent unnecessary re-fetches
+  const lastUserIdRef = useRef(null);
   
   // Chart values visibility for Sales & Revenue tab
   // Load from localStorage on mount, default to true (shared with Dashboard)
@@ -250,12 +254,25 @@ const Analytics = () => {
       return;
     }
 
+    const userId = user?.id;
+    
+    // Only fetch if user ID changed (new user) or data hasn't been loaded yet
+    // This prevents refresh when window regains focus and user object reference changes
+    if (dataLoadedRef.current && lastUserIdRef.current === userId) {
+      return;
+    }
+
+    // Mark data as loaded and track user ID
+    dataLoadedRef.current = true;
+    lastUserIdRef.current = userId;
+
     fetchAnalyticsData();
 
     const runDeferredFetches = () => {
       fetchSalesTrends();
-      fetchCustomerAnalytics();
       fetchProductStocks();
+      // Customer analytics is now loaded lazily when the user views that section
+      // This prevents blocking the main analytics page load
     };
 
     let idleId = null;
@@ -277,13 +294,23 @@ const Analytics = () => {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [authLoading, user]);
+  }, [authLoading, user?.id]); // Use user?.id instead of user to prevent unnecessary re-renders
 
   useEffect(() => {
     if (rawData) {
       applyFilters();
     }
   }, [filters, rawData]);
+
+  // Lazy load customer analytics only when customers tab is active
+  useEffect(() => {
+    if (activeTab === 'customers' && activeCustomersChartTab === 'customerInsights') {
+      // Only fetch if not already loading and not already loaded
+      if (!customerLoading && !customerSummary && topCustomers.length === 0) {
+        fetchCustomerAnalytics();
+      }
+    }
+  }, [activeTab, activeCustomersChartTab, customerLoading, customerSummary, topCustomers.length]);
 
   // Fetch branches for owners
   useEffect(() => {
@@ -308,7 +335,7 @@ const Analytics = () => {
       }
     };
     loadBranches();
-  }, [isOwner, user]);
+  }, [isOwner, user?.id]); // Use user?.id instead of user to prevent unnecessary re-renders
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -373,7 +400,16 @@ const Analytics = () => {
         const response = await authFetch(`${API_URL}/api/analytics/dashboard`);
         const result = await response.json();
         
-        console.log('Analytics API Response:', result);
+        // Only log warnings if they indicate actual errors (not just missing DATABASE_URL when fallback works)
+        if (result.warning) {
+          // Suppress DATABASE_URL warning since fallback mechanism works
+          if (result.warning.includes('DATABASE_URL not configured')) {
+            // Silently handle - fallback mechanism is working
+          } else {
+            // Log other warnings (connection errors, etc.)
+            console.warn('Analytics warning:', result.warning);
+          }
+        }
         
         if (result.success && result.data) {
           const salesOverTime = result.data.salesOverTime || {};
@@ -585,25 +621,54 @@ const Analytics = () => {
   };
 
   const fetchCustomerAnalytics = async () => {
+    // Skip if already loading or already loaded
+    if (customerLoading) {
+      return;
+    }
+    
     try {
       setCustomerLoading(true);
-      const response = await authFetch(`${API_URL}/api/analytics/customer-analytics`);
-      const result = await response.json();
       
-      if (result.success && result.data) {
-        setCustomerSummary(result.data.summary || null);
-        const topCustomersRaw = Array.isArray(result.data.topCustomers) ? result.data.topCustomers : [];
-        const formattedTopCustomers = topCustomersRaw.map((customer, index) => ({
-          ...customer,
-          displayName: getCustomerDisplayName(customer, index)
-        }));
-        setTopCustomers(formattedTopCustomers);
-      } else {
-        setCustomerSummary(null);
-        setTopCustomers([]);
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+      
+      try {
+        const response = await authFetch(`${API_URL}/api/analytics/customer-analytics`, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setCustomerSummary(result.data.summary || null);
+          const topCustomersRaw = Array.isArray(result.data.topCustomers) ? result.data.topCustomers : [];
+          const formattedTopCustomers = topCustomersRaw.map((customer, index) => ({
+            ...customer,
+            displayName: getCustomerDisplayName(customer, index)
+          }));
+          setTopCustomers(formattedTopCustomers);
+        } else {
+          setCustomerSummary(null);
+          setTopCustomers([]);
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          console.warn('⚠️ Customer analytics request timed out');
+        } else {
+          throw fetchError;
+        }
       }
     } catch (error) {
-      console.error('Error fetching customer analytics:', error);
+      console.warn('⚠️ Error fetching customer analytics (non-blocking):', error.message || error);
+      // Don't set error state - just leave it as null/empty so page still works
       setCustomerSummary(null);
       setTopCustomers([]);
     } finally {

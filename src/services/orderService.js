@@ -375,13 +375,22 @@ class OrderService {
 
       if (!response.ok) {
         let errorMessage = 'Failed to create order';
+        let errorData = null;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
+          errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || `Server error (${response.status})`;
         }
-        throw new Error(errorMessage);
+        
+        // Create error with additional properties for stock validation errors
+        const error = new Error(errorMessage);
+        if (errorData) {
+          error.isStockError = errorData.requiresBranchSelection === true || errorData.error === 'Insufficient stock';
+          error.stockCheck = errorData.stockCheck;
+          error.requiresBranchSelection = errorData.requiresBranchSelection;
+        }
+        throw error;
       }
 
       const data = await response.json();

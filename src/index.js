@@ -16,6 +16,14 @@ window.addEventListener('error', (event) => {
     event.preventDefault();
     return false;
   }
+  // Suppress ResizeObserver disconnect errors from echarts-for-react (harmless cleanup error)
+  if (event.message && event.message.includes("Cannot read properties of undefined (reading 'disconnect')")) {
+    const stack = event.error?.stack || '';
+    if (stack.includes('resizeObserver.js') || stack.includes('sensorPool.js') || stack.includes('echarts-for-react')) {
+      event.preventDefault();
+      return false;
+    }
+  }
   // Suppress Leaflet heat layer canvas context errors (timing issue)
   if (event.message && event.message.includes('clearRect') && event.message.includes('Cannot read properties of undefined')) {
     // Check if it's from the heat layer by checking the stack trace or source
@@ -89,6 +97,14 @@ window.addEventListener('unhandledrejection', (event) => {
   if (event.reason && event.reason.message && event.reason.message.includes('ResizeObserver loop')) {
     event.preventDefault();
     return false;
+  }
+  // Suppress ResizeObserver disconnect errors from echarts-for-react
+  if (event.reason && event.reason.message && event.reason.message.includes("Cannot read properties of undefined (reading 'disconnect')")) {
+    const stack = event.reason.stack || '';
+    if (stack.includes('resizeObserver.js') || stack.includes('sensorPool.js') || stack.includes('echarts-for-react')) {
+      event.preventDefault();
+      return false;
+    }
   }
   // Suppress reCAPTCHA timeout promise rejections
   if (event.reason && (event.reason.message && (event.reason.message.includes('Timeout') || event.reason.message.includes('timeout')))) {
@@ -260,6 +276,22 @@ console.error = (...args) => {
     return; // Suppress silently
   }
   
+  // Suppress ResizeObserver disconnect errors from echarts-for-react
+  if (message && message.includes("Cannot read properties of undefined (reading 'disconnect')")) {
+    // Check if it's from echarts-for-react by looking at the stack trace in error objects
+    const hasEchartsStack = args.some(arg => {
+      if (arg && typeof arg === 'object' && arg.stack) {
+        return arg.stack.includes('resizeObserver.js') || 
+               arg.stack.includes('sensorPool.js') || 
+               arg.stack.includes('echarts-for-react');
+      }
+      return false;
+    });
+    if (hasEchartsStack || message.includes('resizeObserver') || message.includes('sensorPool')) {
+      return; // Suppress silently
+    }
+  }
+  
   originalError.apply(console, args);
 };
 
@@ -294,6 +326,13 @@ if (typeof window !== 'undefined') {
     if (message && (message.includes('TronWeb') || message.includes('TronLink') || message.includes('already initiated'))) {
       return true; // Prevent default error handling
     }
+    // Suppress ResizeObserver disconnect errors from echarts-for-react
+    if (message && message.includes("Cannot read properties of undefined (reading 'disconnect')")) {
+      const stack = error?.stack || '';
+      if (stack.includes('resizeObserver.js') || stack.includes('sensorPool.js') || stack.includes('echarts-for-react')) {
+        return true; // Prevent default error handling
+      }
+    }
     if (originalOnError) {
       return originalOnError(message, source, lineno, colno, error);
     }
@@ -316,6 +355,15 @@ if (typeof window !== 'undefined') {
             (error?.stack && error.stack.includes('Timeout (u)'))) {
           console.warn('⚠️ Timeout error suppressed from React error overlay');
           return; // Don't show error overlay
+        }
+        
+        // Suppress ResizeObserver disconnect errors from echarts-for-react
+        if (message && message.includes("Cannot read properties of undefined (reading 'disconnect')")) {
+          const stack = error?.stack || '';
+          if (stack.includes('resizeObserver.js') || stack.includes('sensorPool.js') || stack.includes('echarts-for-react')) {
+            console.warn('⚠️ ResizeObserver disconnect error suppressed from React error overlay (harmless)');
+            return; // Don't show error overlay
+          }
         }
         
         // Call original handler for other errors

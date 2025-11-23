@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getAPI_URL } from '../../config/api';
 import './AddProductModal.css';
@@ -540,6 +540,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     }
   };
 
+  // Track if we've set the default branch to prevent infinite loops
+  const defaultBranchSetRef = useRef(false);
+
+  // Reset the ref when switching between edit/add mode
+  useEffect(() => {
+    defaultBranchSetRef.current = false;
+  }, [isEditMode]);
+
   useEffect(() => {
     const fetchBranches = async () => {
       try {
@@ -548,14 +556,20 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           const branchesData = await response.json();
           setBranches(branchesData);
           const mainBranch = branchesData.find(branch => branch.is_main_manufacturing);
-          if (mainBranch && !isEditMode) {
-            // Only set default branch for non-simple categories (apparel, etc.)
-            const ballCategory = isBallCategory(formData.category);
-            const medalCategory = isMedalCategory(formData.category);
+          if (mainBranch && !isEditMode && !defaultBranchSetRef.current) {
+            // Only set default branch once for non-simple categories (apparel, etc.)
+            // Check current category value without depending on it
+            setFormData(prev => {
+              const ballCategory = isBallCategory(prev.category);
+              const medalCategory = isMedalCategory(prev.category);
             const isSimpleCategory = ballCategory || medalCategory;
-            if (!isSimpleCategory) {
-              setFormData(prev => ({ ...prev, branch_id: mainBranch.id }));
+              // Only set if not a simple category and branch_id is not already set
+              if (!isSimpleCategory && !prev.branch_id) {
+                defaultBranchSetRef.current = true;
+                return { ...prev, branch_id: mainBranch.id };
             }
+              return prev;
+            });
           }
         } else {
           console.error('Failed to fetch branches');
@@ -568,7 +582,7 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     };
 
     fetchBranches();
-  }, [isEditMode, formData.category]);
+  }, [isEditMode]); // Removed formData.category from dependencies to prevent infinite loop
 
   // Fetch current stocks per branch when in edit mode
   useEffect(() => {
@@ -620,6 +634,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
               if (parsedSizes.length > 0) {
                 const loadedSizeStocks = {};
                 Object.keys(branchProductsMap).forEach(branchId => {
+                  // Normalize branchId to string for consistent key usage
+                  const branchIdKey = branchId.toString();
                   const product = branchProductsMap[branchId];
                   if (product.size_stocks) {
                     try {
@@ -627,11 +643,11 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                         ? JSON.parse(product.size_stocks) 
                         : product.size_stocks;
                       if (stocks && typeof stocks === 'object') {
-                        loadedSizeStocks[branchId] = stocks;
-                        console.log(`📦 [AddProductModal] Loaded size_stocks for branch ${branchId}:`, stocks);
+                        loadedSizeStocks[branchIdKey] = stocks;
+                        console.log(`📦 [AddProductModal] Loaded size_stocks for branch ${branchIdKey}:`, stocks);
                       }
                     } catch (e) {
-                      console.warn(`Failed to parse size_stocks for branch ${branchId}:`, e);
+                      console.warn(`Failed to parse size_stocks for branch ${branchIdKey}:`, e);
                     }
                   } else {
                     // Initialize empty size_stocks for branches that don't have it yet
@@ -639,8 +655,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                     parsedSizes.forEach(size => {
                       emptyStocks[size] = 0;
                     });
-                    loadedSizeStocks[branchId] = emptyStocks;
-                    console.log(`📦 [AddProductModal] Initialized empty size_stocks for branch ${branchId}`);
+                    loadedSizeStocks[branchIdKey] = emptyStocks;
+                    console.log(`📦 [AddProductModal] Initialized empty size_stocks for branch ${branchIdKey}`);
                   }
                 });
                 // Always set sizeStocks, even if some branches have empty stocks
@@ -693,8 +709,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     }
   }, [isEditMode, editingProduct, formData.name, formData.category]);
 
+  // Track if we've already initialized from editingProduct to prevent infinite loops
+  const initializedProductIdRef = useRef(null);
+  
   useEffect(() => {
-    if (isEditMode && editingProduct) {
+    // Only initialize if we haven't already initialized this product, or if editingProduct changed
+    const productId = editingProduct?.id;
+    if (isEditMode && editingProduct && productId !== initializedProductIdRef.current) {
+      initializedProductIdRef.current = productId;
+      
       // Parse price - for jerseys, check jersey_prices column first, then fallback to price
       let priceValue = editingProduct.price || '';
       let jerseyPricesValue = { fullSet: '', shirtOnly: '', shortsOnly: '' };
@@ -870,13 +893,14 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       setCutTypeError('');
     }
     if (!isEditMode) {
+      initializedProductIdRef.current = null;
       setSizeSurcharges(createEmptySizeSurcharges());
       setFabricSurcharges({ ...DEFAULT_FABRIC_SURCHARGES });
       setFabricError('');
       setCutTypeSurcharges({ ...DEFAULT_CUT_TYPE_SURCHARGES });
       setCutTypeError('');
     }
-  }, [isEditMode, editingProduct]);
+  }, [isEditMode, editingProduct?.id]); // Only depend on the ID, not the entire object
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
   const kidsSizes = ['S6', 'S8', 'S10', 'S12', 'S14'];
@@ -1524,15 +1548,17 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
   const handleSizeStockChange = (branchId, size, stockQuantity) => {
     setSizeStocks(prev => {
       const updated = { ...prev };
-      if (!updated[branchId]) {
-        updated[branchId] = {};
+      // Normalize branchId to string for consistent key usage
+      const branchIdKey = branchId.toString();
+      if (!updated[branchIdKey]) {
+        updated[branchIdKey] = {};
       }
       // Overwrite the value - if empty string, set to null, otherwise parse as integer (including 0)
       if (stockQuantity === '' || stockQuantity === null) {
-        updated[branchId][size] = null;
+        updated[branchIdKey][size] = null;
       } else {
         const parsed = parseInt(stockQuantity);
-        updated[branchId][size] = isNaN(parsed) ? 0 : parsed;  // Overwrite, don't append
+        updated[branchIdKey][size] = isNaN(parsed) ? 0 : parsed;  // Overwrite, don't append
       }
       return updated;
     });
@@ -1725,10 +1751,12 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       setSizeStocks(prev => {
         const updated = { ...prev };
         selectedBranches.forEach(branchId => {
-          if (!updated[branchId]) {
-            updated[branchId] = {};
+          // Normalize branchId to string for consistent key usage
+          const branchIdKey = branchId.toString();
+          if (!updated[branchIdKey]) {
+            updated[branchIdKey] = {};
           }
-          updated[branchId][value] = null;
+          updated[branchIdKey][value] = null;
         });
         return updated;
       });
@@ -2223,18 +2251,34 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         const stocksObject = {};
         // Build nested structure: branchId -> size -> quantity
         selectedBranches.forEach(branchId => {
+          // Normalize branchId to ensure consistent key lookup (handle both string and number)
+          const branchIdKey = branchId.toString();
+          const branchIdNum = typeof branchId === 'string' ? parseInt(branchId) : branchId;
+          
           const branchStocks = {};
           availableSizes.forEach(size => {
-            const stock = sizeStocks[branchId]?.[size];
-            if (stock !== null && stock !== undefined && !isNaN(parseInt(stock)) && parseInt(stock) >= 0) {
-              branchStocks[size] = parseInt(stock);
+            // Try both string and number keys for branchId to handle type inconsistencies
+            const stock = sizeStocks[branchId]?.[size] ?? sizeStocks[branchIdNum]?.[size] ?? sizeStocks[branchIdKey]?.[size];
+            
+            // Include stock if it's a valid number (including 0)
+            // Only exclude null, undefined, or NaN values
+            if (stock !== null && stock !== undefined) {
+              const parsed = parseInt(stock);
+              if (!isNaN(parsed) && parsed >= 0) {
+                branchStocks[size] = parsed;
+              } else {
+                // If invalid, default to 0
+                branchStocks[size] = 0;
+              }
+            } else {
+              // If null/undefined, default to 0 to ensure all sizes are included
+              branchStocks[size] = 0;
             }
           });
-          // Only add branch if it has at least one size with stock
-          if (Object.keys(branchStocks).length > 0) {
-            stocksObject[branchId.toString()] = branchStocks;
-          }
+          // Always add branch, even if all stocks are 0, to ensure consistency
+          stocksObject[branchIdKey] = branchStocks;
         });
+        // Always set sizeStocksValue if we have branches and sizes
         if (Object.keys(stocksObject).length > 0) {
           sizeStocksValue = stocksObject;
         }
@@ -2334,10 +2378,34 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
 
           // For trophies with sizes, extract the size_stocks for this specific branch
           let branchSizeStocks = null;
-          if (isTrophyProduct && availableSizes.length > 0 && sizeStocksValue) {
-            const branchStocksData = sizeStocksValue[branchId.toString()];
-            if (branchStocksData && Object.keys(branchStocksData).length > 0) {
-              branchSizeStocks = branchStocksData;
+          if (isTrophyProduct && availableSizes.length > 0) {
+            // Try to get from sizeStocksValue first (pre-built structure)
+            if (sizeStocksValue) {
+              const branchStocksData = sizeStocksValue[branchId.toString()];
+              if (branchStocksData && typeof branchStocksData === 'object') {
+                branchSizeStocks = branchStocksData;
+              }
+            }
+            
+            // Fallback: build directly from sizeStocks state if not found in sizeStocksValue
+            // This ensures we always have size_stocks for trophy products with sizes
+            if (!branchSizeStocks && availableSizes.length > 0) {
+              const branchIdKey = branchId.toString();
+              const branchIdNum = typeof branchId === 'string' ? parseInt(branchId) : branchId;
+              const fallbackStocks = {};
+              availableSizes.forEach(size => {
+                // Try both string and number keys for branchId
+                const stock = sizeStocks[branchId]?.[size] ?? sizeStocks[branchIdNum]?.[size] ?? sizeStocks[branchIdKey]?.[size];
+                if (stock !== null && stock !== undefined) {
+                  const parsed = parseInt(stock);
+                  fallbackStocks[size] = !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+                } else {
+                  fallbackStocks[size] = 0;
+                }
+              });
+              if (Object.keys(fallbackStocks).length > 0) {
+                branchSizeStocks = fallbackStocks;
+              }
             }
           }
 
@@ -2354,14 +2422,28 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           };
 
           // Add branch-specific size_stocks for trophies
+          // Always include size_stocks for trophy products with sizes, even if empty
           // Send as object, not string - JSON.stringify will handle it correctly
-          if (branchSizeStocks) {
-            branchProductData.size_stocks = branchSizeStocks;
-            console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks:`, branchSizeStocks);
-            console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks type:`, typeof branchSizeStocks);
+          if (isTrophyProduct && availableSizes.length > 0) {
+            // Use branchSizeStocks if available, otherwise create empty object with all sizes set to 0
+            if (branchSizeStocks && typeof branchSizeStocks === 'object') {
+              branchProductData.size_stocks = branchSizeStocks;
+            } else {
+              // Ensure all sizes are included, defaulting to 0 if not specified
+              const defaultStocks = {};
+              availableSizes.forEach(size => {
+                defaultStocks[size] = 0;
+              });
+              branchProductData.size_stocks = defaultStocks;
+            }
+            console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks:`, branchProductData.size_stocks);
+            console.log(`📦 [AddProductModal] Branch ${branchId} size_stocks type:`, typeof branchProductData.size_stocks);
+            console.log(`📦 [AddProductModal] ✅ CONFIRMING: size_stocks will be sent to API for branch ${branchId}:`, JSON.stringify(branchProductData.size_stocks, null, 2));
           }
 
             console.log(`📦 [AddProductModal] Processing branch ${branchId} with stock ${stockQuantity || 'size_stocks'}`);
+            console.log(`📦 [AddProductModal] ✅ FINAL DATA BEING SENT TO API for branch ${branchId}:`, JSON.stringify(branchProductData, null, 2));
+            console.log(`📦 [AddProductModal] ✅ size_stocks in request body:`, branchProductData.size_stocks ? JSON.stringify(branchProductData.size_stocks, null, 2) : 'NOT INCLUDED');
 
           // Helper function to handle response with better error handling
           const handleResponse = async (response, branchId, action) => {
@@ -2418,6 +2500,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
 
               const result = await handleResponse(response, branchId, 'update');
               console.log(`✅ [AddProductModal] Successfully updated product in branch ${branchId}`);
+              // Confirm size_stocks in response
+              if (isTrophyProduct && availableSizes.length > 0) {
+                console.log(`✅ [AddProductModal] ✅ CONFIRMED: Response size_stocks for branch ${branchId}:`, result?.size_stocks ? JSON.stringify(result.size_stocks, null, 2) : 'NULL/UNDEFINED');
+                if (result?.size_stocks) {
+                  console.log(`✅ [AddProductModal] ✅✅✅ SUCCESS: size_stocks was saved to database for branch ${branchId}!`);
+                } else {
+                  console.warn(`⚠️ [AddProductModal] ⚠️ WARNING: size_stocks was sent but response shows null/undefined for branch ${branchId}`);
+                }
+              }
               return result;
             } else {
               // Product doesn't exist in this branch yet, but we're in edit mode
@@ -2435,6 +2526,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
 
               const result = await handleResponse(response, branchId, 'create');
               console.log(`✅ [AddProductModal] Successfully created product in branch ${branchId}:`, result.id);
+              // Confirm size_stocks in response
+              if (isTrophyProduct && availableSizes.length > 0) {
+                console.log(`✅ [AddProductModal] ✅ CONFIRMED: Response size_stocks for branch ${branchId}:`, result?.size_stocks ? JSON.stringify(result.size_stocks, null, 2) : 'NULL/UNDEFINED');
+                if (result?.size_stocks) {
+                  console.log(`✅ [AddProductModal] ✅✅✅ SUCCESS: size_stocks was saved to database for branch ${branchId}!`);
+                } else {
+                  console.warn(`⚠️ [AddProductModal] ⚠️ WARNING: size_stocks was sent but response shows null/undefined for branch ${branchId}`);
+                }
+              }
               return result;
             }
           } else {
@@ -2452,6 +2552,15 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
 
             const result = await handleResponse(response, branchId, 'create');
             console.log(`✅ [AddProductModal] Successfully created product in branch ${branchId}:`, result.id);
+            // Confirm size_stocks in response
+            if (isTrophyProduct && availableSizes.length > 0) {
+              console.log(`✅ [AddProductModal] ✅ CONFIRMED: Response size_stocks for branch ${branchId}:`, result?.size_stocks ? JSON.stringify(result.size_stocks, null, 2) : 'NULL/UNDEFINED');
+              if (result?.size_stocks) {
+                console.log(`✅ [AddProductModal] ✅✅✅ SUCCESS: size_stocks was saved to database for branch ${branchId}!`);
+              } else {
+                console.warn(`⚠️ [AddProductModal] ⚠️ WARNING: size_stocks was sent but response shows null/undefined for branch ${branchId}`);
+              }
+            }
             return result;
           }
           } catch (error) {
@@ -2982,7 +3091,9 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                                   {selectedBranches.map(branchId => {
                                     const branch = branches.find(b => b.id === branchId);
                                     if (!branch) return null;
-                                    const stockValue = sizeStocks[branchId]?.[size];
+                                    // Normalize branchId to string for consistent key lookup
+                                    const branchIdKey = branchId.toString();
+                                    const stockValue = sizeStocks[branchIdKey]?.[size];
                                     // Get current stock from DB for this branch and size
                                     const currentSizeStockFromDB = branchProducts[branchId]?.size_stocks;
                                     let currentStockForSize = null;

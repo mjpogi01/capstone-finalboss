@@ -264,10 +264,7 @@ router.get('/', async (req, res) => {
     }
 
     // Deduplicate products by name and category for customer-facing display
-    // Group products with the same name and category, keeping the one with:
-    // 1. Highest stock_quantity (if available) or highest total size_stocks
-    // 2. Most recent created_at
-    // 3. First one found if both are equal
+    // Group products with the same name and category, aggregating stock across all branches
     const productMap = new Map();
     
     transformedData.forEach(product => {
@@ -275,54 +272,107 @@ router.get('/', async (req, res) => {
       const key = `${(product.name || '').toLowerCase().trim()}_${(product.category || '').toLowerCase().trim()}`;
       
       if (!productMap.has(key)) {
-        // First occurrence of this product
-        productMap.set(key, product);
+        // First occurrence of this product - initialize aggregated stock
+        let initialSizeStocks = null;
+        if (product.size_stocks) {
+          if (typeof product.size_stocks === 'string') {
+            try {
+              initialSizeStocks = JSON.parse(product.size_stocks);
+            } catch (e) {
+              initialSizeStocks = null;
+            }
+          } else {
+            initialSizeStocks = product.size_stocks;
+          }
+        }
+        
+        // Initialize stock - if stock_quantity is null/undefined, check if we should use 0 or calculate from size_stocks
+        let initialStockQty = 0;
+        if (product.stock_quantity !== null && product.stock_quantity !== undefined) {
+          initialStockQty = product.stock_quantity;
+        } else if (initialSizeStocks && typeof initialSizeStocks === 'object') {
+          // For trophies with size_stocks but null stock_quantity, calculate from size_stocks
+          initialStockQty = Object.values(initialSizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+        } else {
+          // No stock_quantity and no size_stocks, default to 0
+          initialStockQty = 0;
+        }
+        
+        const aggregatedProduct = {
+          ...product,
+          aggregated_stock_quantity: initialStockQty,
+          aggregated_size_stocks: initialSizeStocks
+        };
+        productMap.set(key, aggregatedProduct);
       } else {
-        // Product already exists, compare and keep the better one
+        // Product already exists - aggregate stock from all branches
         const existing = productMap.get(key);
         const current = product;
         
-        // Calculate stock values (including size_stocks for trophies)
-        const getStockValue = (prod) => {
-          if (prod.stock_quantity !== null && prod.stock_quantity !== undefined) {
-            return prod.stock_quantity;
-          }
-          // For products with size_stocks, sum all size quantities
-          if (prod.size_stocks) {
-            let sizeStocks = prod.size_stocks;
-            if (typeof sizeStocks === 'string') {
-              try {
-                sizeStocks = JSON.parse(sizeStocks);
-              } catch (e) {
-                return 0;
-              }
-            }
-            if (sizeStocks && typeof sizeStocks === 'object') {
-              return Object.values(sizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+        // Aggregate stock_quantity for balls and simple products
+        if (current.stock_quantity !== null && current.stock_quantity !== undefined) {
+          existing.aggregated_stock_quantity = (existing.aggregated_stock_quantity || 0) + current.stock_quantity;
+        }
+        
+        // Aggregate size_stocks for trophies
+        if (current.size_stocks) {
+          let currentSizeStocks = current.size_stocks;
+          if (typeof currentSizeStocks === 'string') {
+            try {
+              currentSizeStocks = JSON.parse(currentSizeStocks);
+            } catch (e) {
+              currentSizeStocks = null;
             }
           }
-          return 0;
-        };
-        
-        const existingStock = getStockValue(existing);
-        const currentStock = getStockValue(current);
-        
-        if (currentStock > existingStock) {
-          productMap.set(key, current);
-        } else if (currentStock === existingStock) {
-          // If stock is equal, prefer the one with more recent created_at
-          const existingDate = new Date(existing.created_at || 0);
-          const currentDate = new Date(current.created_at || 0);
-          if (currentDate > existingDate) {
-            productMap.set(key, current);
+          
+          if (currentSizeStocks && typeof currentSizeStocks === 'object') {
+            if (!existing.aggregated_size_stocks) {
+              existing.aggregated_size_stocks = {};
+            }
+            
+            // Sum stock for each size across all branches
+            Object.keys(currentSizeStocks).forEach(size => {
+              const currentQty = parseInt(currentSizeStocks[size]) || 0;
+              const existingQty = parseInt(existing.aggregated_size_stocks[size]) || 0;
+              existing.aggregated_size_stocks[size] = existingQty + currentQty;
+            });
           }
         }
-        // Otherwise keep existing
       }
     });
-
-    // Convert map back to array
-    const deduplicatedData = Array.from(productMap.values());
+    
+    // Now calculate final stock_quantity for all products after aggregation
+    productMap.forEach((product, key) => {
+      // For trophies, calculate total from aggregated_size_stocks
+      if (product.aggregated_size_stocks && typeof product.aggregated_size_stocks === 'object' && !Array.isArray(product.aggregated_size_stocks)) {
+        const totalTrophyStock = Object.values(product.aggregated_size_stocks).reduce(
+          (sum, qty) => sum + (parseInt(qty) || 0), 
+          0
+        );
+        product.stock_quantity = totalTrophyStock;
+        console.log(`📦 [Products API] Trophy ${product.name}: Calculated stock from size_stocks = ${totalTrophyStock}`, product.aggregated_size_stocks);
+      } else {
+        // For balls and other products, use aggregated_stock_quantity
+        product.stock_quantity = product.aggregated_stock_quantity !== undefined && product.aggregated_stock_quantity !== null 
+          ? product.aggregated_stock_quantity 
+          : (product.stock_quantity || 0);
+        if (product.category?.toLowerCase() === 'balls' || product.category?.toLowerCase() === 'trophies') {
+          console.log(`📦 [Products API] ${product.category} ${product.name}: Final stock_quantity = ${product.stock_quantity}, aggregated_stock_quantity = ${product.aggregated_stock_quantity}`);
+        }
+      }
+    });
+    
+    // Convert map back to array and clean up aggregated fields
+    const deduplicatedData = Array.from(productMap.values()).map(product => {
+      // Remove aggregated fields from the product object
+      const { aggregated_stock_quantity, aggregated_size_stocks, ...cleanProduct } = product;
+      
+      return {
+        ...cleanProduct,
+        stock_quantity: product.stock_quantity !== undefined && product.stock_quantity !== null ? product.stock_quantity : 0,
+        size_stocks: aggregated_size_stocks || product.size_stocks
+      };
+    });
 
     res.json(deduplicatedData);
   } catch (error) {
@@ -562,19 +612,48 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
 
     // Check if product with same name, category, and branch_id already exists
     // For balls, trophies, and medals, we want to allow multiple branches but prevent duplicates within the same branch
+    // Use case-insensitive matching for category to prevent duplicates due to case differences
     console.log('📦 [Products API] Checking for existing product:', {
       name: insertData.name,
       category: insertData.category,
       branch_id: insertData.branch_id
     });
     
-    const { data: existingProduct, error: checkError } = await supabase
+    const { data: existingProducts, error: checkError } = await supabase
       .from('products')
       .select('id, branch_id, name, category')
-      .eq('name', insertData.name)
-      .eq('category', insertData.category)
-      .eq('branch_id', insertData.branch_id)
-      .maybeSingle();
+      .eq('name', insertData.name.trim()) // Trim whitespace from name
+      .ilike('category', insertData.category.trim()) // Case-insensitive category match
+      .eq('branch_id', insertData.branch_id);
+    
+    // Find the best match (prefer one with size_stocks if available, or just take the first)
+    let existingProduct = null;
+    if (existingProducts && existingProducts.length > 0) {
+      // Prefer a product that already has size_stocks populated (for trophies)
+      if (insertData.size_stocks) {
+        const { data: productsWithSizeStocks } = await supabase
+          .from('products')
+          .select('id, branch_id, name, category, size_stocks')
+          .in('id', existingProducts.map(p => p.id))
+          .not('size_stocks', 'is', null);
+        
+        if (productsWithSizeStocks && productsWithSizeStocks.length > 0) {
+          existingProduct = productsWithSizeStocks[0];
+          console.log('📦 [Products API] Found existing product with size_stocks:', existingProduct.id);
+        } else {
+          existingProduct = existingProducts[0];
+          console.log('📦 [Products API] Found existing product (no size_stocks):', existingProduct.id);
+        }
+      } else {
+        existingProduct = existingProducts[0];
+        console.log('📦 [Products API] Found existing product:', existingProduct.id);
+      }
+      
+      if (existingProducts.length > 1) {
+        console.warn(`⚠️ [Products API] WARNING: Found ${existingProducts.length} duplicate products with same name/category/branch!`);
+        console.warn(`   This indicates duplicate products exist in the database. Consider cleaning them up.`);
+      }
+    }
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('❌ Error checking for existing product:', checkError);
@@ -602,8 +681,22 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       
       if (updateError) {
         console.error('❌ Error updating product:', updateError);
+        console.error('❌ Update data that failed:', JSON.stringify(insertData, null, 2));
       } else {
         console.log('✅ [Products API] Product updated successfully in branch', insertData.branch_id);
+        console.log('✅ [Products API] Product ID:', data?.id);
+        // Confirm size_stocks was saved
+        if (insertData.size_stocks !== undefined) {
+          console.log('✅ [Products API] ✅ CONFIRMED: size_stocks was sent to database:', JSON.stringify(insertData.size_stocks, null, 2));
+          console.log('✅ [Products API] ✅ CONFIRMED: size_stocks in database response:', JSON.stringify(data?.size_stocks, null, 2));
+          if (data?.size_stocks) {
+            console.log('✅ [Products API] ✅✅✅ SUCCESS: size_stocks column was updated in Supabase!');
+          } else {
+            console.warn('⚠️ [Products API] ⚠️ WARNING: size_stocks was sent but response shows null/undefined');
+          }
+        } else {
+          console.log('ℹ️ [Products API] No size_stocks in update data (not a trophy product with sizes)');
+        }
       }
     } else {
       // Create new product
@@ -619,8 +712,22 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       
       if (insertError) {
         console.error('❌ Error inserting product:', insertError);
+        console.error('❌ Insert data that failed:', JSON.stringify(insertData, null, 2));
       } else {
         console.log('✅ [Products API] Product created successfully in branch', insertData.branch_id);
+        console.log('✅ [Products API] Product ID:', data?.id);
+        // Confirm size_stocks was saved
+        if (insertData.size_stocks !== undefined) {
+          console.log('✅ [Products API] ✅ CONFIRMED: size_stocks was sent to database:', JSON.stringify(insertData.size_stocks, null, 2));
+          console.log('✅ [Products API] ✅ CONFIRMED: size_stocks in database response:', JSON.stringify(data?.size_stocks, null, 2));
+          if (data?.size_stocks) {
+            console.log('✅ [Products API] ✅✅✅ SUCCESS: size_stocks column was updated in Supabase!');
+          } else {
+            console.warn('⚠️ [Products API] ⚠️ WARNING: size_stocks was sent but response shows null/undefined');
+          }
+        } else {
+          console.log('ℹ️ [Products API] No size_stocks in insert data (not a trophy product with sizes)');
+        }
       }
     }
 
@@ -900,6 +1007,21 @@ router.put('/:id', async (req, res) => {
 
     if (!data) {
       return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Confirm size_stocks was saved
+    if (updateData.size_stocks !== undefined) {
+      console.log('✅ [Products API] ✅ CONFIRMED: size_stocks was sent to database:', JSON.stringify(updateData.size_stocks, null, 2));
+      console.log('✅ [Products API] ✅ CONFIRMED: size_stocks in database response:', JSON.stringify(data?.size_stocks, null, 2));
+      if (data?.size_stocks) {
+        console.log('✅ [Products API] ✅✅✅ SUCCESS: size_stocks column was updated in Supabase!');
+        console.log('✅ [Products API] Product ID:', data.id, 'Branch ID:', data.branch_id);
+      } else {
+        console.warn('⚠️ [Products API] ⚠️ WARNING: size_stocks was sent but response shows null/undefined');
+        console.warn('⚠️ [Products API] This might indicate the column does not exist or there was an issue saving it');
+      }
+    } else {
+      console.log('ℹ️ [Products API] No size_stocks in update data (not a trophy product with sizes)');
     }
 
     console.log('✅ [Products API] Product updated successfully');

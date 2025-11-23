@@ -209,3 +209,4 @@ Use a debounce mechanism to prevent rapid successive state changes.
 
 The quickest fix is to **skip `onAuthStateChange` processing during initial load** to prevent the race condition. This addresses the most common cause of unexpected state changes.
 
+

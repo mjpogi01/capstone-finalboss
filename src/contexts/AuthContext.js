@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
   const { showLoginSuccess, showLogoutSuccess, showWelcome, showError } = useNotification();
   const isInitialLoadRef = useRef(true);
   const isProcessingSignOutRef = useRef(false);
+  const isWindowHiddenRef = useRef(false);
 
   useEffect(() => {
     // Get initial session
@@ -56,12 +57,26 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession();
 
+    // Track window visibility to ignore auth state changes when out of focus
+    const handleVisibilityChange = () => {
+      isWindowHiddenRef.current = document.hidden;
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // Skip processing during initial load to prevent race condition
         if (isInitialLoadRef.current) {
           console.log('🔐 Auth state changed during initial load, skipping:', event);
+          return;
+        }
+
+        // Ignore auth state changes when window is out of focus (e.g., alt-tab)
+        // Only process important events (SIGNED_IN, SIGNED_OUT) when window is hidden
+        // This prevents constant state changes when window loses focus
+        if (isWindowHiddenRef.current && event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') {
+          console.log('🔐 Auth state changed while window hidden, skipping:', event);
           return;
         }
 
@@ -208,6 +223,7 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       subscription?.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [showLoginSuccess, showLogoutSuccess, showWelcome]);
 

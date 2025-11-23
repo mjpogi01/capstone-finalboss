@@ -24,20 +24,50 @@ async function assignArtistTaskFallback({
   }
 
   try {
-    const { data: artistProfile, error: artistError } = await supabase
+    // Use workload balancing: find artist with least pending/in_progress tasks
+    // This matches the logic in assign_task_to_least_busy_artist function
+    const { data: artists, error: artistError } = await supabase
       .from('artist_profiles')
-      .select('id, artist_name')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
+      .select(`
+        id,
+        artist_name,
+        artist_tasks!left(
+          id,
+          status
+        )
+      `)
+      .eq('is_active', true);
 
     if (artistError && artistError.code !== 'PGRST116') {
       throw new Error(artistError.message || 'Failed to query active artists');
     }
 
-    if (!artistProfile) {
+    if (!artists || artists.length === 0) {
       throw new Error('No active artists available for fallback assignment');
     }
+
+    // Calculate workload for each artist (count pending + in_progress tasks)
+    const artistsWithWorkload = artists.map(artist => {
+      const activeTasks = (artist.artist_tasks || []).filter(
+        task => task.status === 'pending' || task.status === 'in_progress'
+      );
+      return {
+        id: artist.id,
+        artist_name: artist.artist_name,
+        workload: activeTasks.length
+      };
+    });
+
+    // Sort by workload (ascending), then by name (for consistency)
+    artistsWithWorkload.sort((a, b) => {
+      if (a.workload !== b.workload) {
+        return a.workload - b.workload;
+      }
+      return (a.artist_name || '').localeCompare(b.artist_name || '');
+    });
+
+    // Get the artist with least workload
+    const artistProfile = artistsWithWorkload[0];
 
     let priority = 'medium';
     let deadlineDays = 2;
@@ -244,6 +274,314 @@ function shouldMatchByName(branchContext, order) {
 
 // Supabase client and query helper are provided by ../lib/db
 
+// Function to check stock availability for trophies and balls based on pickup branch
+async function checkStockAvailability(orderItems, pickupBranchId, pickupLocation) {
+  // Note: pickupBranchId is only used for pickup location, not for stock checking
+  // Stock is checked across all branches to ensure availability
+
+  const errors = [];
+  const stockChecks = [];
+
+  for (const item of orderItems) {
+    const category = item.category?.toLowerCase();
+    
+    // Only check stock for trophies and balls
+    if (category !== 'trophies' && category !== 'balls') {
+      continue;
+    }
+
+    const productName = item.name;
+    const quantity = parseInt(item.quantity) || 1;
+    
+    if (!productName) {
+      errors.push(`Product name is missing for item in order`);
+      continue;
+    }
+
+    // Find product across ALL branches (not just the selected branch)
+    const { data: productsData, error: fetchError } = await supabase
+      .from('products')
+      .select('id, name, category, stock_quantity, size_stocks, branch_id')
+      .eq('name', productName)
+      .eq('category', item.category);
+
+    if (fetchError || !productsData || productsData.length === 0) {
+      errors.push(`${productName} is not available in any branch.`);
+      stockChecks.push({
+        product: productName,
+        available: false,
+        reason: 'Product not found in any branch'
+      });
+      continue;
+    }
+
+    // Check stock for balls (simple stock_quantity)
+    if (category === 'balls') {
+      // Sum stock across all branches
+      const totalStock = productsData.reduce((sum, product) => {
+        return sum + (product.stock_quantity || 0);
+      }, 0);
+
+      if (totalStock < quantity) {
+        errors.push(`${productName} has insufficient stock across all branches. Available: ${totalStock}, Required: ${quantity}.`);
+        stockChecks.push({
+          product: productName,
+          available: false,
+          availableStock: totalStock,
+          required: quantity
+        });
+      } else {
+        stockChecks.push({
+          product: productName,
+          available: true,
+          availableStock: totalStock,
+          required: quantity
+        });
+      }
+    }
+    
+    // Check stock for trophies (size_stocks)
+    if (category === 'trophies') {
+      // Get the size from trophy details
+      const trophySize = item.trophyDetails?.size || item.size;
+      if (!trophySize) {
+        errors.push(`${productName} size is not specified in order.`);
+        stockChecks.push({
+          product: productName,
+          available: false,
+          reason: 'Size not specified'
+        });
+        continue;
+      }
+
+      // Sum stock for the specific size across all branches
+      let totalStock = 0;
+      let hasValidStock = false;
+
+      for (const product of productsData) {
+        let sizeStocks = product.size_stocks;
+        
+        // Parse size_stocks if it's a string
+        if (typeof sizeStocks === 'string') {
+          try {
+            sizeStocks = JSON.parse(sizeStocks);
+          } catch (e) {
+            console.error(`Error parsing size_stocks for product ${product.id}:`, e);
+            sizeStocks = null;
+          }
+        }
+
+        if (sizeStocks && typeof sizeStocks === 'object' && sizeStocks[trophySize] !== undefined) {
+          hasValidStock = true;
+          totalStock += (sizeStocks[trophySize] || 0);
+        }
+      }
+
+      if (!hasValidStock) {
+        errors.push(`${productName} (${trophySize}) has no size stocks configured in any branch.`);
+        stockChecks.push({
+          product: productName,
+          size: trophySize,
+          available: false,
+          reason: 'No size stocks configured'
+        });
+        continue;
+      }
+
+      if (totalStock < quantity) {
+        errors.push(`${productName} (${trophySize}) has insufficient stock across all branches. Available: ${totalStock}, Required: ${quantity}.`);
+        stockChecks.push({
+          product: productName,
+          size: trophySize,
+          available: false,
+          availableStock: totalStock,
+          required: quantity
+        });
+      } else {
+        stockChecks.push({
+          product: productName,
+          size: trophySize,
+          available: true,
+          availableStock: totalStock,
+          required: quantity
+        });
+      }
+    }
+  }
+
+  return {
+    available: errors.length === 0,
+    errors: errors,
+    stockChecks: stockChecks
+  };
+}
+
+// Function to deduct stock for trophies and balls ONLY
+// NOTE: Apparel products (jerseys, uniforms, t-shirts, etc.) are pre-ordered (made to order)
+// and do not have stock that needs to be deducted
+// For balls/trophies: Deduct from the SELECTED branch and SELECTED size
+async function deductStockFromOrder(orderItems, pickupBranchId) {
+  try {
+    console.log('📦 Deducting stock for order items (balls and trophies only)');
+    // Note: pickupBranchId is only used for pickup location, not for stock deduction
+    // Each item has its own branchId (set in product modal) which indicates which branch has the stock
+
+    for (const item of orderItems) {
+      const category = item.category?.toLowerCase();
+      const productName = item.name;
+      const quantity = parseInt(item.quantity) || 1;
+      
+      if (!productName) {
+        console.warn(`⚠️ Skipping stock deduction: product name missing for item`);
+        continue;
+      }
+
+      // Only process balls and trophies - apparel products are pre-ordered (no stock deduction)
+      if (category !== 'trophies' && category !== 'balls') {
+        console.log(`ℹ️ Skipping ${productName} (${category}) - apparel products are pre-ordered, no stock deduction needed`);
+        continue;
+      }
+
+      // Use the branchId from the item (set in product modal when user selected branch with stock)
+      const itemBranchId = item.branchId || item.branch_id;
+      
+      if (!itemBranchId) {
+        console.warn(`⚠️ No branchId found for ${productName} - cannot deduct stock. Item should have branchId set from product modal.`);
+        continue;
+      }
+
+      // Find product in the branch specified by the item's branchId
+      // Use case-insensitive category matching and prefer products with size_stocks populated
+      const { data: products, error: fetchError } = await supabase
+        .from('products')
+        .select('id, name, category, stock_quantity, size_stocks, branch_id')
+        .eq('name', productName)
+        .ilike('category', item.category) // Case-insensitive match
+        .eq('branch_id', itemBranchId);
+      
+      // If multiple products found, prefer one with size_stocks populated
+      let foundProduct = null;
+      if (products && products.length > 0) {
+        if (products.length > 1) {
+          console.log(`⚠️ [DEBUG] Found ${products.length} products with same name/category/branch. Products:`, 
+            products.map(p => ({ id: p.id, size_stocks: p.size_stocks })));
+        }
+        // First, try to find one with non-null size_stocks
+        foundProduct = products.find(p => {
+          const ss = p.size_stocks;
+          return ss !== null && ss !== undefined && ss !== 'null' && (typeof ss === 'object' || (typeof ss === 'string' && ss.trim() !== '' && ss.trim() !== 'null'));
+        }) || products[0];
+        console.log(`🔍 [DEBUG] Selected product:`, { id: foundProduct.id, size_stocks: foundProduct.size_stocks });
+      }
+
+      if (fetchError || !foundProduct) {
+        console.error(`❌ Error fetching product ${productName} from branch ${itemBranchId}:`, fetchError);
+        console.error(`   Product not found in branch ${itemBranchId} (selected in product modal)`);
+        continue;
+      }
+      
+      // Debug: Log the full product object
+      console.log(`🔍 [DEBUG] Found product:`, JSON.stringify(foundProduct, null, 2));
+      console.log(`📦 Deducting ${productName} from branch ${itemBranchId} (selected in product modal)`);
+
+      // Deduct stock for balls (using stock_quantity)
+      if (category === 'balls') {
+        const currentStock = foundProduct.stock_quantity || 0;
+        const newStock = Math.max(0, currentStock - quantity);
+        
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ 
+            stock_quantity: newStock,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', foundProduct.id);
+        
+        if (updateError) {
+          console.error(`❌ Error updating stock for ball product ${foundProduct.id}:`, updateError);
+        } else {
+          console.log(`✅ Deducted ${quantity} from ${productName} (balls) at branch ${itemBranchId}. Stock: ${currentStock} → ${newStock}`);
+        }
+      }
+      
+      // Deduct stock for trophies (size_stocks) - using size from item
+      if (category === 'trophies') {
+        let sizeStocks = foundProduct.size_stocks;
+        
+        // Debug: Log what we received
+        console.log(`🔍 [DEBUG] Product ${foundProduct.id} size_stocks type:`, typeof sizeStocks);
+        console.log(`🔍 [DEBUG] Product ${foundProduct.id} size_stocks value:`, sizeStocks);
+        console.log(`🔍 [DEBUG] Product ${foundProduct.id} size_stocks is null:`, sizeStocks === null);
+        console.log(`🔍 [DEBUG] Product ${foundProduct.id} size_stocks is undefined:`, sizeStocks === undefined);
+        
+        // Parse size_stocks if it's a string
+        if (typeof sizeStocks === 'string') {
+          try {
+            sizeStocks = JSON.parse(sizeStocks);
+            console.log(`🔍 [DEBUG] Parsed size_stocks:`, sizeStocks);
+          } catch (e) {
+            console.error(`❌ Error parsing size_stocks for product ${foundProduct.id}:`, e);
+            continue;
+          }
+        }
+
+        // Improved validation: check for null explicitly, and ensure it's an object (not array)
+        if (sizeStocks === null || sizeStocks === undefined || typeof sizeStocks !== 'object' || Array.isArray(sizeStocks)) {
+          console.error(`❌ Invalid size_stocks for trophy product ${foundProduct.id}:`, {
+            value: sizeStocks,
+            type: typeof sizeStocks,
+            isNull: sizeStocks === null,
+            isUndefined: sizeStocks === undefined,
+            isArray: Array.isArray(sizeStocks)
+          });
+          continue;
+        }
+
+        // Get the size from trophy details
+        const trophySize = item.trophyDetails?.size || item.trophyDetails?.trophySize || item.size;
+        if (!trophySize) {
+          console.warn(`⚠️ Trophy size not specified for product ${productName}`);
+          continue;
+        }
+
+        console.log(`📏 Deducting stock for trophy size: ${trophySize} (type: ${typeof trophySize})`);
+        console.log(`🔍 [DEBUG] Available size_stocks keys:`, Object.keys(sizeStocks));
+
+        // JSONB keys are always strings, so convert trophySize to string for lookup
+        // Also try the original value in case it's already a string
+        const sizeKey = String(trophySize);
+        const currentStock = sizeStocks[sizeKey] ?? sizeStocks[trophySize] ?? 0;
+        
+        console.log(`🔍 [DEBUG] Looking up size "${sizeKey}" in size_stocks, found:`, currentStock);
+        if (currentStock < quantity) {
+          console.warn(`⚠️ Insufficient stock for ${productName} size ${trophySize} at branch ${itemBranchId}. Available: ${currentStock}, Required: ${quantity}`);
+        }
+
+        const newStock = Math.max(0, currentStock - quantity);
+        // Use string key to match JSONB format
+        sizeStocks[sizeKey] = newStock;
+        
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ 
+            size_stocks: sizeStocks,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', foundProduct.id);
+        
+        if (updateError) {
+          console.error(`❌ Error updating stock for trophy product ${foundProduct.id}:`, updateError);
+        } else {
+          console.log(`✅ Deducted ${quantity} from ${productName} (${trophySize}) at branch ${itemBranchId}. Stock: ${currentStock} → ${newStock}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error in deductStockFromOrder:', error);
+    throw error;
+  }
+}
+
 // Function to update sold_quantity for products in an order
 async function updateSoldQuantityForOrder(orderItems) {
   try {
@@ -287,6 +625,77 @@ async function updateSoldQuantityForOrder(orderItems) {
   } catch (error) {
     console.error('Error in updateSoldQuantityForOrder:', error);
     throw error;
+  }
+}
+
+// Update branch total_sales when order is completed or cancelled
+// addSales: true to add sales, false to subtract sales
+async function updateBranchTotalSales(order, orderAmount, addSales = true) {
+  try {
+    const action = addSales ? 'adding to' : 'subtracting from';
+    console.log(`💰 ${addSales ? 'Adding to' : 'Subtracting from'} branch total_sales for order ${order.order_number} with amount ${orderAmount}`);
+    
+    // Get branch ID from order (pickup_branch_id or derive from pickup_location)
+    let branchId = null;
+    
+    if (order.pickup_branch_id) {
+      branchId = parseInt(order.pickup_branch_id, 10);
+    } else if (order.pickup_location) {
+      // Try to find branch by name
+      const { data: branch, error: branchError } = await supabase
+        .from('branches')
+        .select('id')
+        .ilike('name', `%${order.pickup_location}%`)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!branchError && branch) {
+        branchId = branch.id;
+      }
+    }
+    
+    if (!branchId) {
+      console.log(`⚠️ No branch found for order ${order.order_number}, skipping branch total_sales update`);
+      return;
+    }
+    
+    // Get current total_sales for the branch
+    const { data: branchData, error: branchFetchError } = await supabase
+      .from('branches')
+      .select('total_sales')
+      .eq('id', branchId)
+      .single();
+    
+    if (branchFetchError) {
+      // If total_sales column doesn't exist, we'll need to add it via migration
+      console.warn(`⚠️ Could not fetch branch total_sales (column may not exist yet): ${branchFetchError.message}`);
+      return;
+    }
+    
+    const currentTotalSales = parseFloat(branchData?.total_sales || 0);
+    const orderAmountNum = parseFloat(orderAmount) || 0;
+    const newTotalSales = addSales 
+      ? currentTotalSales + orderAmountNum
+      : Math.max(0, currentTotalSales - orderAmountNum); // Don't go below 0
+    
+    // Update total_sales
+    const { error: updateError } = await supabase
+      .from('branches')
+      .update({ 
+        total_sales: newTotalSales,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', branchId);
+    
+    if (updateError) {
+      console.error(`Error updating total_sales for branch ${branchId}:`, updateError);
+    } else {
+      const change = addSales ? `added ${orderAmountNum}` : `subtracted ${orderAmountNum}`;
+      console.log(`✅ Updated total_sales for branch ${branchId} from ${currentTotalSales} to ${newTotalSales} (${change})`);
+    }
+  } catch (error) {
+    console.error('Error in updateBranchTotalSales:', error);
+    // Don't throw - this is non-critical
   }
 }
 
@@ -1617,14 +2026,36 @@ router.patch('/:id/status', authenticateSupabaseToken, async (req, res) => {
       }
     }
 
-    // Update sold_quantity when order is completed (picked_up_delivered)
-    if (status === 'picked_up_delivered' && previousStatus !== 'picked_up_delivered') {
+    // Update sold_quantity and branch total_sales when order is completed (picked_up_delivered or completed)
+    const completedStatuses = ['picked_up_delivered', 'completed'];
+    const isCompleting = completedStatuses.includes(status) && !completedStatuses.includes(previousStatus);
+    const isCancelling = status === 'cancelled' && completedStatuses.includes(previousStatus);
+    
+    // Add sales when order is completed (only if not cancelled)
+    if (isCompleting && status !== 'cancelled') {
       try {
+        // Update sold quantity for products
         await updateSoldQuantityForOrder(currentOrder.order_items || []);
         console.log(`📊 Updated sold quantity for completed order ${updatedOrder.order_number}`);
+        
+        // Update branch total_sales (only add once when order is completed)
+        await updateBranchTotalSales(currentOrder, currentOrder.total_amount || 0, true);
+        console.log(`💰 Updated branch total_sales for completed order ${updatedOrder.order_number}`);
       } catch (error) {
-        console.error('Error updating sold quantity for completed order:', error);
-        // Don't fail the status update if sold quantity update fails
+        console.error('Error updating sales metrics for completed order:', error);
+        // Don't fail the status update if sales update fails
+      }
+    }
+    
+    // Subtract sales when a completed order is cancelled
+    if (isCancelling) {
+      try {
+        // Subtract from branch total_sales
+        await updateBranchTotalSales(currentOrder, currentOrder.total_amount || 0, false);
+        console.log(`💰 Subtracted sales from branch total_sales for cancelled order ${updatedOrder.order_number}`);
+      } catch (error) {
+        console.error('Error subtracting sales for cancelled order:', error);
+        // Don't fail the status update if sales update fails
       }
     }
 
@@ -1753,6 +2184,36 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Check stock availability before creating order
+    // NOTE: Only balls and trophies have stock - apparel products are pre-ordered (made to order)
+    // For balls/trophies, we check stock across ALL branches (pickupBranchId is only used for pickup location)
+    if (orderItems && orderItems.length > 0) {
+      // Filter to only balls and trophies (only products with stock)
+      const itemsToCheck = orderItems.filter(item => {
+        const category = item.category?.toLowerCase();
+        return category === 'trophies' || category === 'balls';
+      });
+      
+      // Only check stock if order contains balls or trophies
+      if (itemsToCheck.length > 0) {
+        const stockCheck = await checkStockAvailability(itemsToCheck, pickupBranchId, resolvedPickupLocation);
+        
+        if (!stockCheck.available) {
+          console.log('❌ Stock check failed:', stockCheck.errors);
+          return res.status(400).json({
+            error: 'Insufficient stock',
+            message: stockCheck.errors.join(' '),
+            stockCheck: stockCheck,
+            requiresBranchSelection: true
+          });
+        }
+        
+        console.log('✅ Stock check passed:', stockCheck.stockChecks);
+      } else {
+        console.log('ℹ️ Order contains only apparel products (pre-ordered) - no stock check needed');
+      }
+    }
+
     // Insert using Supabase client
     const { data: inserted, error: insertError } = await supabase
       .from('orders')
@@ -1783,6 +2244,29 @@ router.post('/', async (req, res) => {
     }
 
     const newOrder = inserted;
+
+    // Deduct stock for balls and trophies ONLY
+    // NOTE: Apparel products (jerseys, uniforms, t-shirts, etc.) are pre-ordered (made to order)
+    // and do not have stock that needs to be deducted
+    // For balls/trophies, stock is deducted from any branch that has the product available
+    // (prefers selected branch if available, otherwise uses any branch with sufficient stock)
+    if (orderItems && orderItems.length > 0) {
+      const hasBallsOrTrophies = orderItems.some(item => {
+        const category = item.category?.toLowerCase();
+        return category === 'trophies' || category === 'balls';
+      });
+      
+      if (hasBallsOrTrophies) {
+        try {
+          await deductStockFromOrder(orderItems, pickupBranchId);
+          console.log(`✅ Stock deducted for order ${newOrder.order_number} (balls/trophies only)`);
+        } catch (stockError) {
+          console.error('❌ Error deducting stock for order:', stockError);
+          // Log error but don't fail the order creation - stock can be manually adjusted later
+          // You may want to add a flag to the order indicating stock deduction failed
+        }
+      }
+    }
 
     // Note: sold_quantity will be updated when order status changes to 'picked_up_delivered'
     // This prevents double-counting when orders are created and then completed

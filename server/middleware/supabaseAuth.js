@@ -20,6 +20,65 @@ try {
   throw error;
 }
 
+// Helper function to check if an error is a network/retryable error
+const isNetworkError = (error) => {
+  if (!error) return false;
+  
+  // Check error cause for timeout codes (undici/Node.js fetch errors)
+  const errorCause = error.cause || {};
+  if (errorCause.code === 'UND_ERR_CONNECT_TIMEOUT' || 
+      errorCause.code === 'ETIMEDOUT' ||
+      errorCause.code === 'ECONNRESET') {
+    return true;
+  }
+  
+  // Check for AuthRetryableFetchError
+  if (error.name === 'AuthRetryableFetchError' || error.__isAuthError === true) {
+    // Check if it's a network error (status 0 or timeout)
+    if (error.status === 0 || error.code === 'UND_ERR_CONNECT_TIMEOUT') {
+      return true;
+    }
+  }
+  
+  // Check for timeout errors on the error itself
+  if (error.code === 'UND_ERR_CONNECT_TIMEOUT' || 
+      error.code === 'ETIMEDOUT' ||
+      error.code === 'ECONNRESET' ||
+      error.code === 'ENOTFOUND') {
+    return true;
+  }
+  
+  // Check error message for network-related keywords
+  const errorMsg = (error.message || String(error) || '').toLowerCase();
+  if (errorMsg.includes('timeout') || 
+      errorMsg.includes('connect timeout') ||
+      errorMsg.includes('network') ||
+      errorMsg.includes('fetch failed')) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Helper function to retry with exponential backoff
+const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 100) => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      // If it's not a network error or we've exhausted retries, throw
+      if (!isNetworkError(error) || attempt === maxRetries - 1) {
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.warn(`Network error on attempt ${attempt + 1}/${maxRetries}, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
+
 // Middleware to verify Supabase JWT token
 const authenticateSupabaseToken = async (req, res, next) => {
   try {
@@ -43,13 +102,26 @@ const authenticateSupabaseToken = async (req, res, next) => {
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    // Verify the JWT token with Supabase
+    // Verify the JWT token with Supabase with retry logic for network errors
     let getUserResult;
     try {
-      getUserResult = await supabase.auth.getUser(token);
+      getUserResult = await retryWithBackoff(async () => {
+        return await supabase.auth.getUser(token);
+      }, 3, 200);
     } catch (getUserError) {
       console.error('Exception during getUser call:', getUserError);
       console.error('Exception stack:', getUserError.stack);
+      
+      // Check if it's a network error
+      if (isNetworkError(getUserError)) {
+        console.error('Network error detected - Supabase service unavailable');
+        return res.status(503).json({ 
+          error: 'Authentication service temporarily unavailable. Please try again in a moment.',
+          retryable: true
+        });
+      }
+      
+      // Handle authentication errors
       const errorMsg = getUserError.message || String(getUserError) || '';
       if (errorMsg.toLowerCase().includes('tenant') || errorMsg.toLowerCase().includes('user not found')) {
         return res.status(401).json({ 
@@ -68,6 +140,15 @@ const authenticateSupabaseToken = async (req, res, next) => {
       console.error('Error details:', JSON.stringify(error, null, 2));
       console.error('Error type:', typeof error);
       console.error('Error keys:', Object.keys(error || {}));
+      
+      // Check if it's a network error
+      if (isNetworkError(error)) {
+        console.error('Network error detected in getUserResult - Supabase service unavailable');
+        return res.status(503).json({ 
+          error: 'Authentication service temporarily unavailable. Please try again in a moment.',
+          retryable: true
+        });
+      }
       
       // Check all possible error message properties
       const errorMessage = error.message || error.error_description || error.error || error.msg || String(error) || '';
@@ -124,8 +205,24 @@ const authenticateSupabaseToken = async (req, res, next) => {
       message: error.message,
       status: error.status,
       name: error.name,
+      code: error.code,
+      cause: error.cause ? {
+        code: error.cause.code,
+        message: error.cause.message
+      } : null,
       stack: error.stack
     });
+    
+    // Check if it's a network error
+    if (isNetworkError(error)) {
+      console.error('Network error detected in catch block - Supabase service unavailable');
+      if (!res.headersSent) {
+        return res.status(503).json({ 
+          error: 'Authentication service temporarily unavailable. Please try again in a moment.',
+          retryable: true
+        });
+      }
+    }
     
     // Check if it's a Supabase-specific error
     const errorMessage = error.message || '';

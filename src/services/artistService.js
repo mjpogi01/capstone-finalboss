@@ -97,12 +97,10 @@ class ArtistService {
   // Get tasks for a specific artist
   async getArtistTasks(artistId) {
     try {
-      const { data, error } = await supabase
+      // Fetch tasks without nested relationships (PostgREST foreign key issue)
+      const { data: tasks, error } = await supabase
         .from('artist_tasks')
-        .select(`
-          *,
-          orders(order_number, status)
-        `)
+        .select('*')
         .eq('artist_id', artistId)
         .order('created_at', { ascending: false });
 
@@ -111,7 +109,35 @@ class ArtistService {
         throw new Error(error.message);
       }
 
-      return data;
+      if (!tasks || tasks.length === 0) {
+        return [];
+      }
+
+      // Fetch related orders separately
+      const orderIds = tasks.filter(t => t.order_id).map(t => t.order_id);
+      let ordersMap = {};
+      
+      if (orderIds.length > 0) {
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders')
+          .select('id, order_number, status')
+          .in('id', orderIds);
+
+        if (!ordersError && orders) {
+          orders.forEach(order => {
+            ordersMap[order.id] = {
+              order_number: order.order_number,
+              status: order.status
+            };
+          });
+        }
+      }
+
+      // Merge the data
+      return tasks.map(task => ({
+        ...task,
+        orders: task.order_id ? ordersMap[task.order_id] || null : null
+      }));
     } catch (error) {
       console.error('Error in getArtistTasks:', error);
       throw error;

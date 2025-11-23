@@ -50,6 +50,26 @@ function isTerminationError(error) {
 }
 
 /**
+ * Check if error is a timeout error
+ */
+function isTimeoutError(error) {
+  if (!error) return false;
+  
+  const errorMsg = (error.message || String(error) || '').toLowerCase();
+  const errorCode = error.code || '';
+  
+  return (
+    errorMsg.includes('timeout') ||
+    errorMsg.includes('timed out') ||
+    errorMsg.includes('connection timeout') ||
+    errorMsg.includes('connect timeout') ||
+    errorCode === 'ETIMEDOUT' ||
+    errorCode === 'ECONNRESET' ||
+    errorCode === 'UND_ERR_CONNECT_TIMEOUT'
+  );
+}
+
+/**
  * Create a new database pool
  */
 function createPool() {
@@ -77,7 +97,9 @@ function createPool() {
     },
     max: isPooler ? 3 : 5, // Lower max for pooler to avoid limits
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 30_000, // Increased from 10s to 30s for slow connections
+    statement_timeout: 60_000, // 60 second query timeout
+    query_timeout: 60_000, // 60 second query timeout
     keepAlive: true,
     keepAliveInitialDelayMillis: 10_000
   });
@@ -212,6 +234,25 @@ async function executeSql(sql, params = [], retryCount = 0) {
       } catch (e) {
         // Ignore release errors
       }
+    }
+    
+    // Check if this is a timeout error - provide helpful message
+    if (isTimeoutError(error)) {
+      const helpfulError = new Error(
+        'Database connection timeout. This usually means:\n' +
+        '  1. The database server is unreachable (check if Supabase project is paused)\n' +
+        '  2. Network connectivity issues\n' +
+        '  3. Firewall blocking the connection\n' +
+        '  4. The connection pooler is overloaded\n\n' +
+        'To fix:\n' +
+        '  1. Check if your Supabase project is active (not paused)\n' +
+        '  2. Try using the direct connection (port 5432) instead of pooler\n' +
+        '  3. Check your network/firewall settings\n' +
+        '  4. Wait a few minutes and try again'
+      );
+      helpfulError.originalError = error;
+      helpfulError.isTimeoutError = true;
+      throw helpfulError;
     }
     
     // Check if this is a termination error that we can retry

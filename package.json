@@ -50,7 +50,9 @@
     "build": "react-scripts build",
     "start:production": "node server/index.js",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "backfill-stock": "node server/scripts/backfill-stock-deductions.js",
+    "backfill-stock:dry-run": "node server/scripts/backfill-stock-deductions.js --dry-run"
   },
   "eslintConfig": {
     "extends": [

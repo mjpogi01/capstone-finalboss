@@ -8,6 +8,7 @@
 
   # Handle Angular/React Router - redirect all requests to index.html
   # This allows client-side routing to work
+  # Exclude API routes and actual files/directories
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/api/
@@ -125,9 +126,8 @@
 # Disable directory browsing
 Options -Indexes
 
-# Custom Error Pages (optional - create these files if needed)
-# ErrorDocument 404 /index.html
-# ErrorDocument 500 /index.html
+# Custom Error Pages - redirect 404s to index.html for React Router
+ErrorDocument 404 /index.html
 
 # Prevent access to .htaccess file
 <Files .htaccess>

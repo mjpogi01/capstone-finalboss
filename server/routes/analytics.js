@@ -752,8 +752,9 @@ function buildBranchFilterClause(branchContext, startIndex = 1) {
   let index = startIndex;
 
   // Filter by pickup_branch_id (orders table uses pickup_branch_id, not branch_id)
+  // Ensure branchId is converted to string since pickup_branch_id is VARCHAR
   if (branchContext.branchId) {
-    params.push(branchContext.branchId);
+    params.push(String(branchContext.branchId));
     const branchIdIndex = index;
     index += 1;
     conditions.push(`pickup_branch_id = $${branchIdIndex}`);
@@ -1036,6 +1037,7 @@ function resolveCustomerName(order) {
   }
 
   const candidates = [
+    order.client_name, // For custom design orders
     order.customer_name,
     order.customerName,
     order.customer_full_name,
@@ -1080,6 +1082,7 @@ function resolveCustomerEmail(order) {
   }
 
   const candidates = [
+    order.client_email, // For custom design orders
     order.customer_email,
     order.customerEmail,
     order.email,
@@ -1145,16 +1148,54 @@ router.get('/dashboard-summary', async (req, res) => {
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfCurrentMonthIso = startOfCurrentMonth.toISOString();
 
-    const summaryFilter = buildBranchFilterClause(branchContext, 1);
-    const customersFilter = buildBranchFilterClause(branchContext, 1);
+    // Start parameter index at 2 because $1 is used for startOfCurrentMonthIso
+    const summaryFilter = buildBranchFilterClause(branchContext, 2);
+    const customersFilter = buildBranchFilterClause(branchContext, 2);
 
     // Check if DATABASE_URL is configured
     if (!process.env.DATABASE_URL) {
       // Use Supabase client fallback - but only fetch what we need
       try {
+        // Get total revenue from branches.total_sales
+        let branchesQuery = supabase
+          .from('branches')
+          .select('total_sales');
+        
+        if (branchContext?.branchId) {
+          branchesQuery = branchesQuery.eq('id', branchContext.branchId);
+        }
+        
+        const { data: branches, error: branchesError } = await branchesQuery;
+        
+        if (branchesError) {
+          throw branchesError;
+        }
+        
+        // Calculate total revenue from branches
+        // If total_sales column doesn't exist, it will be undefined, so fallback to orders
+        let totalRevenue = 0;
+        const hasTotalSalesColumn = branches && branches.length > 0 && branches[0].hasOwnProperty('total_sales');
+        
+        if (hasTotalSalesColumn) {
+          totalRevenue = (branches || []).reduce((sum, branch) => {
+            return sum + (parseFloat(branch.total_sales) || 0);
+          }, 0);
+        }
+        
+        // If total_sales column doesn't exist or is all zeros, calculate from completed orders
+        if (!hasTotalSalesColumn || totalRevenue === 0) {
+          console.log('⚠️ branches.total_sales not available or is 0, calculating from completed orders...');
+          const completedOrders = validOrders.filter(order => {
+            const status = (order.status || '').toLowerCase();
+            return status === 'picked_up_delivered' || status === 'completed';
+          });
+          totalRevenue = completedOrders.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0);
+        }
+        
+        // Get order counts and customers from orders
         let ordersQuery = supabase
           .from('orders')
-          .select('total_amount, status, user_id')
+          .select('status, user_id, total_amount')
           .lt('created_at', startOfCurrentMonthIso);
         
         if (branchContext?.branchName) {
@@ -1173,8 +1214,16 @@ router.get('/dashboard-summary', async (req, res) => {
           return status !== 'cancelled' && status !== 'canceled';
         });
         
-        // Calculate summary metrics
-        const totalRevenue = validOrders.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0);
+        // If total_sales column doesn't exist or is all zeros, calculate from completed orders
+        if (!hasTotalSalesColumn || totalRevenue === 0) {
+          console.log('⚠️ branches.total_sales not available or is 0, calculating from completed orders...');
+          const completedOrders = validOrders.filter(order => {
+            const status = (order.status || '').toLowerCase();
+            return status === 'picked_up_delivered' || status === 'completed';
+          });
+          totalRevenue = completedOrders.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0);
+        }
+        
         const totalOrders = validOrders.length;
         const customerSet = new Set();
         validOrders.forEach(order => {
@@ -1212,11 +1261,32 @@ router.get('/dashboard-summary', async (req, res) => {
     }
 
     // Use optimized SQL queries for summary only
+    // For total_revenue: try to use branches.total_sales, fallback to orders if column doesn't exist or is all zeros
+    let totalRevenueQuery;
+    if (branchContext?.branchId) {
+      // Single branch: get its total_sales
+      totalRevenueQuery = executeSql(
+        `
+          SELECT COALESCE(total_sales, 0)::numeric AS total_revenue
+          FROM branches
+          WHERE id = $1
+        `,
+        [branchContext.branchId]
+      );
+    } else {
+      // All branches: sum all total_sales
+      totalRevenueQuery = executeSql(
+        `
+          SELECT COALESCE(SUM(total_sales), 0)::numeric AS total_revenue
+          FROM branches
+        `
+      );
+    }
+    
     const summaryQueryPromise = executeSql(
       `
         SELECT 
-          COUNT(*)::bigint AS total_orders,
-          COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+          COUNT(*)::bigint AS total_orders
         FROM orders
         WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
           AND created_at < $1
@@ -1236,41 +1306,160 @@ router.get('/dashboard-summary', async (req, res) => {
       [startOfCurrentMonthIso, ...customersFilter.params]
     );
 
-    let summaryResult, customersResult;
+    let summaryResult, customersResult, revenueResult;
     
     try {
-      [summaryResult, customersResult] = await Promise.all([
+      [summaryResult, customersResult, revenueResult] = await Promise.all([
         summaryQueryPromise,
-        uniqueCustomersPromise
+        uniqueCustomersPromise,
+        totalRevenueQuery
       ]);
     } catch (sqlError) {
       console.error('❌ SQL query execution error:', sqlError);
-      return res.json({
-        success: true,
-        data: {
-          summary: {
-            totalRevenue: 0,
-            totalOrders: 0,
-            totalCustomers: 0,
-            averageOrderValue: 0
-          }
-        }
+      console.error('❌ Error details:', {
+        message: sqlError.message,
+        code: sqlError.code,
+        detail: sqlError.detail
       });
+      
+      // If branches.total_sales column doesn't exist, fallback to calculating from orders
+      if (sqlError.message?.includes('total_sales') || sqlError.message?.includes('column') || sqlError.code === '42703') {
+        console.log('⚠️ branches.total_sales column not found, calculating from completed orders...');
+        try {
+          let fallbackRevenueQuery;
+          if (branchContext?.branchName) {
+            fallbackRevenueQuery = executeSql(
+              `
+                SELECT COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+                FROM orders
+                WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                  AND LOWER(status) NOT IN ('cancelled', 'canceled')
+                  AND pickup_location ILIKE $1
+              `,
+              [`%${branchContext.branchName}%`]
+            );
+          } else {
+            fallbackRevenueQuery = executeSql(
+              `
+                SELECT COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+                FROM orders
+                WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                  AND LOWER(status) NOT IN ('cancelled', 'canceled')
+              `
+            );
+          }
+          
+          revenueResult = await fallbackRevenueQuery;
+          // Retry the other queries
+          [summaryResult, customersResult] = await Promise.all([
+            summaryQueryPromise,
+            uniqueCustomersPromise
+          ]);
+        } catch (fallbackError) {
+          console.error('❌ Fallback calculation also failed:', fallbackError);
+          return res.json({
+            success: true,
+            data: {
+              summary: {
+                totalRevenue: 0,
+                totalOrders: 0,
+                totalCustomers: 0,
+                averageOrderValue: 0
+              }
+            }
+          });
+        }
+      } else {
+        return res.json({
+          success: true,
+          data: {
+            summary: {
+              totalRevenue: 0,
+              totalOrders: 0,
+              totalCustomers: 0,
+              averageOrderValue: 0
+            }
+          }
+        });
+      }
     }
 
     const totalOrders = Number(summaryResult?.rows?.[0]?.total_orders) || 0;
-    const totalRevenue = Number(summaryResult?.rows?.[0]?.total_revenue) || 0;
+    let totalRevenue = Number(revenueResult?.rows?.[0]?.total_revenue) || 0;
+    
+    console.log('📊 Revenue calculation:', {
+      fromBranches: totalRevenue,
+      branchContext: branchContext?.branchId || branchContext?.branchName || 'all',
+      revenueResult: revenueResult?.rows?.[0]
+    });
+    
+    // If total_sales is 0, try calculating from completed orders as fallback
+    if (totalRevenue === 0) {
+      console.log('⚠️ branches.total_sales is 0, calculating from completed orders as fallback...');
+      try {
+        let fallbackRevenueQuery;
+        if (branchContext?.branchName) {
+          fallbackRevenueQuery = executeSql(
+            `
+              SELECT COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+              FROM orders
+              WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                AND LOWER(status) NOT IN ('cancelled', 'canceled')
+                AND pickup_location ILIKE $1
+            `,
+            [`%${branchContext.branchName}%`]
+          );
+        } else {
+          fallbackRevenueQuery = executeSql(
+            `
+              SELECT COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+              FROM orders
+              WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                AND LOWER(status) NOT IN ('cancelled', 'canceled')
+            `
+          );
+        }
+        const fallbackResult = await fallbackRevenueQuery;
+        const fallbackRevenue = Number(fallbackResult?.rows?.[0]?.total_revenue) || 0;
+        console.log('📊 Fallback revenue calculation:', {
+          fallbackRevenue,
+          branchContext: branchContext?.branchName || 'all',
+          fallbackResult: fallbackResult?.rows?.[0]
+        });
+        if (fallbackRevenue > 0) {
+          totalRevenue = fallbackRevenue;
+          console.log(`✅ Using fallback calculation from orders: ${totalRevenue}`);
+        } else {
+          console.log('⚠️ Fallback also returned 0 - no completed orders found');
+        }
+      } catch (fallbackError) {
+        console.warn('⚠️ Fallback calculation failed:', fallbackError.message);
+      }
+    }
+    
     const totalCustomers = Number(customersResult?.rows?.[0]?.total_customers) || 0;
+    
+    console.log('📊 Final dashboard summary:', {
+      totalRevenue,
+      totalOrders,
+      totalCustomers,
+      branchContext: branchContext?.branchId || branchContext?.branchName || 'all'
+    });
 
+    // Ensure all values are properly converted to numbers
+    const summary = {
+      totalRevenue: Number(totalRevenue) || 0,
+      totalOrders: Number(totalOrders) || 0,
+      totalCustomers: Number(totalCustomers) || 0,
+      averageOrderValue: totalOrders > 0 ? Number(totalRevenue) / Number(totalOrders) : 0
+    };
+    
+    console.log('📊 Sending dashboard summary response:', summary);
+    
     res.json({
       success: true,
       data: {
-        summary: {
-          totalRevenue,
-          totalOrders,
-          totalCustomers,
-          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
-        }
+        summary
       }
     });
   } catch (error) {
@@ -1281,6 +1470,7 @@ router.get('/dashboard-summary', async (req, res) => {
 
 // Get analytics dashboard data
 router.get('/dashboard', async (req, res) => {
+  // Wrap in additional error handler to prevent server crashes
   try {
     const { branch_id } = req.query;
     console.log('📊 Fetching analytics data (optimized)...');
@@ -1683,17 +1873,18 @@ router.get('/dashboard', async (req, res) => {
       [startOfCurrentMonthIso, ...monthlyFilter.params]
     );
 
+    // Use branches.total_sales instead of calculating from orders
+    // Try to get sales from branches.total_sales, with fallback to orders
     const salesByBranchPromise = executeSql(
       `
-        SELECT COALESCE(pickup_location, 'Online Orders') AS pickup_location,
-               SUM(total_amount)::numeric AS sales
-        FROM orders
-        WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
-          AND created_at < $1
-        ${branchSalesFilter.clause}
-        GROUP BY pickup_location;
+        SELECT 
+          b.name AS pickup_location,
+          COALESCE(b.total_sales, 0)::numeric AS sales
+        FROM branches b
+        ${branchContext?.branchId ? 'WHERE b.id = $1' : ''}
+        ORDER BY sales DESC;
       `,
-      [startOfCurrentMonthIso, ...branchSalesFilter.params]
+      branchContext?.branchId ? [branchContext.branchId] : []
     );
 
     const uniqueCustomersPromise = executeSql(
@@ -1743,6 +1934,34 @@ router.get('/dashboard', async (req, res) => {
     let statusResult, monthlyResult, salesByBranchResult, uniqueCustomersResult, recentOrdersResult, allOrdersForProductsResult;
     
     try {
+      // Wrap Promise.all with timeout and error handling
+      const queryPromises = [
+        statusQueryPromise.catch(err => {
+          console.error('❌ Status query failed:', err.message);
+          return { rows: [] };
+        }),
+        monthlySalesPromise.catch(err => {
+          console.error('❌ Monthly sales query failed:', err.message);
+          return { rows: [] };
+        }),
+        salesByBranchPromise.catch(err => {
+          console.error('❌ Sales by branch query failed:', err.message);
+          return { rows: [] };
+        }),
+        uniqueCustomersPromise.catch(err => {
+          console.error('❌ Unique customers query failed:', err.message);
+          return { rows: [{ total_customers: 0 }] };
+        }),
+        recentOrdersPromise.catch(err => {
+          console.error('❌ Recent orders query failed:', err.message);
+          return { rows: [] };
+        }),
+        allOrdersForProductsPromise.catch(err => {
+          console.error('❌ All orders for products query failed:', err.message);
+          return { rows: [] };
+        })
+      ];
+      
       [
         statusResult,
         monthlyResult,
@@ -1750,14 +1969,7 @@ router.get('/dashboard', async (req, res) => {
         uniqueCustomersResult,
         recentOrdersResult,
         allOrdersForProductsResult
-      ] = await Promise.all([
-        statusQueryPromise,
-        monthlySalesPromise,
-        salesByBranchPromise,
-        uniqueCustomersPromise,
-        recentOrdersPromise,
-        allOrdersForProductsPromise
-      ]);
+      ] = await Promise.all(queryPromises);
     } catch (sqlError) {
       console.error('❌ SQL query execution error:', sqlError);
       console.error('❌ SQL error details:', {
@@ -1770,12 +1982,130 @@ router.get('/dashboard', async (req, res) => {
         } : null
       });
       
+      // Check if it's a timeout error - provide helpful message
+      if (sqlError.isTimeoutError || sqlError.message?.includes('timeout')) {
+        console.warn('⚠️  Database connection timeout. This usually means:');
+        console.warn('  1. Supabase project might be paused');
+        console.warn('  2. Network connectivity issues');
+        console.warn('  3. Connection pooler is overloaded');
+        console.warn('⚠️  Returning empty analytics data. Please check your database connection.');
+      }
+      
       // Check if it's a connection/configuration error
-      if (!process.env.DATABASE_URL || sqlError.message?.includes('Missing DATABASE_URL')) {
+      const isDatabaseUrlMissing = !process.env.DATABASE_URL || sqlError.message?.includes('Missing DATABASE_URL');
+      const isConnectionError = sqlError.isTimeoutError || sqlError.message?.includes('timeout') || sqlError.message?.includes('connection');
+      
+      if (isDatabaseUrlMissing) {
         console.warn('⚠️  DATABASE_URL is not configured! Returning empty analytics data.');
         console.warn('⚠️  To enable analytics, add DATABASE_URL to your server/.env file.');
+      } else if (isConnectionError) {
+        console.warn('⚠️  Database connection error. Returning empty analytics data.');
+        console.warn('⚠️  Error:', sqlError.message);
+      }
+      
+      // Return empty/default data structure so dashboard can still load
+      if (isDatabaseUrlMissing || isConnectionError) {
+        const emptyData = {
+          salesOverTime: {
+            monthly: [],
+            yearly: []
+          },
+          salesByBranch: [],
+          orderStatus: {
+            completed: { count: 0, percentage: 0 },
+            processing: { count: 0, percentage: 0 },
+            pending: { count: 0, percentage: 0 },
+            cancelled: { count: 0, percentage: 0 },
+            total: 0
+          },
+          topProducts: [],
+          topCategories: [],
+          summary: {
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalCustomers: 0,
+            averageOrderValue: 0
+          },
+          recentOrders: []
+        };
         
-        // Return empty/default data structure so dashboard can still load
+        // Only show DATABASE_URL warning if it's actually missing
+        const warningMessage = isDatabaseUrlMissing
+          ? 'Analytics data unavailable: DATABASE_URL not configured. Dashboard will show empty data.'
+          : 'Analytics data unavailable: Database connection error. Dashboard will show empty data.';
+        
+        return res.json({
+          success: true,
+          data: emptyData,
+          warning: warningMessage
+        });
+      }
+      
+      // If branches.total_sales column doesn't exist, try fallback to orders
+      if (sqlError.message?.includes('total_sales') || sqlError.message?.includes('column') || sqlError.code === '42703') {
+        console.log('⚠️ branches.total_sales column not found, trying fallback calculation from orders...');
+        try {
+          // Build branch filter for fallback query
+          const branchConditions = [];
+          const branchParams = [];
+          let paramIndex = 1;
+          
+          if (branchContext?.branchId) {
+            branchParams.push(branchContext.branchId);
+            branchConditions.push(`pickup_branch_id = $${paramIndex}`);
+            paramIndex++;
+          }
+          
+          if (branchContext?.branchName) {
+            branchParams.push(`%${branchContext.branchName}%`);
+            branchConditions.push(`pickup_location ILIKE $${paramIndex}`);
+            paramIndex++;
+          }
+          
+          // Retry with fallback queries
+          const fallbackSalesByBranchPromise = executeSql(
+            `
+              SELECT 
+                COALESCE(NULLIF(TRIM(pickup_location), ''), 'Unspecified') AS pickup_location,
+                COALESCE(SUM(total_amount), 0)::numeric AS sales
+              FROM orders
+              WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                AND LOWER(status) NOT IN ('cancelled', 'canceled')
+              ${branchConditions.length > 0 ? `AND (${branchConditions.join(' OR ')})` : ''}
+              GROUP BY pickup_location
+              ORDER BY sales DESC;
+            `,
+            branchParams
+          );
+          
+          [
+            statusResult,
+            monthlyResult,
+            salesByBranchResult,
+            uniqueCustomersResult,
+            recentOrdersResult,
+            allOrdersForProductsResult
+          ] = await Promise.all([
+            statusQueryPromise,
+            monthlySalesPromise,
+            fallbackSalesByBranchPromise,
+            uniqueCustomersPromise,
+            recentOrdersPromise,
+            allOrdersForProductsPromise
+          ]);
+          
+          console.log('✅ Successfully used fallback calculation from orders');
+        } catch (fallbackError) {
+          console.error('❌ Fallback calculation also failed:', fallbackError);
+          // Continue to return empty data
+        }
+      }
+      
+      // If we still don't have results, return empty data
+      if (!salesByBranchResult || !statusResult || !monthlyResult) {
+        console.error('❌ Database query error:', sqlError.message);
+        console.error('❌ Returning empty analytics data to prevent dashboard crash.');
+        
         const emptyData = {
           salesOverTime: {
             monthly: [],
@@ -1803,43 +2133,9 @@ router.get('/dashboard', async (req, res) => {
         return res.json({
           success: true,
           data: emptyData,
-          warning: 'Analytics data unavailable: DATABASE_URL not configured. Dashboard will show empty data.'
+          warning: `Analytics data unavailable: ${sqlError.message || 'Database query failed'}. Dashboard will show empty data.`
         });
       }
-      
-      // For other database errors, still return empty data instead of crashing
-      console.error('❌ Database query error:', sqlError.message);
-      console.error('❌ Returning empty analytics data to prevent dashboard crash.');
-      
-      const emptyData = {
-        salesOverTime: {
-          monthly: [],
-          yearly: []
-        },
-        salesByBranch: [],
-        orderStatus: {
-          completed: { count: 0, percentage: 0 },
-          processing: { count: 0, percentage: 0 },
-          pending: { count: 0, percentage: 0 },
-          cancelled: { count: 0, percentage: 0 },
-          total: 0
-        },
-        topProducts: [],
-        topCategories: [],
-        summary: {
-          totalRevenue: 0,
-          totalOrders: 0,
-          totalCustomers: 0,
-          averageOrderValue: 0
-        },
-        recentOrders: []
-      };
-      
-      return res.json({
-        success: true,
-        data: emptyData,
-        warning: `Analytics data unavailable: ${sqlError.message || 'Database query failed'}. Dashboard will show empty data.`
-      });
     }
 
     // Defensive checks for query results
@@ -1947,8 +2243,89 @@ router.get('/dashboard', async (req, res) => {
       }));
 
     const branchTotals = new Map();
-    (salesByBranchResult.rows || []).forEach(row => {
-      const branchName = getBranchDisplayName(row, branchContext) || 'Unspecified';
+    const salesByBranchRows = salesByBranchResult.rows || [];
+    
+    // Check if all sales are 0 - if so, fallback to calculating from orders
+    const allSalesZero = salesByBranchRows.length === 0 || salesByBranchRows.every(row => {
+      const sales = Number(row.sales) || 0;
+      return sales === 0;
+    });
+    
+    if (allSalesZero) {
+      console.log('⚠️ All branch sales are 0, calculating from completed orders as fallback...');
+      try {
+        let fallbackSalesByBranchQuery;
+        if (branchContext?.branchId || branchContext?.branchName) {
+          // Filter by branch
+          const branchConditions = [];
+          const branchParams = [];
+          let paramIndex = 1;
+          
+          if (branchContext.branchId) {
+            branchParams.push(branchContext.branchId);
+            branchConditions.push(`pickup_branch_id = $${paramIndex}`);
+            paramIndex++;
+          }
+          
+          if (branchContext.branchName) {
+            branchParams.push(`%${branchContext.branchName}%`);
+            branchConditions.push(`pickup_location ILIKE $${paramIndex}`);
+            paramIndex++;
+          }
+          
+          fallbackSalesByBranchQuery = executeSql(
+            `
+              SELECT 
+                COALESCE(NULLIF(TRIM(pickup_location), ''), 'Unspecified') AS pickup_location,
+                COALESCE(SUM(total_amount), 0)::numeric AS sales
+              FROM orders
+              WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                AND LOWER(status) NOT IN ('cancelled', 'canceled')
+                ${branchConditions.length > 0 ? `AND (${branchConditions.join(' OR ')})` : ''}
+              GROUP BY pickup_location
+              ORDER BY sales DESC;
+            `,
+            branchParams
+          );
+        } else {
+          // All branches
+          fallbackSalesByBranchQuery = executeSql(
+            `
+              SELECT 
+                COALESCE(NULLIF(TRIM(pickup_location), ''), 'Unspecified') AS pickup_location,
+                COALESCE(SUM(total_amount), 0)::numeric AS sales
+              FROM orders
+              WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+                AND LOWER(status) NOT IN ('cancelled', 'canceled')
+              GROUP BY pickup_location
+              ORDER BY sales DESC;
+            `,
+            []
+          );
+        }
+        
+        const fallbackResult = await fallbackSalesByBranchQuery;
+        const fallbackRows = fallbackResult?.rows || [];
+        
+        if (fallbackRows.length > 0 && fallbackRows.some(row => (Number(row.sales) || 0) > 0)) {
+          console.log(`✅ Using fallback calculation from orders for salesByBranch: ${fallbackRows.length} branches`);
+          salesByBranchRows.splice(0, salesByBranchRows.length, ...fallbackRows);
+        } else {
+          console.log('⚠️ Fallback also returned no data - no completed orders found');
+        }
+      } catch (fallbackError) {
+        console.warn('⚠️ Fallback calculation for salesByBranch failed:', fallbackError.message);
+      }
+    }
+    
+    salesByBranchRows.forEach(row => {
+      // When filtering by branch, use the branch context name, otherwise use pickup_location
+      let branchName;
+      if (branchContext?.branchName) {
+        branchName = branchContext.branchName;
+      } else {
+        branchName = getBranchDisplayName(row, branchContext) || row.pickup_location || 'Unspecified';
+      }
       const sales = Number(row.sales) || 0;
       branchTotals.set(branchName, (branchTotals.get(branchName) || 0) + sales);
     });
@@ -1960,6 +2337,8 @@ router.get('/dashboard', async (req, res) => {
         sales: Math.round(sales),
         color: getBranchColor(index)
       }));
+    
+    console.log('📊 Sales by branch array:', salesByBranchArray);
 
     const totalRevenue = monthlySalesArray.reduce((sum, item) => sum + item.sales, 0);
     const totalCustomers = Number(uniqueCustomersResult.rows?.[0]?.total_customers) || 0;
@@ -2161,7 +2540,40 @@ router.get('/dashboard', async (req, res) => {
       console.error('❌ Error details:', error.details);
     }
     
-    return handleAnalyticsError(res, error, 'Failed to fetch analytics data');
+    // Return empty data structure as fallback if handleAnalyticsError fails
+    const emptyData = {
+      salesOverTime: { monthly: [], yearly: [] },
+      salesByBranch: [],
+      orderStatus: {
+        completed: { count: 0, percentage: 0 },
+        processing: { count: 0, percentage: 0 },
+        pending: { count: 0, percentage: 0 },
+        cancelled: { count: 0, percentage: 0 },
+        total: 0
+      },
+      topProducts: [],
+      topCategories: [],
+      summary: {
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalCustomers: 0,
+        averageOrderValue: 0
+      },
+      recentOrders: []
+    };
+    
+    // Try to use handleAnalyticsError, but fallback to direct response if it fails
+    try {
+      return handleAnalyticsError(res, error, 'Failed to fetch analytics data');
+    } catch (handlerError) {
+      console.error('❌ CRITICAL: Error handler also failed:', handlerError);
+      return res.status(500).json({
+        success: false,
+        data: emptyData,
+        error: 'An unexpected error occurred while fetching analytics data. Please try again later.',
+        warning: `Error: ${error.message || 'Unknown error'}`
+      });
+    }
   }
 });
 
@@ -2324,37 +2736,79 @@ router.get('/product-performance', async (req, res) => {
 // Get customer analytics
 router.get('/customer-analytics', async (req, res) => {
   try {
-    // Fetch ALL orders (paginated to avoid Supabase default limit of 1000 rows)
+    console.log('📊 Fetching customer analytics...');
+    
+    // Fetch orders with optimization - only fetch essential fields and limit pages
     let allOrders = [];
     let page = 0;
     const pageSize = 1000;
+    const maxPages = 10; // Limit to 10,000 orders max to prevent timeouts
     let hasMore = true;
 
-    while (hasMore) {
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
-      
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .neq('status', 'cancelled')
-        .neq('status', 'canceled')
-        .range(from, to);
+    try {
+      while (hasMore && page < maxPages) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        // Only select essential fields to reduce data transfer and memory usage
+        // Note: customer_name and related fields don't exist in orders table - they're resolved from delivery_address JSONB
+        const { data: orders, error } = await supabase
+          .from('orders')
+          .select('id, user_id, total_amount, created_at, status, delivery_address, pickup_location, pickup_branch_id, client_name, client_email')
+          .neq('status', 'cancelled')
+          .neq('status', 'canceled')
+          .order('created_at', { ascending: false })
+          .range(from, to);
 
-      if (error) throw error;
+        if (error) {
+          console.error('❌ Supabase query error:', error);
+          throw error;
+        }
 
-      if (orders && orders.length > 0) {
-        allOrders = allOrders.concat(orders);
-        hasMore = orders.length === pageSize;
-        page++;
-      } else {
-        hasMore = false;
+        if (orders && orders.length > 0) {
+          allOrders = allOrders.concat(orders);
+          hasMore = orders.length === pageSize;
+          page++;
+          console.log(`📊 Fetched page ${page}, total orders: ${allOrders.length}`);
+        } else {
+          hasMore = false;
+        }
       }
+      
+      if (page >= maxPages) {
+        console.warn(`⚠️ Reached max pages limit (${maxPages}), stopping pagination. Total orders fetched: ${allOrders.length}`);
+      }
+    } catch (queryError) {
+      console.error('❌ Error fetching orders for customer analytics:', queryError);
+      return handleAnalyticsError(res, queryError, 'Failed to fetch orders for customer analytics');
     }
 
     console.log(`📊 Fetched ${allOrders.length} orders for customer analytics (paginated across ${page} pages)`);
 
-    const branchContext = await resolveBranchContext(req.user);
+    let branchContext;
+    try {
+      branchContext = await resolveBranchContext(req.user);
+    } catch (branchError) {
+      console.error('❌ Error resolving branch context for customer analytics:', branchError);
+      // If it's a 403 error (missing branch assignment), return empty data instead of crashing
+      if (branchError.statusCode === 403) {
+        return res.json({
+          success: true,
+          data: {
+            summary: {
+              totalCustomers: 0,
+              newCustomers: 0,
+              avgOrdersPerCustomer: 0,
+              avgSpentPerCustomer: 0
+            },
+            topCustomers: []
+          }
+        });
+      }
+      // For other errors, rethrow to be caught by outer catch
+      throw branchError;
+    }
+    
     const scopedOrders = filterOrdersByBranch(allOrders, branchContext);
  
     const startOfCurrentMonth = new Date();
@@ -2376,42 +2830,54 @@ router.get('/customer-analytics', async (req, res) => {
 
     // Process ALL orders to get accurate total customer count
     scopedOrders.forEach(order => {
-      const userId = order.user_id;
-      if (!customerStats[userId]) {
-        customerStats[userId] = {
-          orderCount: 0,
-          totalSpent: 0,
-          lastOrderDate: null,
-          name: null,
-          email: null,
-          firstOrderDate: null
-        };
-      }
-      
-      customerStats[userId].orderCount += 1;
-      customerStats[userId].totalSpent += parseFloat(order.total_amount || 0);
-      
-      const orderDate = new Date(order.created_at);
-      if (!customerStats[userId].lastOrderDate || orderDate > customerStats[userId].lastOrderDate) {
-        customerStats[userId].lastOrderDate = orderDate;
-      }
-      if (!customerStats[userId].firstOrderDate || orderDate < customerStats[userId].firstOrderDate) {
-        customerStats[userId].firstOrderDate = orderDate;
-      }
-      
-      // Check if customer is "new" (first order within last 30 days)
-      if (customerStats[userId].firstOrderDate && customerStats[userId].firstOrderDate >= thirtyDaysAgo) {
-        newCustomers.add(userId);
-      }
+      try {
+        const userId = order.user_id;
+        if (!userId) {
+          console.warn('⚠️ Order missing user_id, skipping:', order.id);
+          return;
+        }
+        
+        if (!customerStats[userId]) {
+          customerStats[userId] = {
+            orderCount: 0,
+            totalSpent: 0,
+            lastOrderDate: null,
+            name: null,
+            email: null,
+            firstOrderDate: null
+          };
+        }
+        
+        customerStats[userId].orderCount += 1;
+        customerStats[userId].totalSpent += parseFloat(order.total_amount || 0);
+        
+        const orderDate = new Date(order.created_at);
+        if (Number.isFinite(orderDate.getTime())) {
+          if (!customerStats[userId].lastOrderDate || orderDate > customerStats[userId].lastOrderDate) {
+            customerStats[userId].lastOrderDate = orderDate;
+          }
+          if (!customerStats[userId].firstOrderDate || orderDate < customerStats[userId].firstOrderDate) {
+            customerStats[userId].firstOrderDate = orderDate;
+          }
+          
+          // Check if customer is "new" (first order within last 30 days)
+          if (customerStats[userId].firstOrderDate && customerStats[userId].firstOrderDate >= thirtyDaysAgo) {
+            newCustomers.add(userId);
+          }
+        }
 
-      const resolvedName = resolveCustomerName(order);
-      if (resolvedName) {
-        customerStats[userId].name = resolvedName;
-      }
+        const resolvedName = resolveCustomerName(order);
+        if (resolvedName) {
+          customerStats[userId].name = resolvedName;
+        }
 
-      const resolvedEmail = resolveCustomerEmail(order);
-      if (resolvedEmail) {
-        customerStats[userId].email = resolvedEmail;
+        const resolvedEmail = resolveCustomerEmail(order);
+        if (resolvedEmail) {
+          customerStats[userId].email = resolvedEmail;
+        }
+      } catch (orderError) {
+        console.warn('⚠️ Error processing order for customer analytics:', orderError.message, 'Order ID:', order?.id);
+        // Continue processing other orders
       }
     });
 
@@ -2426,27 +2892,43 @@ router.get('/customer-analytics', async (req, res) => {
 
     // Get top 10 customers
     const topCustomers = Object.entries(customerStats)
-      .map(([userId, stats]) => ({
-        userId,
-        customerName: stats.name || null,
-        customerEmail: stats.email || null,
-        orderCount: stats.orderCount,
-        totalSpent: stats.totalSpent,
-        lastOrderDate: stats.lastOrderDate
-      }))
-      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .map(([userId, stats]) => {
+        try {
+          return {
+            userId,
+            customerName: stats.name || null,
+            customerEmail: stats.email || null,
+            orderCount: stats.orderCount || 0,
+            totalSpent: stats.totalSpent || 0,
+            lastOrderDate: stats.lastOrderDate ? (stats.lastOrderDate instanceof Date ? stats.lastOrderDate.toISOString() : stats.lastOrderDate) : null
+          };
+        } catch (mapError) {
+          console.warn('⚠️ Error mapping customer stats:', mapError.message, 'UserId:', userId);
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
       .slice(0, 10);
+
+    console.log('📊 Customer analytics summary:', {
+      totalCustomers,
+      newCustomers: newCustomers.size,
+      avgOrdersPerCustomer,
+      avgSpentPerCustomer,
+      topCustomersCount: topCustomers.length
+    });
 
     res.json({
       success: true,
       data: {
         summary: {
-          totalCustomers,
-          newCustomers: newCustomers.size,
-          avgOrdersPerCustomer: parseFloat(avgOrdersPerCustomer.toFixed(2)),
-          avgSpentPerCustomer: Math.round(avgSpentPerCustomer)
+          totalCustomers: totalCustomers || 0,
+          newCustomers: newCustomers.size || 0,
+          avgOrdersPerCustomer: parseFloat((avgOrdersPerCustomer || 0).toFixed(2)),
+          avgSpentPerCustomer: Math.round(avgSpentPerCustomer || 0)
         },
-        topCustomers
+        topCustomers: topCustomers || []
       }
     });
   } catch (error) {

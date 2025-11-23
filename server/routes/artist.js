@@ -338,25 +338,10 @@ router.get('/tasks', authenticateArtist, async (req, res) => {
       return res.status(404).json({ error: 'Artist profile not found' });
     }
 
+    // Fetch tasks without nested relationships (PostgREST foreign key issue)
     let query = supabase
       .from('artist_tasks')
-      .select(`
-        *,
-        started_at,
-        orders (
-          order_number,
-          total_amount,
-          order_items
-        ),
-        products (
-          id,
-          name,
-          main_image,
-          additional_images,
-          category,
-          price
-        )
-      `)
+      .select('*')
       .eq('artist_id', profile.id)
       .order('created_at', { ascending: false });
 
@@ -375,7 +360,63 @@ router.get('/tasks', authenticateArtist, async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch artist tasks' });
     }
 
-    res.json(tasks || []);
+    if (!tasks || tasks.length === 0) {
+      return res.json([]);
+    }
+
+    // Fetch related orders and products separately
+    const orderIds = tasks.filter(t => t.order_id).map(t => t.order_id);
+    const productIds = tasks.filter(t => t.product_id).map(t => t.product_id);
+
+    // Fetch orders
+    let ordersMap = {};
+    if (orderIds.length > 0) {
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('id, order_number, total_amount, order_items')
+        .in('id', orderIds);
+
+      if (!ordersError && orders) {
+        orders.forEach(order => {
+          ordersMap[order.id] = {
+            order_number: order.order_number,
+            total_amount: order.total_amount,
+            order_items: order.order_items
+          };
+        });
+      }
+    }
+
+    // Fetch products
+    let productsMap = {};
+    if (productIds.length > 0) {
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id, name, main_image, additional_images, category, price')
+        .in('id', productIds);
+
+      if (!productsError && products) {
+        products.forEach(product => {
+          productsMap[product.id] = {
+            id: product.id,
+            name: product.name,
+            main_image: product.main_image,
+            additional_images: product.additional_images,
+            category: product.category,
+            price: product.price
+          };
+        });
+      }
+    }
+
+    // Merge the data
+    const tasksWithRelations = tasks.map(task => ({
+      ...task,
+      orders: task.order_id ? ordersMap[task.order_id] || null : null,
+      products: task.product_id ? productsMap[task.product_id] || null : null
+    }));
+
+    res.json(tasksWithRelations);
   } catch (error) {
     console.error('Error fetching artist tasks:', error);
     res.status(500).json({ error: 'Failed to fetch artist tasks' });
