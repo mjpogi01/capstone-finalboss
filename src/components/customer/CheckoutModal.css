@@ -1879,6 +1879,54 @@ div.checkout-modal div.member-details .detail-label {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
+/* COD Terms Checkbox */
+.cod-terms-container {
+  margin-top: 16px;
+  width: 100%;
+  padding: 16px;
+  background: #1a202c;
+  border: 1.5px solid #4a5568;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.cod-terms-container:hover {
+  border-color: #63b3ed;
+}
+
+.cod-terms-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cod-terms-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  cursor: pointer;
+  accent-color: #63b3ed;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cod-terms-text {
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.cod-terms-checkbox:hover .cod-terms-text {
+  color: #ffffff;
+}
+
+.cod-terms-checkbox input[type="checkbox"]:checked + .cod-terms-text {
+  color: #e0f2fe;
+}
+
 /* Location Selector */
 .location-selector {
   margin-top: 12px;

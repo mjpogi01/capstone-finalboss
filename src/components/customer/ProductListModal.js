@@ -123,6 +123,92 @@ const ProductListModal = ({ isOpen, onClose }) => {
     setCurrentPage(1);
   }, [products, searchTerm, selectedCategory, selectedCategories, sortBy, priceMin, priceMax, selectedRating]);
 
+  // Listen for order placed events to update product quantities immediately
+  useEffect(() => {
+    const handleOrderPlaced = (event) => {
+      const orderItems = event.detail?.orderItems || [];
+      
+      if (orderItems.length === 0) return;
+      
+      console.log('🔄 Updating product quantities after order:', orderItems);
+      
+      setProducts(prevProducts => {
+        return prevProducts.map(product => {
+          // Find matching order items for this product
+          const matchingItems = orderItems.filter(item => {
+            const itemName = item.name || item.product_name;
+            const itemCategory = (item.category || '').toLowerCase();
+            const productCategory = (product.category || '').toLowerCase();
+            
+            return itemName === product.name && itemCategory === productCategory;
+          });
+          
+          if (matchingItems.length === 0) {
+            return product; // No changes needed
+          }
+          
+          // Only update stock for balls and trophies
+          const isBall = product.category?.toLowerCase() === 'balls';
+          const isTrophy = product.category?.toLowerCase() === 'trophies';
+          
+          if (!isBall && !isTrophy) {
+            return product; // Apparel products don't have stock
+          }
+          
+          let updatedProduct = { ...product };
+          
+          if (isBall) {
+            // For balls, reduce stock_quantity
+            const totalQuantity = matchingItems.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+            const currentStock = parseInt(product.stock_quantity) || 0;
+            updatedProduct.stock_quantity = Math.max(0, currentStock - totalQuantity);
+            console.log(`📦 Updated ${product.name} stock: ${currentStock} → ${updatedProduct.stock_quantity} (deducted ${totalQuantity})`);
+          } else if (isTrophy) {
+            // For trophies, reduce size_stocks
+            let sizeStocks = product.size_stocks;
+            if (typeof sizeStocks === 'string') {
+              try {
+                sizeStocks = JSON.parse(sizeStocks);
+              } catch (e) {
+                sizeStocks = {};
+              }
+            }
+            if (!sizeStocks || typeof sizeStocks !== 'object') {
+              sizeStocks = {};
+            }
+            
+            const updatedSizeStocks = { ...sizeStocks };
+            
+            matchingItems.forEach(item => {
+              const trophySize = item.trophyDetails?.size || item.size;
+              const quantity = parseInt(item.quantity) || 1;
+              
+              if (trophySize && updatedSizeStocks[trophySize] !== undefined) {
+                const currentSizeStock = parseInt(updatedSizeStocks[trophySize]) || 0;
+                updatedSizeStocks[trophySize] = Math.max(0, currentSizeStock - quantity);
+                console.log(`📦 Updated ${product.name} (${trophySize}) stock: ${currentSizeStock} → ${updatedSizeStocks[trophySize]} (deducted ${quantity})`);
+              }
+            });
+            
+            updatedProduct.size_stocks = updatedSizeStocks;
+            
+            // Recalculate total stock_quantity from size_stocks
+            const totalStock = Object.values(updatedSizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+            updatedProduct.stock_quantity = totalStock;
+          }
+          
+          return updatedProduct;
+        });
+      });
+    };
+    
+    window.addEventListener('orderPlaced', handleOrderPlaced);
+    
+    return () => {
+      window.removeEventListener('orderPlaced', handleOrderPlaced);
+    };
+  }, []);
+
   const fetchProducts = async () => {
     try {
       setLoading(true);

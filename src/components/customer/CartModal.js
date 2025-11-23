@@ -163,6 +163,11 @@ const CartModal = () => {
       // Create order in database
       const createdOrder = await orderService.createOrder(formattedOrderData);
       
+      // Verify order was actually created (has order_number)
+      if (!createdOrder || !createdOrder.order_number) {
+        throw new Error('Order creation failed: No order number returned');
+      }
+      
       console.log('✅ Order created successfully:', createdOrder);
       
       // Hide processing modal (if we showed it)
@@ -170,7 +175,7 @@ const CartModal = () => {
         setIsProcessingOrder(false);
       }
       
-      // Show success notification
+      // Show success notification ONLY if order was successfully created
       showOrderConfirmation(createdOrder.order_number, orderData.totalAmount);
       
       // Remove only the checked out items from cart
@@ -181,8 +186,13 @@ const CartModal = () => {
         await removeFromCart(itemId);
       }
       
-      // Trigger a custom event to refresh orders count in header
-      window.dispatchEvent(new CustomEvent('orderPlaced'));
+      // Trigger a custom event to refresh orders count in header and update product quantities
+      window.dispatchEvent(new CustomEvent('orderPlaced', { 
+        detail: { 
+          orderItems: orderData.items,
+          orderNumber: createdOrder.order_number
+        } 
+      }));
       
       // Close modals
       setShowCheckout(false);
@@ -201,7 +211,8 @@ const CartModal = () => {
       if (error.isStockError || error.requiresBranchSelection) {
         showError('Insufficient Stock', error.message || 'The selected branch does not have enough stock for your order. Please select a different branch.');
         // Don't close checkout modal - let user select different branch
-        return;
+        // IMPORTANT: Re-throw error so CheckoutModal can catch it and prevent success screen
+        throw error;
       }
       
       // Check if it's a network error (backend not running)
@@ -210,6 +221,9 @@ const CartModal = () => {
       } else {
         showError('Order Failed', `Failed to place order: ${error.message}. Please try again.`);
       }
+      
+      // IMPORTANT: Re-throw error so CheckoutModal can catch it and prevent success screen
+      throw error;
     }
   };
 

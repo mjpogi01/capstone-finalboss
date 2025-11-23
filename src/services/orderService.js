@@ -395,6 +395,14 @@ class OrderService {
 
       const data = await response.json();
       
+      // Validate that order was actually created
+      if (!data || !data.order_number) {
+        // If response is ok but no order_number, something went wrong
+        const error = new Error('Order creation failed: Invalid response from server');
+        error.isOrderError = true;
+        throw error;
+      }
+      
       // Log email status
       if (data.emailSent) {
         console.log('✅ Order confirmation email sent successfully');

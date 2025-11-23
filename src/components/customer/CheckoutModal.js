@@ -76,6 +76,7 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState(null);
   const [expandedOrderIndex, setExpandedOrderIndex] = useState(null);
+  const [codTermsAccepted, setCodTermsAccepted] = useState(false); // COD terms checkbox
 
   const branchOptions = useMemo(
     () => (branches.length > 0 ? branches : FALLBACK_BRANCHES),
@@ -94,6 +95,11 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
   useEffect(() => {
     if (isOpen) {
       checkUserAddress();
+      // Reset order complete state when modal opens
+      setShowOrderComplete(false);
+      setIsProcessingOrder(false);
+      // Reset COD terms when modal opens
+      setCodTermsAccepted(false);
       // Scroll modal to top when it opens to ensure order details are visible
       setTimeout(() => {
         const modalElement = document.querySelector('.checkout-modal');
@@ -234,6 +240,11 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
       if (!deliveryAddress.receiver || !deliveryAddress.phone || !deliveryAddress.address) {
         errors.address = 'Please add or select a delivery address';
       }
+      
+      // Check if COD terms are accepted
+      if (!codTermsAccepted) {
+        errors.codTerms = 'You must accept the COD shipping terms to proceed';
+      }
     }
     
     // Always require location selection
@@ -266,6 +277,9 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
         const errors = [];
         if (shippingMethod === 'cod' && (!deliveryAddress.receiver || !deliveryAddress.phone || !deliveryAddress.address)) {
           errors.push('Please add or select a delivery address');
+        }
+        if (shippingMethod === 'cod' && !codTermsAccepted) {
+          errors.push('You must accept the COD shipping terms to proceed');
         }
         if (!selectedLocation || selectedLocation.trim() === '') {
           errors.push('Please select a branch location');
@@ -340,6 +354,8 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
       // Proceed with order placement - processing modal is handled here in CheckoutModal
       await onPlaceOrder(orderData);
       
+      // Only show success screen if order was actually placed successfully
+      // onPlaceOrder will throw an error if order creation fails
       // Hide processing modal on success
       setIsProcessingOrder(false);
       setShowOrderComplete(true);
@@ -348,7 +364,9 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
       setIsProcessingOrder(false);
       // Error is already handled by onPlaceOrder (CartModal)
       console.error('Order placement failed:', error);
-      // Don't show success if order failed
+      // IMPORTANT: Don't show success screen if order failed
+      // The error notification is already shown by onPlaceOrder
+      setShowOrderComplete(false);
     }
   };
 
@@ -1373,7 +1391,11 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
                     checked={shippingMethod === 'pickup'}
                     onChange={(e) => {
                       setShippingMethod(e.target.value);
-                      setOrderErrors(prev => ({ ...prev, address: '' }));
+                      setOrderErrors(prev => ({ ...prev, address: '', codTerms: '' }));
+                      // Reset COD terms when switching to pickup
+                      if (e.target.value === 'pickup') {
+                        setCodTermsAccepted(false);
+                      }
                     }}
                   />
                   <div className="option-content">
@@ -1390,7 +1412,9 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
                     checked={shippingMethod === 'cod'}
                     onChange={(e) => {
                       setShippingMethod(e.target.value);
-                      setOrderErrors(prev => ({ ...prev, address: '' }));
+                      setOrderErrors(prev => ({ ...prev, address: '', codTerms: '' }));
+                      // COD terms checkbox will be shown when COD is selected
+                      // User must check it to proceed
                     }}
                   />
                   <div className="option-content">
@@ -1398,6 +1422,30 @@ const CheckoutModal = ({ isOpen, onClose, onPlaceOrder, cartItems: selectedCartI
                     <div className="option-subtitle">₱50.00</div>
                   </div>
                 </label>
+                
+                {/* COD Terms Checkbox - Only shown when COD is selected */}
+                {shippingMethod === 'cod' && (
+                  <div className="cod-terms-container">
+                    <label className="cod-terms-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={codTermsAccepted}
+                        onChange={(e) => {
+                          setCodTermsAccepted(e.target.checked);
+                          setOrderErrors(prev => ({ ...prev, codTerms: '' }));
+                        }}
+                      />
+                      <span className="cod-terms-text">
+                        I understand that the shipping fee (₱50.00) is subject to change based on weight, quantity, and distance. The final shipping fee will be confirmed upon order processing.
+                      </span>
+                    </label>
+                    {orderErrors.codTerms && (
+                      <span className="error-message" style={{ display: 'block', marginTop: '8px', color: '#ff4444', fontSize: '14px' }}>
+                        {orderErrors.codTerms}
+                      </span>
+                    )}
+                  </div>
+                )}
                 
                 {/* Location selector shown for both pickup and COD */}
                 <div className="location-selector">

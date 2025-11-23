@@ -441,6 +441,43 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
     }
   }, [product, selectedBranchId]);
 
+  // Listen for order placed events to refresh branch stock quantities
+  useEffect(() => {
+    const handleOrderPlaced = (event) => {
+      const orderItems = event.detail?.orderItems || [];
+      
+      if (orderItems.length === 0 || !isOpen || !product) return;
+      
+      // Check if the order includes this product
+      const includesThisProduct = orderItems.some(item => {
+        const itemName = item.name || item.product_name;
+        const itemCategory = (item.category || '').toLowerCase();
+        const productCategory = (product.category || '').toLowerCase();
+        
+        return itemName === product.name && itemCategory === productCategory;
+      });
+      
+      if (!includesThisProduct) return;
+      
+      // Only refresh for balls and trophies
+      if (isBall || isTrophy) {
+        console.log('🔄 Refreshing branch stock for product after order:', product.name);
+        // Refresh branches with stock
+        if (isTrophy && trophyDetails.size) {
+          fetchBranchesWithStock(product.id, product.category, trophyDetails.size);
+        } else if (isBall) {
+          fetchBranchesWithStock(product.id, product.category, null);
+        }
+      }
+    };
+    
+    window.addEventListener('orderPlaced', handleOrderPlaced);
+    
+    return () => {
+      window.removeEventListener('orderPlaced', handleOrderPlaced);
+    };
+  }, [isOpen, product, isBall, isTrophy, trophyDetails.size, fetchBranchesWithStock]);
+
   // Reset branch selection when product changes
   useEffect(() => {
     if (isOpen && product) {
@@ -1982,6 +2019,11 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
       // Create order in database
       const createdOrder = await orderService.createOrder(formattedOrderData);
       
+      // Verify order was actually created (has order_number)
+      if (!createdOrder || !createdOrder.order_number) {
+        throw new Error('Order creation failed: No order number returned');
+      }
+      
       console.log('✅ Order created successfully:', createdOrder);
       
       // Hide processing modal (if we showed it)
@@ -1989,14 +2031,19 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
         setIsProcessingOrder(false);
       }
       
-      // Show success notification
+      // Show success notification ONLY if order was successfully created
       showOrderConfirmation(createdOrder.order_number, orderData.totalAmount);
       
       // Clear the entire cart after successful checkout
       await clearCart();
       
-      // Trigger a custom event to refresh orders count in header
-      window.dispatchEvent(new CustomEvent('orderPlaced'));
+      // Trigger a custom event to refresh orders count in header and update product quantities
+      window.dispatchEvent(new CustomEvent('orderPlaced', { 
+        detail: { 
+          orderItems: orderData.items,
+          orderNumber: createdOrder.order_number
+        } 
+      }));
       
       setShowCheckout(false);
       setBuyNowItem(null); // Clear Buy Now item
@@ -2015,7 +2062,8 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
       if (error.isStockError || error.requiresBranchSelection) {
         showError('Insufficient Stock', error.message || 'The selected branch does not have enough stock for your order. Please select a different branch.');
         // Don't close checkout modal - let user select different branch
-        return;
+        // IMPORTANT: Re-throw error so CheckoutModal can catch it and prevent success screen
+        throw error;
       }
       
       // Check if it's a network error (backend not running)
@@ -2024,6 +2072,9 @@ const ProductModal = ({ isOpen, onClose, product, isFromCart = false, existingCa
       } else {
         showError('Order Failed', `Failed to place order: ${error.message}. Please try again.`);
       }
+      
+      // IMPORTANT: Re-throw error so CheckoutModal can catch it and prevent success screen
+      throw error;
     }
   };
 
