@@ -21,33 +21,46 @@ const ResetPassword = () => {
     // Supabase adds the recovery token to the URL hash
     const checkRecoverySession = async () => {
       try {
-        // Get the current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
         // Check if we have a recovery token in the URL hash
         const hash = window.location.hash;
         const hashParams = new URLSearchParams(hash.substring(1)); // Remove the #
         const accessToken = hashParams.get('access_token');
         const type = hashParams.get('type');
         
-        // If we have a recovery token but no session, Supabase needs to process it
+        // If we have a recovery token, Supabase needs to process it
         if (accessToken && type === 'recovery') {
-          // Supabase will automatically process this when we call getSession
-          // The session should be established now
+          console.log('🔐 Processing password reset token...');
+          
+          // Supabase will automatically process the recovery token from the hash
+          // Wait a moment for Supabase to process it
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Get the session after processing the recovery token
           const { data: { session: recoverySession }, error: recoveryError } = await supabase.auth.getSession();
           
           if (recoveryError || !recoverySession) {
-            console.error('Recovery session error:', recoveryError);
+            console.error('❌ Recovery session error:', recoveryError);
+            setError('Invalid or expired reset link. Please request a new password reset.');
+            return;
+          }
+          
+          // Verify this is a recovery session (not a full login)
+          // Recovery sessions should have the user but we need to ensure it's only for password reset
+          if (recoverySession.user) {
+            console.log('✅ Recovery session established for password reset');
+            // Clean up the hash from URL for security
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } else if (!accessToken) {
+          // No token - check if we have a valid session (user might have navigated here directly)
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            // No token and no session - invalid link
             setError('Invalid or expired reset link. Please request a new password reset.');
           }
-          // If we have a session, we're good to proceed
-        } else if (!session && !accessToken) {
-          // No token and no session - invalid link
-          setError('Invalid or expired reset link. Please request a new password reset.');
         }
-        // If we have a session, we're good (user might have already been authenticated)
       } catch (err) {
-        console.error('Error checking recovery session:', err);
+        console.error('❌ Error checking recovery session:', err);
         setError('Invalid or expired reset link. Please request a new password reset.');
       }
     };
@@ -82,6 +95,18 @@ const ResetPassword = () => {
     }
 
     try {
+      // Verify we have a valid recovery session before updating password
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error('No valid session found. Please use a valid password reset link.');
+      }
+      
+      // Log the user email for verification (to help debug if wrong account)
+      const userEmail = session.user?.email;
+      console.log('🔐 Resetting password for user:', userEmail);
+      console.log('   User ID:', session.user?.id);
+      
       // Update password using Supabase Auth
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
@@ -89,6 +114,20 @@ const ResetPassword = () => {
 
       if (updateError) {
         throw new Error(updateError.message || 'Failed to update password');
+      }
+
+      console.log('✅ Password updated successfully for:', userEmail);
+      
+      // IMPORTANT: Sign out the user after password reset
+      // The recovery session should not be used for full authentication
+      console.log('🔒 Signing out user after password reset...');
+      const { error: signOutError } = await supabase.auth.signOut();
+      
+      if (signOutError) {
+        console.warn('⚠️ Error signing out after password reset:', signOutError);
+        // Continue anyway - password was reset successfully
+      } else {
+        console.log('✅ User signed out successfully after password reset');
       }
 
       setSuccess(true);

@@ -3,6 +3,12 @@
 ## Overview
 This document explains how stocks, sizes, and branches are stored in the database for products, particularly for trophies with multiple sizes.
 
+## Important Business Model Note
+
+**Apparel products (jerseys, t-shirts, hoodies, uniforms, etc.) are made-to-order.** The business does NOT stock finished apparel products. Instead, the business stocks raw materials (fabric, thread, etc.) for manufacturing. 
+
+**Only on-hand products** like balls, trophies, and medals have `stock_quantity` values and can be purchased directly from inventory. Apparel products are manufactured per order and do not have finished product inventory.
+
 ## Database Schema
 
 ### Products Table Structure

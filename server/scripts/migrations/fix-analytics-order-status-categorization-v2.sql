@@ -58,7 +58,7 @@ BEGIN
           ''averageOrderValue'', COALESCE(AVG(total_amount), 0)
         )
         FROM orders
-        WHERE LOWER(status) NOT IN (''cancelled'', ''canceled'')
+        WHERE LOWER(status) IN (''picked_up_delivered'', ''completed'')
           AND created_at < $%s
           %s
       ),

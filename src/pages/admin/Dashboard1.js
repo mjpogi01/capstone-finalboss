@@ -90,6 +90,9 @@ echarts.use([
   // Chart tabs
   const [activeChartTab, setActiveChartTab] = useState('sales');
   
+  // Low stock category filter
+  const [lowStockCategoryFilter, setLowStockCategoryFilter] = useState('all'); // 'all', 'balls', 'trophies'
+  
   // Refs to store chart instances for resizing
   const chartRefs = useRef({});
 
@@ -471,26 +474,34 @@ echarts.use([
 
   const INITIAL_STOCK_DISPLAY = 5;
 
-  // Filter low stock items to only show on-hand products (balls, trophies, medals)
+  // Filter low stock items to only show on-hand products (balls, trophies)
   // These are the only products that can be prepared and bought on-branch
   const lowStockItems = useMemo(() => {
-    const onHandCategories = ['balls', 'trophies', 'medals'];
+    const onHandCategories = ['balls', 'trophies'];
     
     return stockItems
       .filter(item => {
         // Only include products that:
         // 1. Have a stock_quantity field (on-hand items)
-        // 2. Belong to on-hand categories (balls, trophies, medals)
+        // 2. Belong to on-hand categories (balls, trophies)
         const hasStockQuantity = item.stockQuantity !== null && item.stockQuantity !== undefined;
         const category = item.category?.toLowerCase();
         const isOnHandCategory = onHandCategories.includes(category);
         
         return hasStockQuantity && isOnHandCategory;
       })
+      .filter(item => {
+        // Apply category filter
+        if (lowStockCategoryFilter === 'all') {
+          return true;
+        }
+        const category = item.category?.toLowerCase();
+        return category === lowStockCategoryFilter.toLowerCase();
+      })
       .filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock')
       .sort((a, b) => a.stockQuantity - b.stockQuantity)
       .slice(0, 10);
-  }, [stockItems]);
+  }, [stockItems, lowStockCategoryFilter]);
 
   // Prepare ECharts data for low stock items
   const lowStockChartOption = useMemo(() => {
@@ -1366,6 +1377,24 @@ echarts.use([
                       <FontAwesomeIcon icon={faBox} className="card-icon" />
                       <h3>Low-Stock Items</h3>
                       <div className="card-controls">
+                        <select
+                          value={lowStockCategoryFilter}
+                          onChange={(e) => setLowStockCategoryFilter(e.target.value)}
+                          className="dashboard1-filter-select"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #e5e7eb',
+                            backgroundColor: '#ffffff',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            outline: 'none'
+                          }}
+                        >
+                          <option value="all">All Categories</option>
+                          <option value="balls">Balls</option>
+                          <option value="trophies">Trophies</option>
+                        </select>
                       </div>
                     </div>
                     <div className="chart-container">

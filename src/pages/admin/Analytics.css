@@ -52,7 +52,7 @@ body.sidebar-collapsed .analytics-page {
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.75rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 600;
@@ -83,7 +83,7 @@ body.sidebar-collapsed .analytics-page {
   justify-content: center;
   
   padding: 0.875rem 1.9rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -115,7 +115,7 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .analyze-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #0369a1 0%, #1e3a8a 100%);
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
@@ -177,7 +177,7 @@ body.sidebar-collapsed .analytics-page {
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #0284c7;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   transform: translateY(-1px);
@@ -220,12 +220,12 @@ body.sidebar-collapsed .analytics-page {
 
 .filter-btn.active {
   background: #eff6ff;
-  border-color: #3b82f6;
+  border-color: #0284c7;
 }
 
 .filter-btn.has-filters {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: #0284c7;
 }
 
 .filter-btn.has-filters .btn-icon {
@@ -244,7 +244,7 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .filter-btn.active .btn-icon {
-  color: #2563eb;
+  color: #0369a1;
 }
 
 .btn-icon {
@@ -319,7 +319,7 @@ body.sidebar-collapsed .analytics-page {
 
 .analytics-filter-dropdown .filter-group select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #0284c7;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   background-color: #ffffff;
 }
@@ -351,7 +351,7 @@ body.sidebar-collapsed .analytics-page {
 
 .year-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #0284c7;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   background-color: #ffffff;
 }
@@ -446,13 +446,13 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .analytics-tab:hover {
-  color: #3b82f6;
+  color: #0284c7;
   background: rgba(59, 130, 246, 0.05);
   border-bottom-color: rgba(59, 130, 246, 0.3);
 }
 
 .analytics-tab.active {
-  color: #3b82f6;
+  color: #0284c7;
   border-bottom-color: #3b82f6;
   background: rgba(59, 130, 246, 0.08);
 }
@@ -464,7 +464,7 @@ body.sidebar-collapsed .analytics-page {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
   border-radius: 2px 2px 0 0;
 }
 
@@ -478,7 +478,7 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .analytics-tab.active .tab-icon {
-  color: #3b82f6;
+  color: #0284c7;
   transform: scale(1.1);
 }
 
@@ -556,13 +556,13 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .sales-chart-tab:hover {
-  color: #3b82f6;
+  color: #0284c7;
   background: rgba(59, 130, 246, 0.05);
   border-bottom: none;
 }
 
 .sales-chart-tab.active {
-  color: #3b82f6;
+  color: #0284c7;
   border-bottom: none;
   background: rgba(59, 130, 246, 0.08);
 }
@@ -574,7 +574,7 @@ body.sidebar-collapsed .analytics-page {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
   border-radius: 2px 2px 0 0;
 }
 
@@ -588,7 +588,7 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .sales-chart-tab.active .chart-tab-icon {
-  color: #3b82f6;
+  color: #0284c7;
   transform: scale(1.1);
 }
 
@@ -618,8 +618,8 @@ body.sidebar-collapsed .analytics-page {
 
 .sales-chart-global-controls .dashboard1-chart-toggle-btn:hover {
   background: rgba(59, 130, 246, 0.05);
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #0284c7;
+  color: #0284c7;
 }
 
 .sales-chart-global-controls .dashboard1-chart-toggle-btn .dashboard1-chart-toggle-icon {
@@ -704,7 +704,7 @@ body.sidebar-collapsed .analytics-page {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
   transition: height 0.3s ease;
 }
 
@@ -720,7 +720,7 @@ body.sidebar-collapsed .analytics-page {
 
 /* Different colors for each card type */
 .summary-card:nth-child(1)::before {
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
 }
 
 .summary-card:nth-child(2)::before {
@@ -744,7 +744,7 @@ body.sidebar-collapsed .analytics-page {
   justify-content: center;
   font-size: 1rem;
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  color: #3b82f6;
+  color: #0284c7;
   transition: all 0.3s ease;
   align-self: center;
 }
@@ -799,7 +799,7 @@ body.sidebar-collapsed .analytics-page {
 
 /* Color variations for summary values */
 .summary-card:nth-child(1) .summary-value {
-  color: #3b82f6;
+  color: #0284c7;
 }
 
 .summary-card:nth-child(2) .summary-value {
@@ -873,7 +873,7 @@ body.sidebar-collapsed .analytics-page {
 .analytics-header-analyze-btn {
   margin-left: auto;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -914,7 +914,7 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .time-range-btn.active {
-  background: #2563eb;
+  background: #0369a1;
   color: #ffffff;
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
 }
@@ -929,7 +929,7 @@ body.sidebar-collapsed .analytics-page {
 
 /* Different colors for each card icon */
 .analytics-card:nth-child(1) .card-icon {
-  color: #8b5cf6;
+  color: #7c3aed;
 }
 
 
@@ -941,7 +941,7 @@ body.sidebar-collapsed .analytics-page {
 
 
 .analytics-card:nth-child(3) .card-icon {
-  color: #3b82f6;
+  color: #0284c7;
 }
 
 
@@ -1094,7 +1094,7 @@ body.sidebar-collapsed .analytics-page {
 
 .bar-rect.highest-bar {
   filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
-  stroke: #3b82f6;
+  stroke: #0284c7;
   stroke-width: 1.5;
 }
 
@@ -1154,7 +1154,7 @@ body.sidebar-collapsed .analytics-page {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--bar-color, #3b82f6) 0%, var(--bar-color-dark, #2563eb) 100%);
+  background: linear-gradient(180deg, var(--bar-color, #0284c7) 0%, var(--bar-color-dark, #0369a1) 100%);
   transition: width 0.3s ease;
 }
 
@@ -1191,7 +1191,7 @@ body.sidebar-collapsed .analytics-page {
   justify-content: center;
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   border-radius: 8px;
-  color: #3b82f6;
+  color: #0284c7;
   font-size: 0.875rem;
   flex-shrink: 0;
   transition: all 0.3s ease;
@@ -1216,7 +1216,7 @@ body.sidebar-collapsed .analytics-page {
 .bar-value {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--bar-color, #3b82f6);
+  color: var(--bar-color, #0284c7);
   font-family: 'Inter', sans-serif;
   letter-spacing: -0.01em;
   flex-shrink: 0;
@@ -1240,7 +1240,7 @@ body.sidebar-collapsed .analytics-page {
 .bar-fill {
   height: 100%;
   border-radius: 20px;
-  background: linear-gradient(90deg, var(--bar-color, #3b82f6) 0%, var(--bar-color-light, #60a5fa) 100%);
+  background: linear-gradient(90deg, var(--bar-color, #0284c7) 0%, var(--bar-color-light, #0d9488) 100%);
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -1276,7 +1276,7 @@ body.sidebar-collapsed .analytics-page {
 /* Highest sales item - Special styling */
 .bar-item.highest-sales {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-color: #3b82f6;
+  border-color: #0284c7;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
@@ -1285,7 +1285,7 @@ body.sidebar-collapsed .analytics-page {
 }
 
 .bar-item.highest-sales .branch-icon {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
@@ -1361,7 +1361,7 @@ body.sidebar-collapsed .analytics-page {
   width: 40px;
   height: 40px;
   border: 4px solid #e5e7eb;
-  border-top: 4px solid #3b82f6;
+  border-top: 4px solid #0284c7;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -1730,7 +1730,7 @@ body.sidebar-collapsed .analytics-page {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -2373,7 +2373,7 @@ body.sidebar-collapsed .analytics-page {
 
 .nexus-input-row button {
   border: none;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
   color: #ffffff;
   padding: 0.7rem 1rem;
   border-radius: 12px;
@@ -2471,7 +2471,7 @@ body.sidebar-collapsed .analytics-page {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
   color: #ffffff;
   border: none;
   border-radius: 999px;

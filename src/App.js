@@ -51,10 +51,19 @@ const AppContent = () => {
     const hashParams = window.location.hash.substring(1);
     const hasAuthTokens = hashParams.includes('access_token') || hashParams.includes('error');
     
+    // Check if this is a password reset link (type=recovery)
+    const isPasswordReset = hashParams.includes('type=recovery');
+    
     // If we have OAuth tokens and we're not already on the callback route, redirect there
-    if (hasAuthTokens && !location.pathname.includes('/auth/callback')) {
+    // BUT: Don't redirect password reset links - they should go to /auth/reset-password
+    if (hasAuthTokens && !location.pathname.includes('/auth/callback') && !isPasswordReset) {
       // Preserve the hash when redirecting
       window.location.replace(`/auth/callback${window.location.hash}`);
+    }
+    
+    // If it's a password reset link and we're not on the reset password page, redirect there
+    if (isPasswordReset && !location.pathname.includes('/auth/reset-password')) {
+      window.location.replace(`/auth/reset-password${window.location.hash}`);
     }
   }, [location.pathname]);
 

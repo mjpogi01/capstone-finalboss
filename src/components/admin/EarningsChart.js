@@ -214,7 +214,7 @@ const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onTogg
           barWidth: '35%',
           data: salesValues,
           itemStyle: {
-            color: '#6366f1',
+            color: '#0284c7',
             borderRadius: [4, 4, 0, 0]
           },
           animation: hasData,
@@ -222,7 +222,7 @@ const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onTogg
           emphasis: {
             focus: 'series',
             itemStyle: {
-              color: '#4f46e5'
+              color: '#0369a1'
             }
           }
         },
@@ -233,7 +233,7 @@ const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onTogg
           barWidth: '35%',
           data: ordersValues,
           itemStyle: {
-            color: '#f97316',
+            color: '#0d9488',
             borderRadius: [4, 4, 0, 0]
           },
           animation: hasData,
@@ -241,7 +241,7 @@ const EarningsChart = ({ selectedBranchId = null, isValuesVisible = true, onTogg
           emphasis: {
             focus: 'series',
             itemStyle: {
-              color: '#ea580c'
+              color: '#0f766e'
             }
           }
         }

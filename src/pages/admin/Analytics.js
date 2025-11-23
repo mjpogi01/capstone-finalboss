@@ -267,9 +267,10 @@ const Analytics = () => {
     lastUserIdRef.current = userId;
 
     fetchAnalyticsData();
+    // Fetch sales trends immediately (same as dashboard) - it's lightweight
+    fetchSalesTrends();
 
     const runDeferredFetches = () => {
-      fetchSalesTrends();
       fetchProductStocks();
       // Customer analytics is now loaded lazily when the user views that section
       // This prevents blocking the main analytics page load
@@ -602,9 +603,17 @@ const Analytics = () => {
   };
 
   const fetchSalesTrends = async () => {
+    // Wait for auth to stabilize before making API requests
+    if (authLoading || !user) {
+      return;
+    }
+
     try {
       setSalesTrendsLoading(true);
-      const response = await authFetch(`${API_URL}/api/analytics/sales-trends?period=30`);
+      // Build URL with branch_id if provided (for owners filtering by specific branch)
+      let url = `${API_URL}/api/analytics/sales-trends?period=30`;
+      
+      const response = await authFetch(url);
       const result = await response.json();
       
       if (result.success && Array.isArray(result.data)) {
@@ -1154,8 +1163,8 @@ const Analytics = () => {
           smooth: true,
           data: values,
           showSymbol: false,
-          lineStyle: { width: 3, color: '#8b5cf6' },
-          areaStyle: { color: 'rgba(139, 92, 246, 0.15)' },
+          lineStyle: { width: 3, color: '#1e3a8a' },
+          areaStyle: { color: 'rgba(30, 58, 138, 0.15)' },
           animation: hasData,
           animationDuration: hasData ? 600 : 0,
           emphasis: { focus: 'series' }
@@ -1170,7 +1179,8 @@ const Analytics = () => {
     const branchData = Array.isArray(analyticsData?.salesByBranch) ? analyticsData.salesByBranch : [];
     const values = branchData.map(item => Number(item.sales || 0));
     const hasData = branchData.length > 0 && values.some(value => value > 0);
-    const colors = ['#8b5cf6', '#6366f1', '#ec4899', '#10b981', '#f59e0b', '#06b6d4', '#f97316', '#84cc16'];
+    // Use branch color palette for consistency
+    const colors = ['#1e3a8a', '#0d9488', '#166534', '#0284c7', '#0f766e', '#0369a1', '#7c3aed', '#64748b', '#15803d'];
 
     const option = {
       animation: hasData,
@@ -1276,10 +1286,20 @@ const Analytics = () => {
             const percentage = entry.percentage !== undefined
               ? entry.percentage
               : total > 0 ? Math.round(((entry.count || 0) / total) * 100) : 0;
+            // Use branch color palette for order status
+            const statusColors = {
+              'Completed': '#166534',
+              'Processing': '#0284c7',
+              'Pending': '#0d9488',
+              'Cancelled': '#64748b'
+            };
             return {
               name: label,
               value: entry.count || 0,
-              percentage
+              percentage,
+              itemStyle: {
+                color: statusColors[label] || '#64748b'
+              }
             };
           })
           .filter(Boolean)
@@ -1434,8 +1454,8 @@ const Analytics = () => {
           yAxisIndex: 0,
           smooth: true,
           showSymbol: false,
-          lineStyle: { width: 3, color: '#6366f1' },
-          areaStyle: { color: 'rgba(99, 102, 241, 0.15)' },
+          lineStyle: { width: 3, color: '#0284c7' },
+          areaStyle: { color: 'rgba(2, 132, 199, 0.15)' },
           data: salesValues,
           animation: hasData,
           animationDuration: hasData ? 600 : 0
@@ -1446,7 +1466,7 @@ const Analytics = () => {
           yAxisIndex: 1,
           smooth: true,
           showSymbol: false,
-          lineStyle: { width: 2, color: '#f97316', type: 'dashed' },
+          lineStyle: { width: 2, color: '#0d9488', type: 'dashed' },
           data: ordersValues,
           animation: hasData,
           animationDuration: hasData ? 600 : 0
@@ -1464,9 +1484,9 @@ const Analytics = () => {
     const maxValue = Math.max(0, ...values);
     const paddedMax = maxValue <= 0 ? 10 : Math.ceil(maxValue * 1.1);
     const gradientStops = [
-      { offset: 0, color: '#c084fc' },
-      { offset: 0.45, color: '#a855f7' },
-      { offset: 1, color: '#6366f1' }
+      { offset: 0, color: '#0284c7' },
+      { offset: 0.45, color: '#0d9488' },
+      { offset: 1, color: '#1e3a8a' }
     ];
 
     const option = {
@@ -1526,7 +1546,7 @@ const Analytics = () => {
         data: products.map(item => item.product),
         inverse: true,
         axisLabel: {
-          color: '#4338ca',
+          color: '#1e3a8a',
           fontWeight: 600,
           fontSize: 13
         },
@@ -1539,7 +1559,7 @@ const Analytics = () => {
           barWidth: 28,
           showBackground: true,
           backgroundStyle: {
-            color: 'rgba(99, 102, 241, 0.08)',
+            color: 'rgba(2, 132, 199, 0.08)',
             borderRadius: [0, 12, 12, 0]
           },
           data: values.map((value, index) => ({
@@ -1553,8 +1573,8 @@ const Analytics = () => {
             emphasis: {
               itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                  { offset: 0, color: '#a855f7' },
-                  { offset: 1, color: '#4c1d95' }
+                  { offset: 0, color: '#7c3aed' },
+                  { offset: 1, color: '#1e3a8a' }
                 ])
               }
             }
@@ -1849,7 +1869,7 @@ const Analytics = () => {
           smooth: true,
           showSymbol: false,
           data: historicalData,
-          lineStyle: { width: 3, color: '#3b82f6' },
+          lineStyle: { width: 3, color: '#0284c7' },
           areaStyle: { color: 'rgba(59, 130, 246, 0.12)' },
           animation: hasData,
           animationDuration: hasData ? 600 : 0,

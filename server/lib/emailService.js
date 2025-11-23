@@ -108,7 +108,13 @@ class EmailService {
   // Helper method to send email with retry logic and timeout handling
   async _sendEmailWithRetry(mailOptions, maxRetries = 3) {
     if (!this._isClientReady()) {
-      throw new Error('Email service not configured');
+      const error = new Error('Email service not configured - Resend client not initialized');
+      console.error('❌ Email service check failed:', {
+        hasClient: !!this.client,
+        hasFromAddress: !!this.fromAddress,
+        fromAddress: this.fromAddress
+      });
+      throw error;
     }
 
     let lastError = null;
@@ -116,9 +122,21 @@ class EmailService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const normalizedOptions = this._normalizeMailOptions(mailOptions);
+        
+        console.log(`📧 [Attempt ${attempt}/${maxRetries}] Sending email via Resend...`);
+        console.log(`   To: ${normalizedOptions.to}`);
+        console.log(`   From: ${normalizedOptions.from}`);
+        console.log(`   Subject: ${normalizedOptions.subject}`);
+        
         const { data, error } = await this.client.emails.send(normalizedOptions);
 
         if (error) {
+          console.error('❌ Resend API returned error:', {
+            message: error.message,
+            code: error.code,
+            name: error.name,
+            fullError: error
+          });
           const resendError = new Error(error.message || 'Resend API error');
           resendError.code = error.code;
           throw resendError;
@@ -139,12 +157,20 @@ class EmailService {
         return { id: data?.id || null };
       } catch (error) {
         lastError = error;
+        console.error(`❌ Email send attempt ${attempt}/${maxRetries} failed:`, {
+          message: error.message,
+          code: error.code,
+          name: error.name,
+          stack: error.stack
+        });
+        
         if (attempt >= maxRetries) {
+          console.error('❌ All email send attempts failed. Final error:', lastError);
           throw error;
         }
 
         const waitTime = Math.pow(2, attempt) * 1000;
-        console.warn(`⚠️ Email send attempt ${attempt}/${maxRetries} failed (${error.message || error}). Retrying in ${waitTime / 1000}s...`);
+        console.warn(`⚠️ Retrying in ${waitTime / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         this.initializeClient();
       }

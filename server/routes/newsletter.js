@@ -84,9 +84,16 @@ router.post('/subscribe', async (req, res) => {
 
         // Send welcome email
         try {
-          await emailService.sendNewsletterWelcomeEmail(normalizedEmail);
+          const emailResult = await emailService.sendNewsletterWelcomeEmail(normalizedEmail);
+          if (emailResult.success) {
+            console.log('✅ Welcome email sent to:', normalizedEmail);
+          } else {
+            console.error('❌ Failed to send welcome email:', emailResult.error);
+            console.error('   Email service error details:', emailResult);
+          }
         } catch (emailError) {
-          console.warn('⚠️ Failed to send welcome email (non-critical):', emailError.message);
+          console.error('❌ Exception sending welcome email:', emailError.message);
+          console.error('   Full error:', emailError);
         }
 
         return res.json({
@@ -120,11 +127,19 @@ router.post('/subscribe', async (req, res) => {
 
     // Send welcome email
     try {
-      await emailService.sendNewsletterWelcomeEmail(normalizedEmail);
-      console.log('✅ Welcome email sent to:', normalizedEmail);
+      const emailResult = await emailService.sendNewsletterWelcomeEmail(normalizedEmail);
+      if (emailResult.success) {
+        console.log('✅ Welcome email sent successfully to:', normalizedEmail, 'Message ID:', emailResult.messageId);
+      } else {
+        console.error('❌ Failed to send welcome email:', emailResult.error);
+        console.error('   Email service error details:', emailResult);
+        // Log to help debug
+        console.error('   Check RESEND_API_KEY and RESEND_FROM_EMAIL configuration');
+      }
     } catch (emailError) {
-      console.warn('⚠️ Failed to send welcome email (non-critical):', emailError.message);
-      // Don't fail the subscription if email fails
+      console.error('❌ Exception sending welcome email:', emailError.message);
+      console.error('   Full error:', emailError);
+      console.error('   Stack:', emailError.stack);
     }
 
     res.json({
@@ -426,6 +441,67 @@ router.post('/send-marketing', authenticateSupabaseToken, requireAdminOrOwner, a
     res.status(500).json({
       success: false,
       error: 'Internal server error. Please try again later.'
+    });
+  }
+});
+
+// Test newsletter welcome email (for debugging)
+router.post('/test-welcome-email', authenticateSupabaseToken, requireAdminOrOwner, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Email address is required' 
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('🧪 Testing newsletter welcome email to:', normalizedEmail);
+
+    // Check email service configuration
+    const isConfigured = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+    console.log('📧 Email service configuration:', {
+      hasApiKey: !!process.env.RESEND_API_KEY,
+      hasFromEmail: !!process.env.RESEND_FROM_EMAIL,
+      fromEmail: process.env.RESEND_FROM_EMAIL,
+      isConfigured
+    });
+
+    if (!isConfigured) {
+      return res.status(500).json({
+        success: false,
+        error: 'Email service not configured. Please set RESEND_API_KEY and RESEND_FROM_EMAIL in environment variables.'
+      });
+    }
+
+    // Send test welcome email
+    const emailResult = await emailService.sendNewsletterWelcomeEmail(normalizedEmail);
+
+    if (emailResult.success) {
+      console.log('✅ Test welcome email sent successfully:', emailResult.messageId);
+      return res.json({
+        success: true,
+        message: 'Test welcome email sent successfully!',
+        messageId: emailResult.messageId,
+        email: normalizedEmail
+      });
+    } else {
+      console.error('❌ Test welcome email failed:', emailResult.error);
+      return res.status(500).json({
+        success: false,
+        error: emailResult.error || 'Failed to send test welcome email',
+        details: emailResult
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error in test welcome email:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
