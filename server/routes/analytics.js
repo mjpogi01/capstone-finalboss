@@ -2695,25 +2695,11 @@ router.get('/sales-trends', async (req, res) => {
     
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
+    const startDateIso = startDate.toISOString();
 
-    console.log(`📊 [Sales Trends] Fetching data for last ${daysAgo} days...`);
+    console.log(`📊 [Sales Trends] Fetching data for last ${daysAgo} days using SQL aggregation...`);
 
-    // Only select the columns we need - this is MUCH faster than SELECT *
-    // Excluding order_items JSONB which can be very large
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('created_at, total_amount, pickup_location, status')
-      .neq('status', 'cancelled')
-      .neq('status', 'canceled')
-      .gte('created_at', startDate.toISOString());
- 
-    if (error) throw error;
-    
-    const queryTime = Date.now() - startTime;
-    console.log(`📊 [Sales Trends] Fetched ${orders?.length || 0} orders in ${queryTime}ms`);
- 
-    // For owners: if branch_id is provided in query, create branch context for that branch
-    // For admins: use resolveBranchContext (automatically filters by their branch)
+    // Resolve branch context first
     let branchContext = await resolveBranchContext(req.user);
     
     // If owner provided branch_id query param, override branch context
@@ -2739,38 +2725,42 @@ router.get('/sales-trends', async (req, res) => {
         }
       }
     }
-    
-    const scopedOrders = filterOrdersByBranch(orders, branchContext);
-    // Group by day
-    const dailyData = {};
-    scopedOrders.forEach(order => {
-      const date = new Date(order.created_at).toISOString().split('T')[0];
-      if (!dailyData[date]) {
-        dailyData[date] = {
-          sales: 0,
-          orders: 0
-        };
-      }
-      dailyData[date].sales += parseFloat(order.total_amount || 0);
-      dailyData[date].orders += 1;
-    });
 
-    const trends = Object.entries(dailyData)
-      .map(([date, data]) => ({
-        date,
-        sales: data.sales,
-        orders: data.orders
-      }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Build branch filter clause for SQL
+    const branchFilter = buildBranchFilterClause(branchContext, 2);
+    
+    // Use SQL aggregation - MUCH faster than fetching all orders
+    const sqlQuery = `
+      SELECT 
+        DATE(created_at)::text AS date,
+        SUM(total_amount)::numeric AS sales,
+        COUNT(*)::bigint AS orders
+      FROM orders
+      WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
+        AND created_at >= $1
+        ${branchFilter.clause}
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `;
+
+    const params = [startDateIso, ...branchFilter.params];
+    const result = await executeSql(sqlQuery, params);
+    
+    const trends = (result.rows || []).map(row => ({
+      date: row.date,
+      sales: parseFloat(row.sales || 0),
+      orders: parseInt(row.orders || 0, 10)
+    }));
 
     const totalTime = Date.now() - startTime;
-    console.log(`📊 [Sales Trends] Processed ${trends.length} days of data in ${totalTime}ms total`);
+    console.log(`📊 [Sales Trends] Processed ${trends.length} days of data in ${totalTime}ms (SQL aggregation)`);
 
     res.json({
       success: true,
       data: trends
     });
   } catch (error) {
+    console.error('❌ [Sales Trends] Error:', error);
     return handleAnalyticsError(res, error, 'Failed to fetch sales trends');
   }
 });
