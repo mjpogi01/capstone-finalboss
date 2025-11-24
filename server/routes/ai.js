@@ -20,10 +20,16 @@ const SCHEMA_GUIDE = [
   "orders(id, user_id, order_number, status, shipping_method, pickup_location TEXT, delivery_address JSONB, order_notes, subtotal_amount, shipping_cost, total_amount, total_items, order_items JSONB, created_at, updated_at, design_files)",
   "branches(id, name, address, city, phone, email, is_main_manufacturing, created_at)",
   "user_addresses(user_id, city, province, barangay, street_address, full_name)",
+  "auth.users(id, email, raw_user_meta_data JSONB - contains full_name, first_name, last_name, role)",
+  "user_profiles(id, user_id, full_name, phone) - may exist for some users (optional table)",
   'There is no branch_id column on orders; use orders.pickup_location (branch name) or join to branches.name when aggregating by branch.',
   'When joining, match upper(trim(pickup_location)) to upper(trim(branches.name)).',
   'Customer location data: orders.delivery_address is a JSONB field containing city, province, barangay, and other address fields. Access with delivery_address->>\'province\', delivery_address->>\'city\', etc.',
-  'For customer location queries, check both user_addresses table and orders.delivery_address JSONB field. Use UNION to combine results from both sources.'
+  'For customer location queries, check both user_addresses table and orders.delivery_address JSONB field. Use UNION to combine results from both sources.',
+  'IMPORTANT - Finding customers by name: Customer names are stored in multiple places with priority: user_profiles.full_name > auth.users.raw_user_meta_data->>\'full_name\' > CONCAT(auth.users.raw_user_meta_data->>\'first_name\', \' \', auth.users.raw_user_meta_data->>\'last_name\', \' \') > orders.delivery_address->>\'full_name\'.',
+  'When searching for orders by customer name, use this comprehensive query that searches all name sources:',
+  'SELECT DISTINCT o.* FROM orders o JOIN auth.users u ON o.user_id = u.id LEFT JOIN user_profiles up ON u.id = up.user_id WHERE (LOWER(COALESCE(up.full_name, \'\')) LIKE LOWER(\'%[CUSTOMER_NAME]%\') OR LOWER(COALESCE(u.raw_user_meta_data->>\'full_name\', \'\')) LIKE LOWER(\'%[CUSTOMER_NAME]%\') OR LOWER(CONCAT(COALESCE(u.raw_user_meta_data->>\'first_name\', \'\'), \' \', COALESCE(u.raw_user_meta_data->>\'last_name\', \'\'))) LIKE LOWER(\'%[CUSTOMER_NAME]%\') OR LOWER(COALESCE(o.delivery_address->>\'full_name\', \'\')) LIKE LOWER(\'%[CUSTOMER_NAME]%\')) ORDER BY o.created_at DESC;',
+  'Replace [CUSTOMER_NAME] with the actual customer name from the user question (e.g., "Ricardo Morales"). This query searches user_profiles, auth.users metadata, combined first_name+last_name, and order delivery_address. Use LIKE with % wildcards for flexible partial matching.'
 ].join('\n');
 
 const MAX_SQL_GENERATION_ATTEMPTS = 2;
@@ -814,6 +820,89 @@ function formatPeso(value) {
   return pesoFormatter.format(value);
 }
 
+function isModelExplanationQuestion(question = '') {
+  if (!question || typeof question !== 'string') {
+    return false;
+  }
+  const lowerQuestion = question.toLowerCase();
+  const modelKeywords = [
+    'how does the sales forecast work',
+    'how does the forecast work',
+    'what model is used',
+    'what model do you use',
+    'explain the forecast model',
+    'explain the model',
+    'how is the forecast calculated',
+    'how is forecast calculated',
+    'what is the computation',
+    'what computation',
+    'how does the predictive model work',
+    'explain the predictive model',
+    'what algorithm',
+    'what method',
+    'how does it predict',
+    'forecast methodology',
+    'forecast algorithm',
+    'mathematical model',
+    'fourier',
+    'regression model',
+    'seasonal model'
+  ];
+  return modelKeywords.some(keyword => lowerQuestion.includes(keyword));
+}
+
+function buildModelExplanationContext() {
+  return [
+    '**Sales Forecast Model - Detailed Explanation:**',
+    '',
+    'The sales forecasting system uses a **Weighted Fourier Regression** model as the primary method, with a **Seasonal Naïve** fallback when insufficient data is available.',
+    '',
+    '**Primary Model: Weighted Fourier Regression**',
+    '',
+    'This model combines three key techniques:',
+    '1. **Fourier Series**: Uses sine and cosine functions (6 harmonic pairs) to capture seasonal patterns that repeat yearly',
+    '2. **Weighted Least Squares Regression**: Gives more importance to recent months (decay factor 0.55 per 12 months) while still using older data (minimum weight 0.3)',
+    '3. **Log Transformation**: Converts revenue to logarithmic scale (log(revenue + 1)) to stabilize variance and ensure positive predictions',
+    '',
+    '**Why This Model?**',
+    '- Captures complex seasonal patterns (e.g., higher sales in March/June each year)',
+    '- Handles overall growth/decline trends over time',
+    '- Emphasizes recent data which is more predictive of future performance',
+    '- Ensures all predictions are positive (appropriate for revenue)',
+    '- Fast computation with interpretable results',
+    '',
+    '**Mathematical Computation Process:**',
+    '1. **Feature Engineering**: For each month, creates 14 features: constant (1), linear trend (monthIndex), and 6 pairs of sin/cos harmonics',
+    '   - Formula: sin(2π × k × monthIndex / 12) and cos(2π × k × monthIndex / 12) for k=1 to 6',
+    '2. **Recency Weighting**: Assigns weights to historical months based on recency',
+    '   - Most recent month: weight ≈ 1.0',
+    '   - 12 months ago: weight ≈ 0.55',
+    '   - 24+ months ago: weight = 0.3 (minimum)',
+    '3. **Log Transformation**: Converts revenue values to log(revenue + 1) for better statistical properties',
+    '4. **Weighted Regression**: Solves weighted least squares to find 14 coefficients that best fit historical data',
+    '5. **Ridge Regularization**: Adds small epsilon (1e-6) to prevent overfitting and numerical instability',
+    '6. **Forecast Generation**: For future months, calculates features, applies coefficients, then transforms back: exp(logPrediction) - 1',
+    '',
+    '**Model Parameters:**',
+    '- Harmonics: 6 pairs (captures yearly, semi-annual, quarterly, and finer patterns)',
+    '- Recency decay: 0.55 per 12 months',
+    '- Minimum weight: 0.3',
+    '- Season length: 12 months (yearly cycle)',
+    '- Regularization: 1e-6 (Ridge)',
+    '',
+    '**Fallback Model: Seasonal Naïve**',
+    'When less than 18 months of data is available, the system uses a simple approach:',
+    '- Forecast[month] = Historical[month - 12]',
+    '- Example: January 2025 forecast = January 2024 actual revenue',
+    '',
+    '**Model Performance:**',
+    'The model\'s accuracy is measured using MAPE (Mean Absolute Percentage Error) on historical data.',
+    'Confidence scores (45-92%) reflect how well the model fits historical patterns.',
+    '',
+    'For complete technical documentation, see: docs/sales-forecast-model-explanation.md'
+  ].join('\n');
+}
+
 function buildForecastMetadataMessage(metadata = {}, chartData = {}) {
   const summary = metadata.summary || chartData.summary;
   if (!summary) {
@@ -1107,10 +1196,14 @@ router.post('/analytics', async (req, res, next) => {
       'IMPORTANT BUSINESS MODEL: Apparel products (jerseys, t-shirts, hoodies, uniforms, etc.) are made-to-order. The business does NOT stock finished apparel products. Instead, the business stocks raw materials (fabric, thread, etc.) for manufacturing. Only on-hand products like balls, trophies, and medals have stock_quantity values and can be purchased directly from inventory. When discussing inventory or stock levels, only reference finished products for balls, trophies, and medals. For apparel products, discuss order volumes and manufacturing capacity, not finished product inventory.',
       'The business operates in the Philippines; refer to seasons as dry or rainy and never mention winter.',
       'ALWAYS use Philippine Peso (PHP) currency format when mentioning monetary amounts. Use the ₱ symbol (not $) and format amounts as ₱X,XXX or ₱X,XXX.XX (e.g., ₱1,234.56 or ₱50,000). Never use dollar signs ($) or USD. All revenue, prices, and monetary values are in Philippine Pesos.',
-      'If the available dataset does not contain the information needed to answer the user question, you MUST respond by proposing a SAFE SELECT query wrapped in <SQL>...</SQL> and wait for the query result before providing conclusions. Do not just suggest a query - actually provide it wrapped in <SQL>...</SQL>.',
-      'Location-based questions (province, city, address) require querying user_addresses table and/or orders.delivery_address JSONB field. If the current dataset does not contain location data, generate SQL to fetch it.',
-      'If a question cannot be answered with the provided data, generate the appropriate SQL query to fetch the needed data.',
+      'If the available dataset does not contain the information needed to answer the user question, you MUST immediately generate and provide a SAFE SELECT query wrapped in <SQL>...</SQL>. The SQL will be executed automatically - you do NOT need to ask for permission or wait for confirmation. After providing the SQL, the system will execute it automatically and provide you with the results for analysis.',
+      'Location-based questions (province, city, address) require querying user_addresses table and/or orders.delivery_address JSONB field. If the current dataset does not contain location data, immediately generate SQL wrapped in <SQL>...</SQL> to fetch it. The SQL will be executed automatically.',
+      'If a question cannot be answered with the provided data, immediately generate the appropriate SQL query wrapped in <SQL>...</SQL> to fetch the needed data. Do not ask for permission - the SQL will be executed automatically by the system.',
+      'IMPORTANT: When you provide SQL wrapped in <SQL>...</SQL>, it will be executed automatically without requiring user confirmation. Do NOT say things like "I need permission", "let me know if you want me to execute", "wait for the query result", "I don\'t have the ability to execute", or "I would need to query". Simply provide the SQL wrapped in <SQL>...</SQL> tags and the system will handle execution automatically.',
+      'CRITICAL: When a user asks for specific data (e.g., "orders of [customer name]", "give me orders for [name]", "show orders by [name]"), you MUST immediately generate the SQL query wrapped in <SQL>...</SQL> tags. Do NOT explain that you need to query - just provide the SQL. The system will execute it automatically.',
+      'IMPORTANT - Customer name searches: When searching for customer names, use LIKE with wildcards (%) for flexible matching. Try both full name and individual parts (first name, last name). Customer names might be in user_profiles.full_name, auth.users.raw_user_meta_data->>\'full_name\', or combined from first_name + last_name. Always use LOWER() for case-insensitive matching.',
       'When analyzing sales forecasts, always include a brief explanation of the predictive model used (Weighted Fourier Regression or Seasonal Naïve) and how it works, as well as the model\'s confidence scores and training performance metrics. This helps users understand the reliability and methodology behind the projections.',
+      'IMPORTANT - Sales Forecast Model Explanation: When users ask about the sales forecast model, how it works, what model is used, the computation behind it, or any questions about the predictive methodology (e.g., "how does the sales forecast work?", "what model do you use?", "explain the forecast model", "how is the forecast calculated?", "what is the computation behind the forecast?"), provide a comprehensive explanation covering: (1) The model type: Weighted Fourier Regression (primary) or Seasonal Naïve (fallback), (2) Why this model was chosen: captures seasonal patterns, handles trends, emphasizes recent data, ensures positive predictions, (3) Key components: Fourier series (sine/cosine harmonics) for seasonality, weighted regression for recency, log transformation for stability, (4) Mathematical approach: uses 6 harmonic pairs to model yearly patterns, weights recent months more heavily (decay factor 0.55), transforms revenue to log scale, (5) The computation process: feature engineering with Fourier basis functions, weighted least squares regression, Ridge regularization, forecast generation by extending patterns forward, (6) Model parameters: 6 harmonics, recency decay 0.55, minimum weight 0.3, 12-month seasonal cycle. Explain in clear, accessible language while being technically accurate. Reference the model documentation at docs/sales-forecast-model-explanation.md for detailed information.',
       'Respond using markdown formatting only.'
     ].join(' ');
 
@@ -1136,6 +1229,14 @@ router.post('/analytics', async (req, res, next) => {
         }
       }
       
+      // Add detailed model explanation if user is asking about the model
+      if (chartId === 'salesForecast' && isModelExplanationQuestion(rawQuestion || lastUserMessage?.content || '')) {
+        conversation.push({
+          role: 'system',
+          content: buildModelExplanationContext()
+        });
+      }
+      
       // Add customer insights summary metadata
       if (chartId === 'topCustomers' && dataset.metadata?.summary) {
         const summary = dataset.metadata.summary;
@@ -1155,7 +1256,17 @@ router.post('/analytics', async (req, res, next) => {
     } else {
       conversation.push({
         role: 'system',
-        content: 'General analytics conversation: the user may ask for any metric across the business. Use the schema guide to craft safe SELECT queries when needed.'
+        content: 'General analytics conversation: the user may ask for any metric across the business. When the user asks a question that requires data, you MUST immediately generate a SAFE SELECT query wrapped in <SQL>...</SQL> tags. The SQL will be executed automatically without requiring user confirmation. Do NOT ask for permission, do NOT say "I need to query", do NOT say "let me know" - simply provide the SQL wrapped in <SQL>...</SQL> tags immediately. After providing the SQL, the system will execute it automatically and provide you with the results for analysis.'
+      });
+    }
+    
+    // Add model explanation context if user is asking about the sales forecast model
+    // (even if not viewing the sales forecast chart)
+    const questionText = rawQuestion || lastUserMessage?.content || '';
+    if (isModelExplanationQuestion(questionText)) {
+      conversation.push({
+        role: 'system',
+        content: buildModelExplanationContext()
       });
     }
 
@@ -1177,8 +1288,9 @@ router.post('/analytics', async (req, res, next) => {
       const questionText = (lastMessage?.content || rawQuestion || '').toLowerCase();
       const requiresLocationData = /(province|city|location|address|where|batangas|calaca|balayan|mindoro)/i.test(questionText);
       const requiresCancelledOrdersData = /(cancel|cancelled|canceled).*(order|sales|revenue|total|amount)|(order|sales|revenue|total|amount).*(cancel|cancelled|canceled)|total.*sales.*cancel|sales.*of.*cancel/i.test(questionText);
+      const requiresSpecificCustomerData = /(order|orders|purchase|purchases|transaction|transactions).*(of|for|by).*[a-z]|(give|show|list|find|get).*(order|orders).*(of|for|by).*[a-z]|(customer|user).*[a-z].*(order|orders)/i.test(questionText);
       const hasLocationDataInDataset = dataset.rows[0] && (dataset.rows[0].province || dataset.rows[0].city || dataset.rows[0].delivery_address);
-      const requiresDifferentData = (requiresLocationData && !hasLocationDataInDataset) || requiresCancelledOrdersData;
+      const requiresDifferentData = (requiresLocationData && !hasLocationDataInDataset) || requiresCancelledOrdersData || requiresSpecificCustomerData;
 
       if (requiresDifferentData) {
         // Question needs different data - allow SQL generation
@@ -1187,17 +1299,19 @@ router.post('/analytics', async (req, res, next) => {
           dataTypeHint = 'The provided dataset excludes cancelled orders by default. Generate a SAFE SELECT query to fetch cancelled order data from the orders table. ';
         } else if (requiresLocationData) {
           dataTypeHint = 'Location-based questions require querying user_addresses table and/or orders.delivery_address JSONB field. ';
+        } else if (requiresSpecificCustomerData) {
+          dataTypeHint = 'The user is asking for specific customer/order data. You MUST immediately generate a SAFE SELECT query wrapped in <SQL>...</SQL> to fetch this data from the orders table. ';
         }
         
         datasetAnalysisConversation.push({
           role: 'system',
-          content: `The provided dataset does not contain the information needed to answer this question. ${dataTypeHint}Generate a SAFE SELECT query wrapped in <SQL>...</SQL> to fetch the required data. The dataset context is provided for reference, but you should query the database directly.`
+          content: `The provided dataset does not contain the information needed to answer this question. ${dataTypeHint}Generate a SAFE SELECT query wrapped in <SQL>...</SQL> to fetch the required data. The SQL will be executed automatically without requiring user confirmation. After providing the SQL, the system will execute it and provide you with the results for analysis. Do NOT ask for permission, do NOT say "I need to query", do NOT say "let me know if you want me to execute" - simply provide the SQL wrapped in <SQL>...</SQL> tags immediately.`
         });
       } else {
         // Dataset should have the needed data
         datasetAnalysisConversation.push({
           role: 'system',
-          content: 'The dataset above already contains all values needed. Do not request or generate additional SQL. Provide insights and recommended actions based solely on the provided rows.'
+          content: 'The dataset above should contain the needed data. However, if the user asks for specific information that is not in the provided dataset (e.g., detailed order information for a specific customer, customer addresses, orders by name, etc.), you MUST immediately generate SQL wrapped in <SQL>...</SQL> to fetch it. The SQL will be executed automatically - do NOT ask for permission, do NOT say "I need to query", do NOT say "let me know" - simply provide the SQL wrapped in <SQL>...</SQL> tags. If the dataset contains all needed information, provide insights based on the provided rows without generating SQL.'
         });
       }
 
@@ -1209,8 +1323,8 @@ router.post('/analytics', async (req, res, next) => {
       const cleanedReply = stripSqlBlocks(analysisResponse.reply);
       const proposedSql = extractSqlBlock(analysisResponse.reply);
 
-      // If Nexus proposed SQL because the dataset doesn't have the needed data, execute it
-      if (proposedSql && requiresDifferentData && isSelectStatement(proposedSql)) {
+      // If Nexus proposed SQL, execute it automatically without requiring permission
+      if (proposedSql && isSelectStatement(proposedSql)) {
         // Continue with SQL execution flow - set up variables for the SQL execution below
         let normalizedSql = proposedSql.replace(/;\s*$/g, '').trim();
         let sqlResult;
