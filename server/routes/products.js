@@ -552,6 +552,21 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       }
     }
 
+    // Branch validation for admins
+    let finalBranchId = branch_id ? parseInt(branch_id) : 1;
+    
+    // Admins can only create products for their assigned branch
+    if (req.user.role === 'admin' && req.user.branch_id) {
+      // If admin has a branch_id, they can only create products for that branch
+      if (branch_id && parseInt(branch_id) !== parseInt(req.user.branch_id)) {
+        return res.status(403).json({ 
+          error: 'You can only create products for your assigned branch' 
+        });
+      }
+      // Always use admin's branch_id (override any provided branch_id)
+      finalBranchId = parseInt(req.user.branch_id);
+    }
+
     // Build insert data object
     const insertData = {
       name,
@@ -563,7 +578,7 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       additional_images: additional_images || [],
       stock_quantity: stock_quantity ? parseInt(stock_quantity) : 0,
       sold_quantity: sold_quantity ? parseInt(sold_quantity) : 0,
-      branch_id: branch_id ? parseInt(branch_id) : 1
+      branch_id: finalBranchId
     };
     
     // Only add jersey_prices if it's not null (Supabase handles null differently)
@@ -776,6 +791,103 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
     console.log('✅ [Products API] Inserted product size_surcharges:', data?.size_surcharges);
     console.log('✅ [Products API] Inserted product fabric_surcharges:', data?.fabric_surcharges);
 
+    // If admin created the product, also create it for all other branches with 0 stock
+    if (req.user.role === 'admin' && req.user.branch_id && data) {
+      try {
+        // Fetch all branches
+        const { data: allBranches, error: branchesError } = await supabase
+          .from('branches')
+          .select('id')
+          .order('id');
+
+        if (branchesError) {
+          console.error('❌ [Products API] Error fetching branches for multi-branch creation:', branchesError);
+        } else if (allBranches && allBranches.length > 0) {
+          const adminBranchId = parseInt(req.user.branch_id);
+          const otherBranches = allBranches.filter(b => b.id !== adminBranchId);
+
+          console.log(`📦 [Products API] Creating product for ${otherBranches.length} other branches with 0 stock`);
+
+          // Create product for each other branch with 0 stock
+          for (const branch of otherBranches) {
+            const otherBranchInsertData = {
+              ...insertData,
+              branch_id: branch.id,
+              stock_quantity: 0, // Always 0 stock for other branches
+              sold_quantity: 0
+            };
+
+            // For trophy products with size_stocks, set all sizes to 0
+            // size_stocks structure can be:
+            // - { branchId: { size: quantity } } - nested per branch
+            // - { size: quantity } - flat structure (single branch)
+            if (insertData.size_stocks && typeof insertData.size_stocks === 'object') {
+              let zeroSizeStocks = {};
+              let sizesToZero = [];
+              
+              // Extract sizes from the admin's size_stocks
+              // Check if nested structure { branchId: { size: quantity } }
+              const branchKeys = Object.keys(insertData.size_stocks);
+              if (branchKeys.length > 0) {
+                const firstBranchKey = branchKeys[0];
+                const firstBranchData = insertData.size_stocks[firstBranchKey];
+                
+                if (firstBranchData && typeof firstBranchData === 'object') {
+                  // Nested structure - extract sizes from first branch (admin's branch)
+                  sizesToZero = Object.keys(firstBranchData);
+                } else {
+                  // Flat structure { size: quantity } - use all keys as sizes
+                  sizesToZero = branchKeys;
+                }
+              }
+              
+              // Create zero stocks for all sizes
+              sizesToZero.forEach(size => {
+                zeroSizeStocks[size] = 0;
+              });
+              
+              // Set size_stocks with nested structure for this branch
+              if (Object.keys(zeroSizeStocks).length > 0) {
+                otherBranchInsertData.size_stocks = { [branch.id.toString()]: zeroSizeStocks };
+              }
+            } else {
+              // Clear size_stocks for non-trophy products or if not set
+              if (otherBranchInsertData.size_stocks) {
+                delete otherBranchInsertData.size_stocks;
+              }
+            }
+
+            // Check if product already exists in this branch
+            const { data: existingProducts } = await supabase
+              .from('products')
+              .select('id')
+              .eq('name', insertData.name.trim())
+              .ilike('category', insertData.category.trim())
+              .eq('branch_id', branch.id)
+              .limit(1);
+
+            if (!existingProducts || existingProducts.length === 0) {
+              // Create product for this branch
+              const { error: branchInsertError } = await supabase
+                .from('products')
+                .insert(otherBranchInsertData);
+
+              if (branchInsertError) {
+                console.error(`❌ [Products API] Error creating product for branch ${branch.id}:`, branchInsertError);
+              } else {
+                console.log(`✅ [Products API] Created product for branch ${branch.id} with 0 stock`);
+              }
+            } else {
+              console.log(`⚠️ [Products API] Product already exists in branch ${branch.id}, skipping`);
+            }
+          }
+        }
+      } catch (multiBranchError) {
+        console.error('❌ [Products API] Error creating products for other branches:', multiBranchError);
+        // Don't fail the request if multi-branch creation fails - the main product was created successfully
+      }
+    }
+
     // Transform the data to match the expected format
     const [productWithBranch] = await attachBranchNames([data]);
     const transformedData = {
@@ -790,7 +902,7 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
 });
 
 // Update product
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, res) => {
   try {
     const { id } = req.params;
     const { 
@@ -806,6 +918,35 @@ router.put('/:id', async (req, res) => {
       branch_id,
       size_stocks
     } = req.body;
+
+    // Check if admin is trying to update a product from another branch
+    if (req.user.role === 'admin' && req.user.branch_id) {
+      // First, fetch the existing product to check its branch_id
+      const { data: existingProduct, error: fetchError } = await supabase
+        .from('products')
+        .select('id, branch_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError || !existingProduct) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
+      // Admin can only update products from their assigned branch
+      if (existingProduct.branch_id !== parseInt(req.user.branch_id)) {
+        return res.status(403).json({ 
+          error: 'You can only update products from your assigned branch' 
+        });
+      }
+
+      // Also check if they're trying to change the branch_id to a different branch
+      const newBranchId = branch_id ? parseInt(branch_id) : existingProduct.branch_id;
+      if (newBranchId !== parseInt(req.user.branch_id)) {
+        return res.status(403).json({ 
+          error: 'You cannot change the product branch or assign it to a different branch' 
+        });
+      }
+    }
 
     const soldQuantityValue = sold_quantity === '' || sold_quantity === null || sold_quantity === undefined ? 0 : parseInt(sold_quantity);
     
@@ -890,6 +1031,14 @@ router.put('/:id', async (req, res) => {
     }
 
     // Build update data object
+    let finalBranchId = branch_id ? parseInt(branch_id) : 1;
+    
+    // Enforce branch restriction for admins in update data
+    if (req.user.role === 'admin' && req.user.branch_id) {
+      // Admin can only update their own branch's products, so ensure branch_id matches
+      finalBranchId = parseInt(req.user.branch_id);
+    }
+    
     const updateData = {
       name,
       category,
@@ -902,7 +1051,7 @@ router.put('/:id', async (req, res) => {
         ? parseInt(stock_quantity) 
         : 0,  // Overwrite to 0 if not provided (don't append)
       sold_quantity: soldQuantityValue,
-      branch_id: branch_id ? parseInt(branch_id) : 1,
+      branch_id: finalBranchId,
       updated_at: new Date().toISOString()
     };
     

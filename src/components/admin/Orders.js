@@ -32,12 +32,14 @@ import {
   FaUsers,
   FaSearch,
   FaUpload,
-  FaDownload
+  FaDownload,
+  FaClipboardList
 } from 'react-icons/fa';
 import './Orders.css';
 import './FloatingButton.css';
 import './OrderNotification.css';
 import './artist-assignment-loading.css';
+import '../../pages/admin/Analytics.css';
 import orderService from '../../services/orderService';
 import { getApparelSizeVisibility } from '../../utils/orderSizing';
 import designUploadService from '../../services/designUploadService';
@@ -48,6 +50,8 @@ import { supabase } from '../../lib/supabase';
 const Orders = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = user?.user_metadata?.role === 'admin';
+  const isOwner = user?.user_metadata?.role === 'owner';
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -261,8 +265,13 @@ const Orders = () => {
         setLoading(true);
         
         console.log('📦 [Orders Component] Loading first page with limit:', initialLimit);
+        // For admins: don't pass pickupBranch filter - backend automatically filters by their branch
+        const filtersForRequest = isAdmin 
+          ? { ...debouncedFilters, pickupBranch: undefined }
+          : debouncedFilters;
+        
         const firstPageResponse = await orderService.getAllOrders({
-          ...debouncedFilters,
+          ...filtersForRequest,
           page: 1,
           limit: initialLimit,
           includeUserData: false, // Skip user data on initial load - fetch when order is expanded
@@ -314,7 +323,7 @@ const Orders = () => {
               for (let page = 2; page <= pagesToLoad + 1; page++) {
                 pagePromises.push(
                   orderService.getAllOrders({
-                    ...debouncedFilters,
+                    ...filtersForRequest,
                     page: page,
                     limit: initialLimit,
                     includeUserData: false, // Skip user data on background pages
@@ -1255,34 +1264,53 @@ const Orders = () => {
       {/* Header */}
       <div className="orders-header">
         <h1>Order Management</h1>
-        <div className="orders-stats">
-          <div className="stat-card">
-            <span className="stat-number">{stats.total ?? pagination.total ?? filteredOrders.length}</span>
-            <span className="stat-label">Total Orders</span>
+        <div className="analytics-summary">
+          <div className="summary-card">
+            <div className="summary-icon">
+              <FaClipboardList />
           </div>
-          <div className="stat-card">
-            <span className="stat-number">
-              {deliveredStatValue}
-            </span>
-            <span className="stat-label">
+            <div className="summary-content">
+              <h3>Total Orders</h3>
+              <p className="summary-value">{stats.total ?? pagination.total ?? filteredOrders.length}</p>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-icon completed">
+              <FaCheck />
+            </div>
+            <div className="summary-content">
+              <h3>
               Delivered
-              {!isMetricsFiltered && <span className="stat-subtext"> (All Branches)</span>}
+                {!isMetricsFiltered && isOwner && <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> (All Branches)</span>}
+                {!isMetricsFiltered && isAdmin && <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> (This Branch)</span>}
               {isMetricsFiltered && filters.pickupBranch && (
-                <span className="stat-subtext"> ({filters.pickupBranch})</span>
+                  <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> ({filters.pickupBranch})</span>
               )}
-            </span>
+              </h3>
+              <p className="summary-value">{deliveredStatValue}</p>
           </div>
-          <div className="stat-card">
-            <span className="stat-number">
+          </div>
+          <div className="summary-card">
+            <div className="summary-icon processing">
+              <FaClock />
+            </div>
+            <div className="summary-content">
+              <h3>In Progress</h3>
+              <p className="summary-value">
               {stats.inProgress ?? filteredOrders.filter(o => ['layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing'].includes(o.status)).length}
-            </span>
-            <span className="stat-label">In Progress</span>
+              </p>
           </div>
-          <div className="stat-card">
-            <span className="stat-number">
+          </div>
+          <div className="summary-card">
+            <div className="summary-icon pending">
+              <FaTimes />
+            </div>
+            <div className="summary-content">
+              <h3>Pending</h3>
+              <p className="summary-value">
               {stats.pending ?? filteredOrders.filter(o => o.status === 'pending').length}
-            </span>
-            <span className="stat-label">Pending</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -1312,6 +1340,7 @@ const Orders = () => {
           
           {showFilters && (
             <div className="filter-dropdown">
+            {!isAdmin && (
             <div className="filter-group">
               <label>Branch</label>
               <select
@@ -1324,6 +1353,7 @@ const Orders = () => {
                 ))}
               </select>
             </div>
+            )}
             
             <div className="filter-group">
               <label>Status</label>

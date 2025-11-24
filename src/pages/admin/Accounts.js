@@ -37,6 +37,11 @@ const Accounts = () => {
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false);
   const [pendingArtist, setPendingArtist] = useState(null);
   const [pendingStatus, setPendingStatus] = useState(null);
+  
+  // Delete confirmation modal states
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteAccount, setPendingDeleteAccount] = useState(null);
+  const [pendingDeleteType, setPendingDeleteType] = useState(null); // 'admin', 'customer', or 'artist'
 
   const showFeedback = (message, type = 'info', duration = 4000) => {
     setFeedbackNotice({ message, type });
@@ -218,10 +223,22 @@ const Accounts = () => {
     }
   }, [user, adminAccounts.length, customerAccounts.length, artistAccounts.length]);
 
-  // Delete admin account
-  const handleDeleteAdmin = async (adminId) => {
-    // Find the account being deleted for logging
+  // Delete admin account - opens confirmation modal
+  const handleDeleteAdmin = (adminId) => {
     const accountToDelete = adminAccounts.find(acc => acc.id === adminId);
+    setPendingDeleteAccount(accountToDelete);
+    setPendingDeleteType('admin');
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Confirm admin account deletion
+  const handleConfirmDeleteAdmin = async () => {
+    setIsDeleteConfirmOpen(false);
+    const accountToDelete = pendingDeleteAccount;
+    
+    if (!accountToDelete) return;
+    
+    const adminId = accountToDelete.id;
     console.log('🗑️ DELETING ADMIN ACCOUNT:', {
       id: adminId,
       name: accountToDelete?.name,
@@ -229,170 +246,212 @@ const Accounts = () => {
       role: accountToDelete?.role
     });
     
-    if (window.confirm('Are you sure you want to delete this admin account?')) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          showFeedback('No active session. Please log in again.', 'error');
-          return;
-        }
-
-        console.log('📤 Sending delete request for admin ID:', adminId);
-        const response = await fetch(`${getAPI_URL()}/api/delete/user/${adminId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('📥 Delete response status:', response.status);
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log('✅ Delete successful:', result);
-          showFeedback('Admin account deleted successfully!', 'success');
-          
-          console.log('🔄 BEFORE REFRESH - Current admin accounts:', adminAccounts.map(acc => ({ id: acc.id, email: acc.email, name: acc.name })));
-          
-          // Wait longer for Supabase to propagate changes
-          console.log('⏳ Waiting for Supabase propagation (5 seconds)...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          
-          // Simple refresh - just fetch again
-          await fetchAccounts();
-          
-          // Force React to re-render the table
-          setForceUpdate(prev => prev + 1);
-          
-          console.log('🔄 AFTER REFRESH - New admin accounts:', adminAccounts.map(acc => ({ id: acc.id, email: acc.email, name: acc.name })));
-        } else {
-          const errorData = await response.json();
-          console.log('❌ Delete failed:', errorData);
-          showFeedback(errorData.error || 'Failed to delete admin account', 'error');
-        }
-      } catch (error) {
-        console.error('❌ Error deleting admin:', error);
-        showFeedback(`Error deleting admin account: ${error.message}`, 'error');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showFeedback('No active session. Please log in again.', 'error');
+        return;
       }
+
+      console.log('📤 Sending delete request for admin ID:', adminId);
+      const response = await fetch(`${getAPI_URL()}/api/delete/user/${adminId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📥 Delete response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Delete successful:', result);
+        showFeedback('Admin account deleted successfully!', 'success');
+        
+        console.log('🔄 BEFORE REFRESH - Current admin accounts:', adminAccounts.map(acc => ({ id: acc.id, email: acc.email, name: acc.name })));
+        
+        // Wait longer for Supabase to propagate changes
+        console.log('⏳ Waiting for Supabase propagation (5 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Simple refresh - just fetch again
+        await fetchAccounts();
+        
+        // Force React to re-render the table
+        setForceUpdate(prev => prev + 1);
+        
+        console.log('🔄 AFTER REFRESH - New admin accounts:', adminAccounts.map(acc => ({ id: acc.id, email: acc.email, name: acc.name })));
+      } else {
+        const errorData = await response.json();
+        console.log('❌ Delete failed:', errorData);
+        showFeedback(errorData.error || 'Failed to delete admin account', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting admin:', error);
+      showFeedback(`Error deleting admin account: ${error.message}`, 'error');
+    } finally {
+      setPendingDeleteAccount(null);
+      setPendingDeleteType(null);
     }
   };
 
-  // Delete customer account
-  const handleDeleteCustomer = async (customerId) => {
-    // Find the account being deleted for logging
+  // Delete customer account - opens confirmation modal
+  const handleDeleteCustomer = (customerId) => {
     const accountToDelete = customerAccounts.find(acc => acc.id === customerId);
+    setPendingDeleteAccount(accountToDelete);
+    setPendingDeleteType('customer');
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Confirm customer account deletion
+  const handleConfirmDeleteCustomer = async () => {
+    setIsDeleteConfirmOpen(false);
+    const accountToDelete = pendingDeleteAccount;
+    
+    if (!accountToDelete) return;
+    
+    const customerId = accountToDelete.id;
     console.log('🗑️ DELETING CUSTOMER ACCOUNT:', {
       id: customerId,
-      name: accountToDelete?.name,
+      name: getCustomerDisplayName(accountToDelete),
       email: accountToDelete?.email
     });
     
-    if (window.confirm('Are you sure you want to delete this customer account?')) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          showFeedback('No active session. Please log in again.', 'error');
-          return;
-        }
-
-        console.log('📤 Sending delete request for customer ID:', customerId);
-        const response = await fetch(`${getAPI_URL()}/api/delete/user/${customerId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('📥 Delete response status:', response.status);
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log('✅ Delete successful:', result);
-          showFeedback('Customer account deleted successfully!', 'success');
-          
-          console.log('🔄 BEFORE REFRESH - Current customer accounts:', customerAccounts.map(acc => ({ id: acc.id, email: acc.email, name: acc.name })));
-          
-          // Wait longer for Supabase to propagate changes
-          console.log('⏳ Waiting for Supabase propagation (5 seconds)...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          
-          // Simple refresh - just fetch again
-          await fetchAccounts();
-          
-          // Force React to re-render the table
-          setForceUpdate(prev => prev + 1);
-          
-          console.log('🔄 AFTER REFRESH - New customer accounts:', customerAccounts.map(acc => ({ id: acc.id, email: acc.email, name: acc.name })));
-        } else {
-          const errorData = await response.json();
-          console.log('❌ Delete failed:', errorData);
-          showFeedback(errorData.error || 'Failed to delete customer account', 'error');
-        }
-      } catch (error) {
-        console.error('❌ Error deleting customer:', error);
-        showFeedback(`Error deleting customer account: ${error.message}`, 'error');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showFeedback('No active session. Please log in again.', 'error');
+        return;
       }
+
+      console.log('📤 Sending delete request for customer ID:', customerId);
+      const response = await fetch(`${getAPI_URL()}/api/delete/user/${customerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📥 Delete response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Delete successful:', result);
+        showFeedback('Customer account deleted successfully!', 'success');
+        
+        console.log('🔄 BEFORE REFRESH - Current customer accounts:', customerAccounts.map(acc => ({ id: acc.id, email: acc.email, name: getCustomerDisplayName(acc) })));
+        
+        // Wait longer for Supabase to propagate changes
+        console.log('⏳ Waiting for Supabase propagation (5 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Simple refresh - just fetch again
+        await fetchAccounts();
+        
+        // Force React to re-render the table
+        setForceUpdate(prev => prev + 1);
+        
+        console.log('🔄 AFTER REFRESH - New customer accounts:', customerAccounts.map(acc => ({ id: acc.id, email: acc.email, name: getCustomerDisplayName(acc) })));
+      } else {
+        const errorData = await response.json();
+        console.log('❌ Delete failed:', errorData);
+        showFeedback(errorData.error || 'Failed to delete customer account', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting customer:', error);
+      showFeedback(`Error deleting customer account: ${error.message}`, 'error');
+    } finally {
+      setPendingDeleteAccount(null);
+      setPendingDeleteType(null);
     }
   };
 
-  // Delete artist account
-  const handleDeleteArtist = async (artistId) => {
-    // Find the account being deleted for logging
+  // Delete artist account - opens confirmation modal (owner only)
+  const handleDeleteArtist = (artistId) => {
+    // Only owners can delete artists
+    if (!isOwner) {
+      showFeedback('Only owners can delete artist accounts.', 'error');
+      return;
+    }
+    
     const accountToDelete = artistAccounts.find(acc => acc.id === artistId);
+    setPendingDeleteAccount(accountToDelete);
+    setPendingDeleteType('artist');
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Confirm artist account deletion (owner only)
+  const handleConfirmDeleteArtist = async () => {
+    setIsDeleteConfirmOpen(false);
+    
+    // Extra safety check - only owners can delete artists
+    if (!isOwner) {
+      showFeedback('Only owners can delete artist accounts.', 'error');
+      setPendingDeleteAccount(null);
+      setPendingDeleteType(null);
+      return;
+    }
+    
+    const accountToDelete = pendingDeleteAccount;
+    
+    if (!accountToDelete) return;
+    
+    const artistId = accountToDelete.id;
     console.log('🗑️ DELETING ARTIST ACCOUNT:', {
       id: artistId,
       artist_name: accountToDelete?.artist_name,
       email: accountToDelete?.email
     });
     
-    if (window.confirm('Are you sure you want to delete this artist account?')) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          showFeedback('No active session. Please log in again.', 'error');
-          return;
-        }
-
-        console.log('📤 Sending delete request for artist ID:', artistId);
-        const response = await fetch(`${getAPI_URL()}/api/admin/artists/${artistId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('📥 Delete response status:', response.status);
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log('✅ Delete successful:', result);
-          showFeedback('Artist account deleted successfully!', 'success');
-          
-          console.log('🔄 BEFORE REFRESH - Current artist accounts:', artistAccounts.map(acc => ({ id: acc.id, email: acc.email, artist_name: acc.artist_name })));
-          
-          // Wait longer for Supabase to propagate changes
-          console.log('⏳ Waiting for Supabase propagation (5 seconds)...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          
-          // Simple refresh - just fetch again
-          await fetchAccounts();
-          
-          // Force React to re-render the table
-          setForceUpdate(prev => prev + 1);
-          
-          console.log('🔄 AFTER REFRESH - New artist accounts:', artistAccounts.map(acc => ({ id: acc.id, email: acc.email, artist_name: acc.artist_name })));
-        } else {
-          const errorData = await response.json();
-          console.log('❌ Delete failed:', errorData);
-          showFeedback(errorData.error || 'Failed to delete artist account', 'error');
-        }
-      } catch (error) {
-        console.error('❌ Error deleting artist:', error);
-        showFeedback(`Error deleting artist account: ${error.message}`, 'error');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showFeedback('No active session. Please log in again.', 'error');
+        return;
       }
+
+      console.log('📤 Sending delete request for artist ID:', artistId);
+      const response = await fetch(`${getAPI_URL()}/api/admin/artists/${artistId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📥 Delete response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Delete successful:', result);
+        showFeedback('Artist account deleted successfully!', 'success');
+        
+        console.log('🔄 BEFORE REFRESH - Current artist accounts:', artistAccounts.map(acc => ({ id: acc.id, email: acc.email, artist_name: acc.artist_name })));
+        
+        // Wait longer for Supabase to propagate changes
+        console.log('⏳ Waiting for Supabase propagation (5 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Simple refresh - just fetch again
+        await fetchAccounts();
+        
+        // Force React to re-render the table
+        setForceUpdate(prev => prev + 1);
+        
+        console.log('🔄 AFTER REFRESH - New artist accounts:', artistAccounts.map(acc => ({ id: acc.id, email: acc.email, artist_name: acc.artist_name })));
+      } else {
+        const errorData = await response.json();
+        console.log('❌ Delete failed:', errorData);
+        showFeedback(errorData.error || 'Failed to delete artist account', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting artist:', error);
+      showFeedback(`Error deleting artist account: ${error.message}`, 'error');
+    } finally {
+      setPendingDeleteAccount(null);
+      setPendingDeleteType(null);
     }
   };
 
@@ -533,6 +592,55 @@ const Accounts = () => {
       setPendingArtist(null);
       setPendingStatus(null);
     }
+  };
+
+  // Unified delete confirmation handler
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteType || !pendingDeleteAccount) return;
+    
+    if (pendingDeleteType === 'admin') {
+      handleConfirmDeleteAdmin();
+    } else if (pendingDeleteType === 'customer') {
+      handleConfirmDeleteCustomer();
+    } else if (pendingDeleteType === 'artist') {
+      handleConfirmDeleteArtist();
+    }
+  };
+
+  // Get delete confirmation message based on account type
+  const getDeleteMessage = () => {
+    if (!pendingDeleteAccount || !pendingDeleteType) return '';
+    
+    if (pendingDeleteType === 'admin') {
+      const name = pendingDeleteAccount.name || 'N/A';
+      const email = pendingDeleteAccount.email || 'N/A';
+      return `Are you sure you want to delete the admin account for ${name} (${email})? This action cannot be undone and will permanently remove all associated data.`;
+    } else if (pendingDeleteType === 'customer') {
+      const name = getCustomerDisplayName(pendingDeleteAccount);
+      const email = pendingDeleteAccount.email || 'N/A';
+      return `Are you sure you want to delete the customer account for ${name} (${email})? This action cannot be undone and will permanently remove all associated data including orders and addresses.`;
+    } else if (pendingDeleteType === 'artist') {
+      const name = pendingDeleteAccount.artist_name || pendingDeleteAccount.email || 'N/A';
+      const email = pendingDeleteAccount.email || 'N/A';
+      return `Are you sure you want to delete the artist account for ${name} (${email})? This action cannot be undone and will permanently remove all associated data including assigned tasks.`;
+    }
+    
+    return '';
+  };
+  
+  // Get delete confirmation title based on account type
+  const getDeleteTitle = () => {
+    if (!pendingDeleteType) return 'Delete Account';
+    
+    if (pendingDeleteType === 'admin') {
+      return 'Delete Admin Account';
+    } else if (pendingDeleteType === 'customer') {
+      return 'Delete Customer Account';
+    } else if (pendingDeleteType === 'artist') {
+      return 'Delete Artist Account';
+    }
+    
+    return 'Delete Account';
   };
 
   // Track if we've already fetched accounts to prevent refetching on focus
@@ -913,14 +1021,16 @@ const Accounts = () => {
                                 <FontAwesomeIcon icon={faEdit} />
                               </button>
                             )}
-                            <button
-                              onClick={() => handleDeleteArtist(artist.id)}
-                              className="delete-btn"
-                              title="Delete Artist Account"
-                              aria-label="Delete Artist Account"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
+                            {isOwner && (
+                              <button
+                                onClick={() => handleDeleteArtist(artist.id)}
+                                className="delete-btn"
+                                title="Delete Artist Account"
+                                aria-label="Delete Artist Account"
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -1084,6 +1194,22 @@ const Accounts = () => {
         confirmText={pendingStatus ? 'Activate' : 'Set Inactive'}
         cancelText="Cancel"
         type={pendingStatus ? 'success' : 'warning'}
+      />
+
+      {/* Delete Account Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => {
+          setIsDeleteConfirmOpen(false);
+          setPendingDeleteAccount(null);
+          setPendingDeleteType(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title={getDeleteTitle()}
+        message={getDeleteMessage()}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
       />
     </div>
     </div>

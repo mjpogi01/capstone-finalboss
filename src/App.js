@@ -190,14 +190,6 @@ const AppContent = () => {
           } 
         />
         <Route 
-          path="/admin/analytics"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <Analytics />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
           path="/owner/analytics" 
           element={
             <ProtectedRoute requireOwner={true}>

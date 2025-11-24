@@ -300,3 +300,4 @@ After setting up cron:
 For questions or issues, check the Supabase documentation on [pg_cron](https://supabase.com/docs/guides/database/extensions/pg_cron).
 
 
+

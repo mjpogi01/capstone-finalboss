@@ -203,3 +203,4 @@ GRANT EXECUTE ON FUNCTION get_analytics_dashboard TO authenticated;
 SELECT get_analytics_dashboard(NULL, NULL, NULL, NULL);
 
 
+

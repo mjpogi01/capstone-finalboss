@@ -217,14 +217,15 @@ function applyBranchFilter(queryBuilder, branchContext) {
   }
  
   // Use pickup_location for filtering since pickup_branch_id doesn't exist in the database
+  // Use exact match (eq) instead of pattern matching (ilike) to ensure strict filtering
   if (branchContext.branchName) {
-    const escapedName = branchContext.branchName.replace(/"/g, '\\"').replace(/%/g, '\\%').replace(/_/g, '\\_');
-    const pattern = `%${escapedName}%`;
-    return queryBuilder.ilike('pickup_location', pattern);
+    // First try exact match
+    return queryBuilder.eq('pickup_location', branchContext.branchName);
   }
  
-  // If we have branchId but no branchName, try to match by pickup_location
-  // This is a fallback - ideally we'd have a branch_id column
+  // If we have branchId but no branchName, we can't filter effectively
+  // This should not happen in normal operation, but log a warning
+  console.warn('⚠️ Branch context has branchId but no branchName - cannot apply filter');
   return queryBuilder;
 }
 
@@ -841,17 +842,22 @@ router.get('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res)
       };
 
       // Fetch stats in parallel (optimized - all queries run simultaneously)
+      // For admins: deliveredOverall should be filtered by branch (same as deliveredCount)
+      // For owners: deliveredOverall shows all branches (applyFilters = false)
+      const shouldFilterDeliveredOverall = branchContext !== null; // Only filter if admin has branch context
       const [statsTotal, deliveredCount, inProgressCount, pendingCount, deliveredOverallCount] = await Promise.all([
         getCountForStatuses(),
         getCountForStatuses(['picked_up_delivered']),
         getCountForStatuses(['layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing']),
         getCountForStatuses(['pending']),
-        getCountForStatuses(['picked_up_delivered'], false)
+        getCountForStatuses(['picked_up_delivered'], shouldFilterDeliveredOverall)
       ]);
 
       let deliveredTotalsByBranch = {};
       try {
-        const branchTotalsQuery = buildStatsQuery(false)
+        // For admins: only show their branch in deliveredTotalsByBranch
+        // For owners: show all branches
+        const branchTotalsQuery = buildStatsQuery(!shouldFilterDeliveredOverall)
           .eq('status', 'picked_up_delivered')
           .select('pickup_location, count:id', { head: false })
           .group('pickup_location');
@@ -1177,13 +1183,14 @@ router.patch('/:id/design-review', authenticateSupabaseToken, requireAdminOrOwne
     }
 
     // Load order by ID or order_number without causing UUID cast errors
+    // Need to fetch full order (including pickup_location) to check branch access
     let order = null;
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
     if (isUuid) {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, status, order_items, order_number')
+        .select('id, status, order_items, order_number, pickup_location, pickup_branch_id')
         .eq('id', id)
         .maybeSingle();
       if (error) {
@@ -1193,7 +1200,7 @@ router.patch('/:id/design-review', authenticateSupabaseToken, requireAdminOrOwne
     } else {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, status, order_items, order_number')
+        .select('id, status, order_items, order_number, pickup_location, pickup_branch_id')
         .eq('order_number', id)
         .maybeSingle();
       if (error) {
@@ -1205,6 +1212,13 @@ router.patch('/:id/design-review', authenticateSupabaseToken, requireAdminOrOwne
     if (!order) {
       console.warn('Design review: order not found for identifier:', id);
       return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Apply branch restrictions for admins
+    let branchContext = null;
+    if (req.user.role === 'admin') {
+      branchContext = await resolveAdminBranchContext(req.user);
+      ensureOrderAccess(order, branchContext);
     }
 
     // Find latest artist task for this order

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getAPI_URL } from '../../config/api';
+import { useAuth } from '../../contexts/AuthContext';
 import './AddProductModal.css';
 
 const isTrophyCategory = (category) => typeof category === 'string' && category.toLowerCase() === 'trophies';
@@ -376,6 +377,11 @@ const DEFAULT_SIZE_SURCHARGE_VALUES = {
 };
 
 const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
+  const { user } = useAuth();
+  const isOwner = user?.user_metadata?.role === 'owner';
+  const isAdmin = user?.user_metadata?.role === 'admin';
+  const adminBranchId = user?.user_metadata?.branch_id ? parseInt(user.user_metadata.branch_id) : null;
+  
   const [formData, setFormData] = useState({ ...DEFAULT_FORM_DATA });
   const [jerseyPrices, setJerseyPrices] = useState({ ...DEFAULT_JERSEY_PRICES });
   // Trophy prices: object mapping size to price, e.g., { "14\" (Large)": 1000, "10\" (Medium)": 750 }
@@ -554,8 +560,19 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         const response = await fetch(`${getAPI_URL()}/api/branches`);
         if (response.ok) {
           const branchesData = await response.json();
-          setBranches(branchesData);
-          const mainBranch = branchesData.find(branch => branch.is_main_manufacturing);
+          
+          // Filter branches: admins can only see their assigned branch
+          let filteredBranches = branchesData;
+          if (isAdmin && adminBranchId) {
+            filteredBranches = branchesData.filter(branch => branch.id === adminBranchId);
+            // Auto-select the admin's branch
+            if (filteredBranches.length > 0 && !isEditMode) {
+              setSelectedBranches([adminBranchId]);
+            }
+          }
+          
+          setBranches(filteredBranches);
+          const mainBranch = filteredBranches.find(branch => branch.is_main_manufacturing) || filteredBranches[0];
           if (mainBranch && !isEditMode && !defaultBranchSetRef.current) {
             // Only set default branch once for non-simple categories (apparel, etc.)
             // Check current category value without depending on it
@@ -582,11 +599,28 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
     };
 
     fetchBranches();
-  }, [isEditMode]); // Removed formData.category from dependencies to prevent infinite loop
+  }, [isEditMode, isAdmin, adminBranchId]); // Added dependencies for admin branch filtering
 
   // Fetch current stocks per branch when in edit mode
   useEffect(() => {
-    if (isEditMode && editingProduct && formData.name && formData.category) {
+    const productId = editingProduct?.id;
+    const currentName = formData.name;
+    const currentCategory = formData.category;
+    
+    // Only fetch if we haven't already fetched for this combination, or if the values actually changed
+    const hasChanged = 
+      lastFetchedRef.current.productId !== productId ||
+      lastFetchedRef.current.name !== currentName ||
+      lastFetchedRef.current.category !== currentCategory;
+    
+    if (isEditMode && editingProduct && currentName && currentCategory && hasChanged) {
+      // Update the ref before fetching to prevent re-fetching
+      lastFetchedRef.current = {
+        productId,
+        name: currentName,
+        category: currentCategory
+      };
+      
       const fetchBranchStocks = async () => {
         try {
           const branchProductsMap = {};
@@ -596,9 +630,9 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           if (allProductsResponse.ok) {
             const allProducts = await allProductsResponse.json();
             // For trophies, include products with size_stocks even if stock_quantity is null
-            const isTrophy = isTrophyCategory(formData.category);
+            const isTrophy = isTrophyCategory(currentCategory);
             const matchingProducts = allProducts.filter(p => {
-              const nameMatch = p.name === formData.name && p.category === formData.category;
+              const nameMatch = p.name === currentName && p.category === currentCategory;
               // Include ALL products with matching name and category, regardless of stock value
               // This ensures we get all branch products, including those with 0 or null stock
               return nameMatch;
@@ -701,22 +735,27 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
       fetchBranchStocks();
     } else if (!isEditMode) {
       // For new products, initialize empty branch stocks
+      lastFetchedRef.current = { productId: null, name: null, category: null };
       setBranchProducts({});
       setBranchStocks({});
       setSelectedBranches([]);
       setBranchStockQuantity('');
       setSizeStocks({});
     }
-  }, [isEditMode, editingProduct, formData.name, formData.category]);
+  }, [isEditMode, editingProduct?.id, formData.name, formData.category]);
 
   // Track if we've already initialized from editingProduct to prevent infinite loops
   const initializedProductIdRef = useRef(null);
+  // Track last fetched product name and category to prevent infinite loops
+  const lastFetchedRef = useRef({ productId: null, name: null, category: null });
   
   useEffect(() => {
     // Only initialize if we haven't already initialized this product, or if editingProduct changed
     const productId = editingProduct?.id;
     if (isEditMode && editingProduct && productId !== initializedProductIdRef.current) {
       initializedProductIdRef.current = productId;
+      // Reset the fetch ref when switching to a new product
+      lastFetchedRef.current = { productId: null, name: null, category: null };
       
       // Parse price - for jerseys, check jersey_prices column first, then fallback to price
       let priceValue = editingProduct.price || '';
@@ -3157,8 +3196,8 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                       Add trophy sizes and their corresponding prices and stock quantities. Each size must have a price (e.g., 13" = 500, 16" = 750, 19" = 1000).
                     </small>
                     
-                    {/* Branch Selection Checkboxes */}
-                    {branches.length > 0 && (
+                    {/* Branch Selection Checkboxes - Hidden for admins (they can only see their branch) */}
+                    {branches.length > 0 && !isAdmin && (
                       <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                           <label style={{ display: 'block', fontWeight: 600, color: '#111827', fontSize: '0.875rem', margin: 0 }}>

@@ -15,11 +15,46 @@
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
 	margin-bottom: 20px;
+	flex-shrink: 0;
+	min-width: 60px;
+	min-height: 60px;
+	box-sizing: border-box;
 }
 
 @keyframes spin {
 	0% { transform: rotate(0deg); }
 	100% { transform: rotate(360deg); }
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+	.loading-state {
+		padding: 60px 20px;
+	}
+	
+	.spinner {
+		width: 50px;
+		height: 50px;
+		min-width: 50px;
+		min-height: 50px;
+		border-width: 3px;
+		margin-bottom: 16px;
+	}
+}
+
+@media (max-width: 480px) {
+	.loading-state {
+		padding: 40px 16px;
+	}
+	
+	.spinner {
+		width: 45px;
+		height: 45px;
+		min-width: 45px;
+		min-height: 45px;
+		border-width: 3px;
+		margin-bottom: 12px;
+	}
 }
 
 .error-state {

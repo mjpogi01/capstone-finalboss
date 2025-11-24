@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import { Navigate } from 'react-router-dom';
 import * as echarts from 'echarts/core';
 import { LineChart, BarChart, PieChart } from 'echarts/charts';
 import {
@@ -121,6 +122,7 @@ const useViewportWidth = (defaultWidth = 1440) => {
 const Analytics = () => {
   const { user, isLoading: authLoading } = useAuth();
   const isOwner = user?.user_metadata?.role === 'owner';
+  const isAdmin = user?.user_metadata?.role === 'admin';
   
   const [analyticsData, setAnalyticsData] = useState({
     totalSales: [],
@@ -1179,8 +1181,8 @@ const Analytics = () => {
     const branchData = Array.isArray(analyticsData?.salesByBranch) ? analyticsData.salesByBranch : [];
     const values = branchData.map(item => Number(item.sales || 0));
     const hasData = branchData.length > 0 && values.some(value => value > 0);
-    // Use branch color palette for consistency
-    const colors = ['#1e3a8a', '#0d9488', '#166534', '#0284c7', '#0f766e', '#0369a1', '#7c3aed', '#64748b', '#15803d'];
+    // Use vibrant blue color for all bars
+    const barColor = '#3b82f6';
 
     const option = {
       animation: hasData,
@@ -1249,7 +1251,7 @@ const Analytics = () => {
           data: branchData.map((item, index) => ({
             value: Number(item.sales || 0),
             itemStyle: {
-              color: item.color || colors[index % colors.length],
+              color: barColor,
               borderRadius: [6, 6, 0, 0]
             }
           })),
@@ -1945,6 +1947,11 @@ const Analytics = () => {
     }
 
     return `Customer ${index + 1}`;
+  }
+
+  // Redirect admins away from analytics page
+  if (!authLoading && isAdmin) {
+    return <Navigate to="/admin" replace />;
   }
 
   return (

@@ -1820,10 +1820,10 @@ router.get('/dashboard', async (req, res) => {
         SELECT COUNT(DISTINCT user_id)::bigint AS total_customers
         FROM orders
         WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
-          AND created_at < $1
+          AND created_at <= $1
         ${uniqueCustomersFilter.clause}
       `,
-      [startOfCurrentMonthIso, ...uniqueCustomersFilter.params]
+      [nowIso, ...uniqueCustomersFilter.params]
     );
 
     const recentOrdersPromise = executeSql(

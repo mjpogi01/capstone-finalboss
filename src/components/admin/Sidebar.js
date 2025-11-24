@@ -23,15 +23,20 @@ const Sidebar = ({ activePage, setActivePage, isMobileMenuOpen, setIsMobileMenuO
   const userRole = user?.user_metadata?.role || 'customer';
   const basePath = userRole === 'owner' ? '/owner' : '/admin';
   const canAccessEmailMarketing = hasAdminAccess();
+  const isOwner = userRole === 'owner';
   
   const menuItems = [
     { id: 'home', label: 'Dashboard', icon: faHouse, path: basePath },
-    { id: 'analytics', label: 'Analytics', icon: faChartLine, path: `${basePath}/analytics` },
     { id: 'orders', label: 'Orders', icon: faClipboardList, path: `${basePath}/orders` },
     { id: 'support', label: 'Support Chats', icon: faComments, path: `${basePath}/support` },
     { id: 'inventory', label: 'Inventory', icon: faBoxesStacked, path: '/inventory' },
     { id: 'accounts', label: 'Accounts', icon: faUsers, path: `${basePath}/accounts` },
   ];
+
+  // Only owners can access Analytics
+  if (isOwner) {
+    menuItems.splice(1, 0, { id: 'analytics', label: 'Analytics', icon: faChartLine, path: `${basePath}/analytics` });
+  }
 
   // Add Email Marketing menu item if user has access
   if (canAccessEmailMarketing) {
