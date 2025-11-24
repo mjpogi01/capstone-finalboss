@@ -1145,10 +1145,12 @@ router.get('/dashboard-summary', async (req, res) => {
     }
 
     const now = new Date();
+    const nowIso = now.toISOString();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfCurrentMonthIso = startOfCurrentMonth.toISOString();
 
-    // Start parameter index at 2 because $1 is used for startOfCurrentMonthIso
+    // Use current time for queries to include all orders up to now (including current month)
+    // Start parameter index at 2 because $1 is used for nowIso
     const summaryFilter = buildBranchFilterClause(branchContext, 2);
     const customersFilter = buildBranchFilterClause(branchContext, 2);
 
@@ -1157,10 +1159,11 @@ router.get('/dashboard-summary', async (req, res) => {
       // Use Supabase client fallback - but only fetch what we need
       try {
         // Get all orders first to calculate revenue from completed orders
+        // Use current time to include all orders up to now (including current month)
         let ordersQuery = supabase
           .from('orders')
           .select('status, user_id, total_amount')
-          .lt('created_at', startOfCurrentMonthIso);
+          .lte('created_at', nowIso);
         
         if (branchContext?.branchId) {
           ordersQuery = ordersQuery.eq('pickup_branch_id', branchContext.branchId);
@@ -1232,10 +1235,10 @@ router.get('/dashboard-summary', async (req, res) => {
         SELECT COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
         FROM orders
         WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
-          AND created_at < $1
+          AND created_at <= $1
           ${revenueFilter.clause}
       `,
-      [startOfCurrentMonthIso, ...revenueFilter.params]
+      [nowIso, ...revenueFilter.params]
     );
     
     const summaryQueryPromise = executeSql(
@@ -1244,10 +1247,10 @@ router.get('/dashboard-summary', async (req, res) => {
           COUNT(*)::bigint AS total_orders
         FROM orders
         WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
-          AND created_at < $1
+          AND created_at <= $1
         ${summaryFilter.clause}
       `,
-      [startOfCurrentMonthIso, ...summaryFilter.params]
+      [nowIso, ...summaryFilter.params]
     );
 
     const uniqueCustomersPromise = executeSql(
@@ -1255,10 +1258,10 @@ router.get('/dashboard-summary', async (req, res) => {
         SELECT COUNT(DISTINCT user_id)::bigint AS total_customers
         FROM orders
         WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
-          AND created_at < $1
+          AND created_at <= $1
         ${customersFilter.clause}
       `,
-      [startOfCurrentMonthIso, ...customersFilter.params]
+      [nowIso, ...customersFilter.params]
     );
 
     let summaryResult, customersResult, revenueResult;
@@ -1381,6 +1384,7 @@ router.get('/dashboard', async (req, res) => {
     }
 
     const now = new Date();
+    const nowIso = now.toISOString();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfCurrentMonthIso = startOfCurrentMonth.toISOString();
 
@@ -1409,10 +1413,11 @@ router.get('/dashboard', async (req, res) => {
       
       // Use Supabase client to fetch orders and calculate analytics
       try {
+        // Use current time to include all orders up to now (including current month)
         let ordersQuery = supabase
           .from('orders')
           .select('id, order_number, total_amount, status, created_at, user_id, pickup_location, order_items')
-          .lt('created_at', startOfCurrentMonthIso);
+          .lte('created_at', nowIso);
         
         // Apply branch filter if needed
         if (branchContext?.branchName) {
@@ -1732,6 +1737,7 @@ router.get('/dashboard', async (req, res) => {
       statusFilter.params
     );
 
+    // Monthly sales query - exclude current month for historical chart data
     const monthlySalesPromise = executeSql(
       `
         SELECT date_trunc('month', created_at) AS month_start,
@@ -1744,6 +1750,19 @@ router.get('/dashboard', async (req, res) => {
         ORDER BY month_start;
       `,
       [startOfCurrentMonthIso, ...monthlyFilter.params]
+    );
+
+    // Total revenue query - include ALL completed orders up to now (including current month)
+    const totalRevenueFilter = buildBranchFilterClause(branchContext, 2);
+    const totalRevenuePromise = executeSql(
+      `
+        SELECT COALESCE(SUM(total_amount), 0)::numeric AS total_revenue
+        FROM orders
+        WHERE LOWER(status) IN ('picked_up_delivered', 'completed')
+          AND created_at <= $1
+          ${totalRevenueFilter.clause}
+      `,
+      [nowIso, ...totalRevenueFilter.params]
     );
 
     // Use branches.total_sales instead of calculating from orders
@@ -1840,7 +1859,7 @@ router.get('/dashboard', async (req, res) => {
       [startOfCurrentMonthIso, ...monthlyFilter.params]
     );
 
-    let statusResult, monthlyResult, salesByBranchResult, uniqueCustomersResult, recentOrdersResult, allOrdersForProductsResult;
+    let statusResult, monthlyResult, salesByBranchResult, uniqueCustomersResult, recentOrdersResult, allOrdersForProductsResult, totalRevenueResult;
     
     try {
       [
@@ -1849,14 +1868,16 @@ router.get('/dashboard', async (req, res) => {
         salesByBranchResult,
         uniqueCustomersResult,
         recentOrdersResult,
-        allOrdersForProductsResult
+        allOrdersForProductsResult,
+        totalRevenueResult
       ] = await Promise.all([
         statusQueryPromise,
         monthlySalesPromise,
         salesByBranchPromise,
         uniqueCustomersPromise,
         recentOrdersPromise,
-        allOrdersForProductsPromise
+        allOrdersForProductsPromise,
+        totalRevenuePromise
       ]);
     } catch (sqlError) {
       console.error('❌ SQL query execution error:', sqlError);
@@ -2157,7 +2178,9 @@ router.get('/dashboard', async (req, res) => {
     
     console.log('📊 Sales by branch array:', salesByBranchArray);
 
-    const totalRevenue = monthlySalesArray.reduce((sum, item) => sum + item.sales, 0);
+    // Calculate total revenue from all completed orders (including current month)
+    // This ensures new completed orders are immediately reflected
+    const totalRevenue = Number(totalRevenueResult?.rows?.[0]?.total_revenue) || 0;
     const totalCustomers = Number(uniqueCustomersResult.rows?.[0]?.total_customers) || 0;
 
     const recentOrdersRows = recentOrdersResult.rows || [];
