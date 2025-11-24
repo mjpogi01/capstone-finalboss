@@ -442,34 +442,8 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
   return (
     <section className="product-categories">
       {/* Category Nav */}
-      <div className="sportswear-category-nav-wrapper">
-        {/* Fixed Groups Pagination - Mobile only */}
-        {/* Group 1: First 3 dots (categories 0-2) */}
-        {/* Group 2: Second 3 dots (categories 3-5) */}
-        {/* Group 3: Last 1 dot (category 6) */}
-        <div className="sportswear-scroll-radio-indicators">
-          {categories.length > 0 && (() => {
-            // Determine how many dots to show based on current group
-            let dotsToShow = 3;
-            if (dotStartIndex === 6) {
-              // Last group: only 1 dot
-              dotsToShow = 1;
-            }
-            
-            return Array.from({ length: dotsToShow }, (_, idx) => {
-              const dotIndex = dotStartIndex + idx;
-              const isActive = activeDotIndex === idx;
-              return (
-                <span 
-                  key={`dot-${dotIndex}`}
-                  className={`sportswear-radio-dot ${isActive ? 'active' : ''}`}
-                />
-              );
-            });
-          })()}
-        </div>
-        
-        {/* LEFT ARROW */}
+      <div className="sportswear-category-nav-container">
+        {/* LEFT ARROW - Outside on larger screens */}
         <button
           className="sportswear-scroll-btn left"
           onClick={() => scrollNav("left")}
@@ -478,23 +452,51 @@ const ProductCategories = ({ activeCategory, setActiveCategory, searchQuery, set
           <FaChevronLeft />
         </button>
 
-        <div className="sportswear-category-nav" ref={navRef}>
-          {categories.map(category => (
-            <button
-              key={category.id}
-              className={`sportswear-category-btn ${activeCategory === category.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveCategory(category.id);
-                setShowAll(false);
-                // Dot indicator will update automatically via useEffect
-              }}
-            >
-              {category.name}
-            </button>
-          ))}
+        <div className="sportswear-category-nav-wrapper">
+          {/* Fixed Groups Pagination - Mobile only */}
+          {/* Group 1: First 3 dots (categories 0-2) */}
+          {/* Group 2: Second 3 dots (categories 3-5) */}
+          {/* Group 3: Last 1 dot (category 6) */}
+          <div className="sportswear-scroll-radio-indicators">
+            {categories.length > 0 && (() => {
+              // Determine how many dots to show based on current group
+              let dotsToShow = 3;
+              if (dotStartIndex === 6) {
+                // Last group: only 1 dot
+                dotsToShow = 1;
+              }
+              
+              return Array.from({ length: dotsToShow }, (_, idx) => {
+                const dotIndex = dotStartIndex + idx;
+                const isActive = activeDotIndex === idx;
+                return (
+                  <span 
+                    key={`dot-${dotIndex}`}
+                    className={`sportswear-radio-dot ${isActive ? 'active' : ''}`}
+                  />
+                );
+              });
+            })()}
+          </div>
+          
+          <div className="sportswear-category-nav" ref={navRef}>
+            {categories.map(category => (
+              <button
+                key={category.id}
+                className={`sportswear-category-btn ${activeCategory === category.id ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveCategory(category.id);
+                  setShowAll(false);
+                  // Dot indicator will update automatically via useEffect
+                }}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* RIGHT ARROW */}
+        {/* RIGHT ARROW - Outside on larger screens */}
         <button
           className="sportswear-scroll-btn right"
           onClick={() => scrollNav("right")}
