@@ -349,7 +349,12 @@ const DEFAULT_FORM_DATA = {
   description: '',
   stock_quantity: null,
   sold_quantity: 0,
-  branch_id: null
+  branch_id: null,
+  brand: '',
+  low_stock_threshold: 10,
+  sufficient_stock_threshold: 30,
+  high_stock_threshold: 50,
+  overstock_threshold: 100
 };
 
 const DEFAULT_JERSEY_PRICES = {
@@ -793,7 +798,12 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
         description: editingProduct.description || '',
         stock_quantity: editingProduct.stock_quantity || null,
         sold_quantity: editingProduct.sold_quantity || 0,
-        branch_id: editingProduct.branch_id ?? null
+        branch_id: editingProduct.branch_id ?? null,
+        brand: editingProduct.brand || '',
+        low_stock_threshold: editingProduct.low_stock_threshold || 10,
+        sufficient_stock_threshold: editingProduct.sufficient_stock_threshold || 30,
+        high_stock_threshold: editingProduct.high_stock_threshold || 50,
+        overstock_threshold: editingProduct.overstock_threshold || 100
       });
 
       // Parse trophy prices if it's a trophy product
@@ -1499,6 +1509,19 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
 
       if (name === 'category' && isTrophyCategory(value)) {
         updated.size = '';
+      }
+
+      // Auto-set brand to "Yohann's" for apparel products
+      if (name === 'category') {
+        if (isApparelCategory(value)) {
+          updated.brand = "Yohann's";
+        } else if (isBallCategory(value) || isTrophyCategory(value)) {
+          // Keep existing brand for balls/trophies if it's not "Yohann's"
+          // Clear only if it's currently set to "Yohann's" (for new products)
+          if (!prev.brand || prev.brand === "Yohann's") {
+            updated.brand = '';
+          }
+        }
       }
 
       return updated;
@@ -2336,6 +2359,10 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
           ? null 
           : (formData.stock_quantity ? parseInt(formData.stock_quantity) : null),
         sold_quantity: formData.sold_quantity ? parseInt(formData.sold_quantity) : 0,
+        low_stock_threshold: formData.low_stock_threshold ? parseInt(formData.low_stock_threshold) : 10,
+        sufficient_stock_threshold: formData.sufficient_stock_threshold ? parseInt(formData.sufficient_stock_threshold) : 30,
+        high_stock_threshold: formData.high_stock_threshold ? parseInt(formData.high_stock_threshold) : 50,
+        overstock_threshold: formData.overstock_threshold ? parseInt(formData.overstock_threshold) : 100,
         main_image: mainImage,
         additional_images: additionalImages
       };
@@ -2966,6 +2993,21 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                     </div>
                   )}
                 </div>
+
+                {/* Brand Field - Show for balls and trophies only */}
+                {(ballCategorySelected || trophyCategorySelected) && (
+                  <div className="apm-form-group">
+                    <label>Brand</label>
+                    <input
+                      type="text"
+                      name="brand"
+                      value={formData.brand || ''}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Molten, Mikasa, Spalding"
+                    />
+                    <small className="apm-form-help">Enter the brand name for this product</small>
+                  </div>
+                )}
               </div>
 
             {/* Only show apparel-specific sections if not ball/medal */}
@@ -4224,6 +4266,88 @@ const AddProductModal = ({ onClose, onAdd, editingProduct, isEditMode }) => {
                   <small className="apm-form-help">Number of items already sold</small>
                 </div>
               </div>
+
+              {/* Reorder Level Thresholds - Only show for on-hand products (non-trophy products) */}
+              {!trophyCategorySelected && (
+                <div className="apm-section-block">
+                  <div className="apm-form-group">
+                    <label>Reorder Level Thresholds</label>
+                    <small className="apm-form-help" style={{ display: 'block', marginBottom: '1rem', color: '#6b7280' }}>
+                      Set stock thresholds for inventory management. These values are used in the Item Stocks graph.
+                    </small>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                          Low Stocks Threshold
+                        </label>
+                        <input
+                          type="number"
+                          name="low_stock_threshold"
+                          value={formData.low_stock_threshold}
+                          onChange={handleInputChange}
+                          placeholder="10"
+                          min="0"
+                          style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }}
+                        />
+                        <small style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                          Stock below this is considered low
+                        </small>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                          Sufficient Stocks Threshold
+                        </label>
+                        <input
+                          type="number"
+                          name="sufficient_stock_threshold"
+                          value={formData.sufficient_stock_threshold}
+                          onChange={handleInputChange}
+                          placeholder="30"
+                          min="0"
+                          style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }}
+                        />
+                        <small style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                          Stock between low and this is sufficient
+                        </small>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                          High Stock Threshold
+                        </label>
+                        <input
+                          type="number"
+                          name="high_stock_threshold"
+                          value={formData.high_stock_threshold}
+                          onChange={handleInputChange}
+                          placeholder="50"
+                          min="0"
+                          style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }}
+                        />
+                        <small style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                          Stock between sufficient and this is high
+                        </small>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                          Overstock Threshold
+                        </label>
+                        <input
+                          type="number"
+                          name="overstock_threshold"
+                          value={formData.overstock_threshold}
+                          onChange={handleInputChange}
+                          placeholder="100"
+                          min="0"
+                          style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }}
+                        />
+                        <small style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                          Stock above this is considered overstock
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
 
               <div className="apm-section-block">

@@ -70,21 +70,28 @@
 
 /* Base Styles */
 .orders-container {
-  padding: var(--spacing-xl);
+  padding: 1.5rem;
   background: var(--bg-secondary);
   min-height: calc(100vh - 70px); /* Account for navbar height */
   font-family: var(--font-family);
   color: var(--text-primary);
-  max-width: 1600px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   width: 100%;
   transition: max-width 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* Reduce padding on admin-main-content when it contains orders-container */
+.admin-main-content:has(.orders-container) {
+  padding: 0 1rem 1rem 1rem;
+  padding-top: 0;
 }
 
 /* Responsive when sidebar is collapsed */
 .admin-dashboard.sidebar-collapsed .orders-container,
 body.sidebar-collapsed .orders-container {
-  max-width: calc(100vw - 100px);
+  max-width: 100%;
 }
 
 /* Mobile: collapse state should not affect layout */
@@ -147,11 +154,26 @@ body.sidebar-collapsed .orders-container {
   margin-bottom: var(--spacing-xl);
 }
 
+.orders-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
 .orders-header h1 {
   color: var(--text-primary);
-  margin-bottom: var(--spacing-lg);
+  margin: 0;
   font-size: 2rem;
   font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
 }
 
  .orders-stats {
@@ -255,31 +277,28 @@ body.sidebar-collapsed .orders-container {
    Minimal, Professional, Responsive
    ============================================ */
 
-.compact-filters {
+.orders-header-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  padding: 1.25rem 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex: 1;
+  min-width: 0;
+  max-width: 600px;
+  margin-left: auto;
 }
 
-.compact-filters:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
-  border-color: rgba(203, 213, 225, 0.8);
-}
-
-/* Search Bar */
 .search-bar {
   flex: 1;
-  max-width: 24rem;
+  min-width: 0;
   position: relative;
 }
+
+.filter-toggle-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Search Bar - styles are now in .orders-header-controls .search-bar */
 
 .search-bar .search-icon {
   position: absolute;
@@ -290,7 +309,28 @@ body.sidebar-collapsed .orders-container {
   color: #94a3b8;
   pointer-events: none;
   z-index: 1;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.search-bar .search-spinner {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
 
 .search-input:focus ~ .search-icon,
@@ -309,6 +349,11 @@ body.sidebar-collapsed .orders-container {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 400;
   letter-spacing: 0.01em;
+}
+
+.search-input.searching {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .search-input:hover {
@@ -2289,6 +2334,17 @@ body.sidebar-collapsed .orders-container {
      min-height: calc(100vh - 56px); /* Account for navbar height at 768px */
    }
    
+   .orders-header-container {
+     flex-direction: column;
+     align-items: stretch;
+     gap: 1rem;
+     padding: 1rem;
+   }
+   
+   .orders-header h1 {
+     font-size: 1.5rem;
+   }
+   
    .stat-card {
      padding: 1.25rem;
    }
@@ -2297,14 +2353,20 @@ body.sidebar-collapsed .orders-container {
      font-size: 2rem;
    }
   
-  .compact-filters {
+  .orders-header-controls {
     flex-direction: column;
     align-items: stretch;
     gap: var(--spacing-md);
+    max-width: 100%;
+    margin-left: 0;
   }
   
   .search-bar {
     max-width: none;
+  }
+  
+  .filter-toggle-container {
+    width: 100%;
   }
   
   .filter-dropdown {
@@ -2514,6 +2576,18 @@ body.sidebar-collapsed .orders-container {
   overflow: hidden;
   border: 1px solid #e5e7eb;
   margin-bottom: 2rem;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Table Header */

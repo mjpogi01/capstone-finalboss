@@ -31,8 +31,8 @@ const CITY_PROVINCE_OVERRIDES = {
 
 const SALES_FORECAST_RANGE_LABELS = {
   nextMonth: 'Next Month',
-  restOfYear: 'Rest of Year',
-  nextYear: 'Next 12 Months'
+  nextQuarter: 'Next Quarter',
+  nextYear: 'Next Year'
 };
 
 let barangayGeoCache = null;
@@ -839,6 +839,16 @@ function generateForecastMonths(rangeKey, startDate) {
     return months;
   }
 
+  if (rangeKey === 'nextQuarter') {
+    // Next quarter: 3 months starting from next month
+    let pointer = addMonthsUTC(safeStart, 1);
+    for (let i = 0; i < 3; i += 1) {
+      months.push(pointer);
+      pointer = addMonthsUTC(pointer, 1);
+    }
+    return months;
+  }
+
   if (rangeKey === 'restOfYear') {
     let pointer = safeStart;
     const currentYear = safeStart.getUTCFullYear();
@@ -852,6 +862,7 @@ function generateForecastMonths(rangeKey, startDate) {
     return months;
   }
 
+  // Default: next 12 months (nextYear)
   let pointer = safeStart;
   for (let i = 0; i < 12; i += 1) {
     months.push(pointer);
@@ -1847,6 +1858,11 @@ router.get('/dashboard', async (req, res) => {
     );
 
     // Query for ALL orders (not just recent) to calculate top products from historical data
+    // Limit to last 6 months to improve performance
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const sixMonthsAgoIso = sixMonthsAgo.toISOString();
+    
     const allOrdersForProductsPromise = executeSql(
       `
         SELECT id,
@@ -1854,23 +1870,19 @@ router.get('/dashboard', async (req, res) => {
         FROM orders
         WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
           AND created_at < $1
+          AND created_at >= $2
         ${monthlyFilter.clause}
+        LIMIT 10000
       `,
-      [startOfCurrentMonthIso, ...monthlyFilter.params]
+      [startOfCurrentMonthIso, sixMonthsAgoIso, ...monthlyFilter.params]
     );
 
     let statusResult, monthlyResult, salesByBranchResult, uniqueCustomersResult, recentOrdersResult, allOrdersForProductsResult, totalRevenueResult;
     
     try {
-      [
-        statusResult,
-        monthlyResult,
-        salesByBranchResult,
-        uniqueCustomersResult,
-        recentOrdersResult,
-        allOrdersForProductsResult,
-        totalRevenueResult
-      ] = await Promise.all([
+      // Use Promise.allSettled to handle individual query failures gracefully
+      // This prevents one slow query from blocking all others
+      const results = await Promise.allSettled([
         statusQueryPromise,
         monthlySalesPromise,
         salesByBranchPromise,
@@ -1879,6 +1891,23 @@ router.get('/dashboard', async (req, res) => {
         allOrdersForProductsPromise,
         totalRevenuePromise
       ]);
+      
+      // Extract results, using empty arrays/objects for failed queries
+      statusResult = results[0].status === 'fulfilled' ? results[0].value : { rows: [] };
+      monthlyResult = results[1].status === 'fulfilled' ? results[1].value : { rows: [] };
+      salesByBranchResult = results[2].status === 'fulfilled' ? results[2].value : { rows: [] };
+      uniqueCustomersResult = results[3].status === 'fulfilled' ? results[3].value : { rows: [] };
+      recentOrdersResult = results[4].status === 'fulfilled' ? results[4].value : { rows: [] };
+      allOrdersForProductsResult = results[5].status === 'fulfilled' ? results[5].value : { rows: [] };
+      totalRevenueResult = results[6].status === 'fulfilled' ? results[6].value : { rows: [] };
+      
+      // Log any failed queries (but don't block the response)
+      const queryNames = ['status', 'monthly', 'salesByBranch', 'uniqueCustomers', 'recentOrders', 'allOrdersForProducts', 'totalRevenue'];
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.warn(`⚠️ Query ${queryNames[index]} failed:`, result.reason?.message || 'Unknown error');
+        }
+      });
     } catch (sqlError) {
       console.error('❌ SQL query execution error:', sqlError);
       console.error('❌ SQL error details:', {
@@ -2390,12 +2419,46 @@ router.get('/sales-trends', async (req, res) => {
   console.log('📊 [Sales Trends] Request received');
   
   try {
-    const { period = '30', branch_id } = req.query;
-    const daysAgo = parseInt(period);
+    const { period = 'daily', branch_id } = req.query;
     
-    const startDate = new Date();
+    // Calculate start date based on period type
+    // Data starts from 2022, so ensure we don't include 2021
+    const dataStartDate = new Date('2022-01-01T00:00:00.000Z');
+    let startDate = new Date();
+    let dateGrouping, dateFormat;
+    
+    if (period === 'daily') {
+      startDate.setDate(startDate.getDate() - 30); // Last 30 days
+      dateGrouping = "DATE(created_at)";
+      dateFormat = "DATE(created_at)::text";
+    } else if (period === 'weekly') {
+      startDate.setDate(startDate.getDate() - 84); // Last 12 weeks
+      dateGrouping = "DATE_TRUNC('week', created_at)";
+      dateFormat = "DATE_TRUNC('week', created_at)::text";
+    } else if (period === 'monthly') {
+      startDate.setMonth(startDate.getMonth() - 12); // Last 12 months
+      dateGrouping = "DATE_TRUNC('month', created_at)";
+      dateFormat = "DATE_TRUNC('month', created_at)::text";
+    } else if (period === 'yearly') {
+      startDate.setFullYear(startDate.getFullYear() - 5); // Last 5 years
+      dateGrouping = "DATE_TRUNC('year', created_at)";
+      dateFormat = "DATE_TRUNC('year', created_at)::text";
+    } else {
+      // Fallback: treat as number of days (backward compatibility)
+      const daysAgo = parseInt(period);
+      if (!Number.isNaN(daysAgo)) {
     startDate.setDate(startDate.getDate() - daysAgo);
-    const startDateIso = startDate.toISOString();
+        dateGrouping = "DATE(created_at)";
+        dateFormat = "DATE(created_at)::text";
+      } else {
+        startDate.setDate(startDate.getDate() - 30);
+        dateGrouping = "DATE(created_at)";
+        dateFormat = "DATE(created_at)::text";
+      }
+    }
+    
+    // Ensure start date is not before 2022-01-01
+    const startDateIso = startDate < dataStartDate ? dataStartDate.toISOString() : startDate.toISOString();
 
     console.log('📊 [Sales Trends] Resolving branch context...');
     // Resolve branch context with timeout protection
@@ -2443,15 +2506,16 @@ router.get('/sales-trends', async (req, res) => {
         // Sales: only from completed orders, Orders: count all non-cancelled orders
         const sqlQuery = `
           SELECT 
-            DATE(created_at)::text AS date,
+            ${dateFormat} AS date,
             COALESCE(SUM(CASE WHEN LOWER(status) IN ('picked_up_delivered', 'completed') THEN total_amount ELSE 0 END), 0)::numeric AS sales,
             COUNT(*)::bigint AS orders
           FROM orders
           WHERE LOWER(status) NOT IN ('cancelled', 'canceled')
             AND created_at >= $1
+            AND created_at >= '2022-01-01T00:00:00.000Z'
             ${branchFilter.clause}
-          GROUP BY DATE(created_at)
-          ORDER BY DATE(created_at) ASC
+          GROUP BY ${dateGrouping}
+          ORDER BY ${dateGrouping} ASC
         `;
 
         const params = [startDateIso, ...branchFilter.params];
@@ -2483,11 +2547,15 @@ router.get('/sales-trends', async (req, res) => {
     // Fallback to Supabase client
     console.log('📊 [Sales Trends] Using Supabase fallback...');
     try {
+      // Ensure we only get data from 2022 onwards
+      const effectiveStartDate = startDate < dataStartDate ? dataStartDate : startDate;
+      
       const { data: orders, error } = await supabase
         .from('orders')
         .select('*')
         .neq('status', 'cancelled')
-        .gte('created_at', startDateIso);
+        .gte('created_at', effectiveStartDate.toISOString())
+        .gte('created_at', '2022-01-01T00:00:00.000Z');
    
       if (error) throw error;
       
@@ -2496,12 +2564,34 @@ router.get('/sales-trends', async (req, res) => {
       const scopedOrders = filterOrdersByBranch(orders, branchContext);
       console.log('📊 [Sales Trends] Filtered to', scopedOrders?.length || 0, 'orders after branch filter');
       
-      // Group by day - sales from completed orders only, orders count all non-cancelled
-      const dailyData = {};
+      // Group by period - sales from completed orders only, orders count all non-cancelled
+      const periodData = {};
       scopedOrders.forEach(order => {
-        const date = new Date(order.created_at).toISOString().split('T')[0];
-        if (!dailyData[date]) {
-          dailyData[date] = {
+        const orderDate = new Date(order.created_at);
+        let dateKey;
+        
+        if (period === 'daily') {
+          dateKey = orderDate.toISOString().split('T')[0];
+        } else if (period === 'weekly') {
+          // Get start of week (Monday) - PostgreSQL DATE_TRUNC('week') uses ISO week (Monday as start)
+          const weekStart = new Date(orderDate);
+          const day = weekStart.getDay();
+          // Convert Sunday (0) to 7, then calculate days to subtract
+          const daysToMonday = day === 0 ? 6 : day - 1;
+          weekStart.setDate(weekStart.getDate() - daysToMonday);
+          weekStart.setHours(0, 0, 0, 0);
+          dateKey = weekStart.toISOString();
+        } else if (period === 'monthly') {
+          dateKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-01`;
+        } else if (period === 'yearly') {
+          dateKey = `${orderDate.getFullYear()}-01-01`;
+        } else {
+          // Fallback to daily
+          dateKey = orderDate.toISOString().split('T')[0];
+        }
+        
+        if (!periodData[dateKey]) {
+          periodData[dateKey] = {
             sales: 0,
             orders: 0
           };
@@ -2509,13 +2599,13 @@ router.get('/sales-trends', async (req, res) => {
         // Only count sales from completed orders
         const status = (order.status || '').toLowerCase();
         if (status === 'picked_up_delivered' || status === 'completed') {
-          dailyData[date].sales += parseFloat(order.total_amount || 0);
+          periodData[dateKey].sales += parseFloat(order.total_amount || 0);
         }
         // Count all non-cancelled orders
-        dailyData[date].orders += 1;
+        periodData[dateKey].orders += 1;
       });
 
-      const trends = Object.entries(dailyData)
+      const trends = Object.entries(periodData)
         .map(([date, data]) => ({
           date,
           sales: data.sales,
@@ -2839,7 +2929,7 @@ router.get('/customer-analytics', async (req, res) => {
 async function computeSalesForecast({ requestedRange, branchContext }) {
   try {
     const allowedRanges = Object.keys(SALES_FORECAST_RANGE_LABELS);
-    const range = allowedRanges.includes(requestedRange) ? requestedRange : 'restOfYear';
+    const range = allowedRanges.includes(requestedRange) ? requestedRange : 'nextQuarter';
     const rangeLabel = SALES_FORECAST_RANGE_LABELS[range];
 
     const monthlyFilter = buildBranchFilterClause(branchContext, 2);

@@ -3,6 +3,73 @@
    Uses Analytics.css for card layout
    =========================================== */
 
+/* Period Filter Buttons */
+.earnings-chart-period-filters {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-right: 0.75rem;
+}
+
+.period-filter-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.period-filter-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.period-filter-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.period-filter-btn.active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .earnings-chart-period-filters {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-right: 0.5rem;
+  }
+  
+  .period-filter-btn {
+    padding: 0.4375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .earnings-chart-period-filters {
+    width: 100%;
+    margin-bottom: 0.75rem;
+    margin-right: 0;
+  }
+  
+  .period-filter-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+}
+
 /* Year select dropdown styled to match time-range-btn */
 .time-range-btn.year-select {
   appearance: none;
@@ -26,8 +93,18 @@
   flex: 1;
   display: flex;
   position: relative;
-  min-height: 400px;
+  min-height: 300px;
   width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Ensure chart container is responsive */
+.chart-container > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 300px;
 }
 
 .chart-loading,
@@ -230,7 +307,8 @@
   }
   
   .chart-container {
-    min-height: 200px;
+    min-height: 250px;
+    max-height: calc(100vh - 500px);
   }
   
   .year-select,

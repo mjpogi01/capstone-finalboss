@@ -33,7 +33,9 @@ import {
   faClipboardList,
   faEnvelope,
   faChevronUp,
-  faChevronDown
+  faChevronDown,
+  faBell,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import { authFetch } from '../../services/apiClient';
 import { useAuth } from '../../contexts/AuthContext';
@@ -86,6 +88,14 @@ echarts.use([
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('all');
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  
+  // Notification bell
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+  const [lowStockNotifications, setLowStockNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationActiveTab, setNotificationActiveTab] = useState('orders'); // 'orders' or 'stocks'
+  const notificationRef = useRef(null);
   
   // Chart tabs
   const [activeChartTab, setActiveChartTab] = useState('sales');
@@ -474,21 +484,23 @@ echarts.use([
 
   const INITIAL_STOCK_DISPLAY = 5;
 
-  // Filter low stock items to only show on-hand products (balls, trophies)
-  // These are the only products that can be prepared and bought on-branch
+  // Get available categories from stock items
+  const stockItemCategories = useMemo(() => {
+    const itemsWithStock = stockItems.filter(item => 
+      item.stockQuantity !== null && item.stockQuantity !== undefined
+    );
+    const categoryList = itemsWithStock
+      .map(item => item.category)
+      .filter(cat => cat && cat.trim() !== '');
+    return [...new Set(categoryList)].sort();
+  }, [stockItems]);
+
+  // Filter stock items - show all items with stock quantity
   const lowStockItems = useMemo(() => {
-    const onHandCategories = ['balls', 'trophies'];
-    
     return stockItems
       .filter(item => {
-        // Only include products that:
-        // 1. Have a stock_quantity field (on-hand items)
-        // 2. Belong to on-hand categories (balls, trophies)
-        const hasStockQuantity = item.stockQuantity !== null && item.stockQuantity !== undefined;
-        const category = item.category?.toLowerCase();
-        const isOnHandCategory = onHandCategories.includes(category);
-        
-        return hasStockQuantity && isOnHandCategory;
+        // Include all items - stockQuantity is always set (null/undefined defaulted to 0)
+        return true;
       })
       .filter(item => {
         // Apply category filter
@@ -498,9 +510,18 @@ echarts.use([
         const category = item.category?.toLowerCase();
         return category === lowStockCategoryFilter.toLowerCase();
       })
-      .filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock')
-      .sort((a, b) => a.stockQuantity - b.stockQuantity)
-      .slice(0, 10);
+      .sort((a, b) => {
+        // First, prioritize 0 stock items
+        if (a.stockQuantity === 0 && b.stockQuantity !== 0) return -1;
+        if (a.stockQuantity !== 0 && b.stockQuantity === 0) return 1;
+        
+        // Then sort by stock quantity (lowest first) then by name
+        if (a.stockQuantity !== b.stockQuantity) {
+          return a.stockQuantity - b.stockQuantity;
+        }
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    // No limit - show all items, especially all 0-stock items
   }, [stockItems, lowStockCategoryFilter]);
 
   // Prepare ECharts data for low stock items
@@ -509,11 +530,15 @@ echarts.use([
       return null;
     }
     
-    // Use isAllValuesVisible state
-    const showValues = isAllValuesVisible;
+    // Always show values (toggle removed)
+    const showValues = true;
 
-    // Limit to top 10 items for chart
-    const chartItems = lowStockItems.slice(0, 10);
+    // Show all 0-stock items first, then limit the rest for chart performance
+    const zeroStockItems = lowStockItems.filter(item => item.stockQuantity === 0);
+    const otherItems = lowStockItems.filter(item => item.stockQuantity > 0);
+    // Show all 0-stock items + up to 20 other items (or more if needed to show all 0-stock)
+    const maxOtherItems = Math.max(20, 50 - zeroStockItems.length); // Ensure we show at least 50 items total if possible
+    const chartItems = [...zeroStockItems, ...otherItems.slice(0, maxOtherItems)];
     
     // Ensure all arrays have the same length
     if (chartItems.length === 0) {
@@ -524,7 +549,12 @@ echarts.use([
       const name = item?.name || 'Unknown';
       return name.length > 20 ? name.substring(0, 20) + '...' : name;
     });
-    const stockQuantities = chartItems.map(item => Number(item?.stockQuantity) || 0);
+    // Preserve 0 values - explicitly handle 0 stock items
+    const stockQuantities = chartItems.map(item => {
+      const qty = item?.stockQuantity;
+      // Explicitly check for null/undefined, preserve 0 values
+      return qty !== null && qty !== undefined ? Number(qty) : 0;
+    });
     const colors = chartItems.map(item => getStockStatusColor(item?.status || 'In Stock'));
     
     // Validate arrays have same length
@@ -696,6 +726,198 @@ echarts.use([
     { value: 'trophies', label: 'Trophies' }
   ];
 
+  // Helper functions for notifications (must be defined before fetchNotifications)
+  const getCustomerNameForNotification = (order) => {
+    // Priority order for customer name resolution
+    const formattedOrder = order.orderItems ? order : orderService.formatOrderForDisplay(order);
+    
+    // Try multiple possible field names for customer name
+    const customerName = formattedOrder.customerName || 
+                        formattedOrder.customer_name || 
+                        formattedOrder.customer_full_name ||
+                        formattedOrder.customerFullName ||
+                        formattedOrder.display_name ||
+                        formattedOrder.customer?.full_name ||
+                        formattedOrder.customer?.name ||
+                        order.customerName ||
+                        order.customer_name ||
+                        order.customer_full_name ||
+                        order.customerFullName ||
+                        order.display_name ||
+                        order.customer?.full_name ||
+                        order.customer?.name ||
+                        null;
+    
+    // If we have a name, return it
+    if (customerName && customerName.trim() !== '') {
+      return customerName.trim();
+    }
+    
+    // Fallback to email if name is not available
+    const customerEmail = formattedOrder.customer_email || 
+                         formattedOrder.customerEmail ||
+                         order.customer_email ||
+                         order.customerEmail ||
+                         null;
+    
+    if (customerEmail) {
+      // Extract name from email if possible (e.g., "john.doe@email.com" -> "John Doe")
+      const emailParts = customerEmail.split('@')[0];
+      if (emailParts.includes('.') || emailParts.includes('_')) {
+        const separator = emailParts.includes('.') ? '.' : '_';
+        const parts = emailParts.split(separator);
+        if (parts.length >= 2) {
+          return parts.map(part => 
+            part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+          ).join(' ');
+        }
+      }
+      return customerEmail;
+    }
+    
+    return 'customer';
+  };
+
+  const getProductNameForNotification = (order) => {
+    const orderItems = order.order_items || order.orderItems || order.items || [];
+    
+    if (orderItems && orderItems.length > 0) {
+      const productNames = orderItems
+        .map(item => {
+          const productName = item.name || 
+                            item.product_name || 
+                            item.productName || 
+                            item.product?.name ||
+                            null;
+          const quantity = parseInt(item.quantity) || 1;
+          
+          return {
+            name: productName,
+            quantity: quantity
+          };
+        })
+        .filter(item => item.name && item.name.trim() !== '');
+      
+      if (productNames.length > 0) {
+        const firstProduct = productNames[0];
+        return productNames.length === 1 
+          ? `${firstProduct.name}${firstProduct.quantity > 1 ? ` (${firstProduct.quantity}x)` : ''}`
+          : `${firstProduct.name} (${firstProduct.quantity}x) +${productNames.length - 1} more`;
+      }
+    }
+    
+    return order.product_name || 'No Product Name';
+  };
+
+  const formatOrderDateForNotification = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    }
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric'
+    });
+  };
+
+  // Fetch notifications (recent orders and low stock items)
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setNotificationsLoading(true);
+      
+      // Fetch recent orders (last 20)
+      const orderFilters = {
+        limit: 20,
+        dateSort: 'desc',
+        includeUserData: true, // Include customer data to get customer names
+        includeStats: false
+      };
+      
+      if (isOwner && selectedBranchId && selectedBranchId !== 'all') {
+        const selectedBranch = branches.find(b => b.id === parseInt(selectedBranchId));
+        if (selectedBranch && selectedBranch.name) {
+          orderFilters.pickupBranch = selectedBranch.name;
+        }
+      }
+      
+      const ordersResponse = await orderService.getAllOrders(orderFilters);
+      const recentOrders = (ordersResponse?.orders || []).slice(0, 20).map(order => {
+        const formattedOrder = order.orderItems ? order : orderService.formatOrderForDisplay(order);
+        return {
+          id: order.id || formattedOrder.id,
+          type: 'order',
+          message: `New order from ${getCustomerNameForNotification(order)}`,
+          product: getProductNameForNotification(formattedOrder),
+          date: formatOrderDateForNotification(formattedOrder.orderDate || formattedOrder.created_at || order.created_at),
+          status: formattedOrder.status || order.status || 'pending'
+        };
+      });
+      setRecentNotifications(recentOrders);
+      
+      // Get low stock items from already fetched stockItems
+      const lowStock = stockItems
+        .filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock')
+        .slice(0, 20)
+        .map(item => {
+          // Get branch name from branchId
+          let branchName = 'Unknown Branch';
+          if (item.branchId) {
+            const branch = branches.find(b => b.id === item.branchId || b.id === parseInt(item.branchId));
+            branchName = branch?.name || `Branch ${item.branchId}`;
+          } else if (isAdmin && adminBranchId) {
+            // For admins, use their branch name if branchId is not available
+            const adminBranch = branches.find(b => b.id === adminBranchId || b.id === parseInt(adminBranchId));
+            branchName = adminBranch?.name || 'Current Branch';
+          } else if (isOwner && selectedBranchId && selectedBranchId !== 'all') {
+            // For owners with a selected branch, use that branch name
+            const selectedBranch = branches.find(b => b.id === parseInt(selectedBranchId));
+            branchName = selectedBranch?.name || 'Selected Branch';
+          }
+          
+          return {
+            id: item.id,
+            type: 'stock',
+            message: `${item.name} is ${item.status.toLowerCase()} at ${branchName}`,
+            product: item.name,
+            stockQuantity: item.stockQuantity,
+            reorderLevel: item.reorderLevel,
+            status: item.status,
+            branchName: branchName
+          };
+        });
+      setLowStockNotifications(lowStock);
+      
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setRecentNotifications([]);
+      setLowStockNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [isOwner, selectedBranchId, branches, stockItems]);
+
+  // Fetch notifications on mount and when relevant data changes
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Refresh notifications every 60 seconds
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -708,16 +930,19 @@ echarts.use([
       if (!event.target.closest('.dashboard1-branch-filter')) {
         setShowBranchDropdown(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotificationDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch branches for owners
+  // Fetch branches for owners and admins (needed for notifications)
   useEffect(() => {
     const loadBranches = async () => {
-      if (isOwner) {
+      if (isOwner || isAdmin) {
         try {
           const data = await branchService.getBranches();
           setBranches(Array.isArray(data) ? data : []);
@@ -728,7 +953,7 @@ echarts.use([
       }
     };
     loadBranches();
-  }, [isOwner]);
+  }, [isOwner, isAdmin]);
 
   // Fetch stock items from products database
   // Only include on-hand products (balls, trophies, medals) that have stock_quantity
@@ -747,31 +972,59 @@ echarts.use([
           // Owner: fetch products from selected branch
           products = await productService.getProductsByBranch(parseInt(selectedBranchId));
         } else {
-          // Owner with 'all' selected or no branch filter: fetch all products
-          products = await productService.getAllProducts();
+          // Owner with 'all' selected: fetch all products with all=true to include 0 stock items
+          // Use the same fetch pattern as Inventory page to ensure all products are fetched
+          try {
+            const response = await authFetch(`${API_URL}/api/products?all=true`);
+            if (response.ok) {
+              const data = await response.json();
+              // Normalize response like Inventory page does
+              if (Array.isArray(data)) {
+                products = data;
+              } else if (Array.isArray(data?.data)) {
+                products = data.data;
+              } else if (Array.isArray(data?.products)) {
+                products = data.products;
+              } else {
+                products = [];
+              }
+            } else {
+              // Fallback to regular getAllProducts if API call fails
+              products = await productService.getAllProducts();
+            }
+          } catch (error) {
+            console.error('Error fetching all products with all=true:', error);
+            // Fallback to regular getAllProducts
+            products = await productService.getAllProducts();
+          }
         }
         
         // Define on-hand categories (products that can be prepared and bought on-branch)
         const onHandCategories = ['balls', 'trophies', 'medals'];
         
         // Transform products to stock items format
-        // Only include products with stock_quantity (on-hand items) in on-hand categories
+        // Only include products in on-hand categories (balls, trophies, medals)
+        // Include items with 0 stock, null stock, or undefined stock (all treated as 0 stock)
         const transformedStockItems = products
           .filter(product => {
             // Only include products that:
-            // 1. Have a stock_quantity field (on-hand items)
-            // 2. Belong to on-hand categories (balls, trophies, medals)
-            const hasStockQuantity = product.stock_quantity !== null && product.stock_quantity !== undefined;
+            // 1. Belong to on-hand categories (balls, trophies, medals)
+            // 2. Include all products in these categories, regardless of stock_quantity value
+            //    (null/undefined will be treated as 0 stock)
             const category = product.category?.toLowerCase();
             const isOnHandCategory = onHandCategories.includes(category);
             
-            return hasStockQuantity && isOnHandCategory;
+            return isOnHandCategory;
           })
           .map(product => {
-            const stockQuantity = product.stock_quantity || 0;
+            // Explicitly handle 0 stock - preserve 0 values, only default null/undefined to 0
+            const stockQuantity = product.stock_quantity !== null && product.stock_quantity !== undefined 
+              ? Number(product.stock_quantity) 
+              : 0;
             const reorderLevel = product.reorder_level || 10;
             
             // Determine status based on stock quantity and reorder level
+            // Items with 0 stock should be marked as "Out of Stock"
             let status = 'In Stock';
             if (stockQuantity === 0) {
               status = 'Out of Stock';
@@ -779,9 +1032,51 @@ echarts.use([
               status = 'Low Stock';
             }
             
+            // For trophies, include size in the name for better identification
+            let displayName = product.name || 'Unknown Product';
+            if (product.category?.toLowerCase() === 'trophies') {
+              // Parse available sizes - check both size and available_sizes fields
+              let sizes = [];
+              
+              // First, try available_sizes (parsed by productService)
+              if (product.available_sizes && Array.isArray(product.available_sizes) && product.available_sizes.length > 0) {
+                sizes = product.available_sizes;
+              } else if (product.size) {
+                // Parse size field if it's a string
+                if (typeof product.size === 'string') {
+                  try {
+                    const parsed = JSON.parse(product.size);
+                    if (Array.isArray(parsed)) {
+                      sizes = parsed;
+                    } else if (typeof parsed === 'string') {
+                      sizes = [parsed];
+                    }
+                  } catch (e) {
+                    // If not JSON, treat as single size string
+                    sizes = [product.size];
+                  }
+                } else if (Array.isArray(product.size)) {
+                  sizes = product.size;
+                } else if (product.size) {
+                  sizes = [product.size];
+                }
+              }
+              
+              // If we have sizes, append the first one to the name
+              if (sizes.length > 0) {
+                if (sizes.length === 1) {
+                  displayName = `${displayName} (${sizes[0]})`;
+                } else {
+                  // For multiple sizes, show the first one (most common case)
+                  displayName = `${displayName} (${sizes[0]})`;
+                }
+              }
+            }
+            
             return {
               id: product.id,
-              name: product.name,
+              name: displayName,
+              originalName: product.name || 'Unknown Product', // Keep original name for reference
               image: product.main_image || product.additional_images?.[0] || "https://via.placeholder.com/50",
               category: product.category?.toLowerCase() || '',
               stockQuantity: stockQuantity,
@@ -789,11 +1084,139 @@ echarts.use([
               supplier: product.supplier || 'N/A',
               lastRestocked: product.last_restocked || new Date().toISOString().split('T')[0],
               status: status,
-              branchId: product.branch_id || null
+              branchId: product.branch_id || null,
+              branchName: product.branch_name || null
             };
           });
         
-        setStockItems(transformedStockItems);
+        // Group by product name (and size for trophies) and aggregate stock across branches
+        // For trophies, the name already includes size, so we use the full name as the key
+        // This ensures different sizes of the same trophy are treated as separate products
+        // For balls and other single-size products, group by original name + category to avoid duplicates
+        const stockData = transformedStockItems.reduce((acc, item) => {
+          // Normalize names: trim, lowercase, remove extra spaces, handle null/undefined
+          // Also normalize special characters and remove punctuation variations
+          const normalizeName = (name) => {
+            if (!name) return '';
+            return String(name)
+              .toLowerCase()
+              .trim()
+              .replace(/\s+/g, ' ')  // Multiple spaces to single space
+              .replace(/["'"]/g, '"')  // Normalize quotes
+              .replace(/["'"]/g, "'")  // Normalize apostrophes
+              .trim();
+          };
+          
+          // Normalize size strings (for trophies) - remove common variations
+          const normalizeSize = (sizeStr) => {
+            if (!sizeStr) return '';
+            return String(sizeStr)
+              .toLowerCase()
+              .trim()
+              .replace(/\s*inch(es)?/gi, 'in')  // "10 inch" -> "10in"
+              .replace(/\s*"/g, 'in')  // '10"' -> "10in"
+              .replace(/\s+/g, '')  // Remove all spaces
+              .trim();
+          };
+          
+          const normalizedOriginalName = normalizeName(item.originalName);
+          const normalizedDisplayName = normalizeName(item.name);
+          const normalizedCategory = normalizeName(item.category);
+          
+          // For products with size in name (trophies), extract and normalize the size for consistent grouping
+          // For products without size (balls, medals), use original name + category to ensure proper grouping
+          let key;
+          // Use normalized category for comparison to handle case variations
+          if (normalizedCategory === 'trophies') {
+            // For trophies, always try to extract size from display name
+            // Extract size from display name (format: "Product Name (Size)")
+            const sizeMatch = normalizedDisplayName.match(/\(([^)]+)\)$/);
+            if (sizeMatch && sizeMatch[1]) {
+              const extractedSize = sizeMatch[1].trim();
+              const normalizedSize = normalizeSize(extractedSize);
+              // Use original name + normalized size as key to ensure same trophy+size from different branches group together
+              // This ensures different sizes of the same trophy are treated as separate products
+              key = `${normalizedOriginalName}_${normalizedSize}_${normalizedCategory}`;
+            } else {
+              // No size found in display name - use original name + category
+              // This handles trophies that don't have sizes or where size extraction failed
+              key = `${normalizedOriginalName}_${normalizedCategory}`;
+            }
+          } else {
+            // Ball, medal, or other product - use original name + category to group properly
+            // This ensures products with the same name but different categories are separate
+            // Also ensures products from different branches with the same name are grouped together
+            key = `${normalizedOriginalName}_${normalizedCategory}`;
+          }
+          
+          // Skip if key is invalid (empty after normalization)
+          if (!key || key === '_' || key === '__') {
+            console.warn('⚠️ [Item Stocks] Skipping item with invalid key:', item);
+            return acc;
+          }
+          
+          if (!acc[key]) {
+            // For balls/medals (no size), use originalName as display name
+            // For trophies (with size), use the name with size suffix
+            const displayName = (normalizedCategory === 'trophies' && normalizedDisplayName !== normalizedOriginalName)
+              ? item.name  // Trophy with size - keep the size suffix
+              : item.originalName;  // Ball/medal - use original name without any modifications
+            
+            // Use the first item's data for metadata (they should be the same for grouped items)
+            acc[key] = {
+              id: item.id, // Use first item's ID
+              name: displayName, // Display name (original name for balls/medals, name with size for trophies)
+              originalName: item.originalName, // Original name without size
+              image: item.image,
+              category: item.category,
+              stockQuantity: 0, // Will be summed
+              reorderLevel: item.reorderLevel,
+              supplier: item.supplier,
+              lastRestocked: item.lastRestocked, // Use first item's last restocked date
+              status: 'In Stock', // Will be recalculated
+              branchId: item.branchId,
+              branches: [] // Track stock by branch
+            };
+          }
+          
+          // Sum stock quantities across all branches
+          acc[key].stockQuantity += item.stockQuantity;
+          
+          // Track stock by branch (avoid duplicates)
+          if (item.branchName) {
+            const existingBranch = acc[key].branches.find(b => b.branch === item.branchName);
+            if (existingBranch) {
+              // If branch already exists, add to its stock (shouldn't happen, but handle it)
+              existingBranch.stock += item.stockQuantity;
+            } else {
+              // Add new branch entry
+              acc[key].branches.push({
+                branch: item.branchName,
+                stock: item.stockQuantity
+              });
+            }
+          }
+          
+          return acc;
+        }, {});
+        
+        // Convert grouped data back to array and recalculate status based on aggregated stock
+        const groupedStockItems = Object.values(stockData).map(item => {
+          // Recalculate status based on aggregated stock quantity and reorder level
+          let status = 'In Stock';
+          if (item.stockQuantity === 0) {
+            status = 'Out of Stock';
+          } else if (item.stockQuantity <= item.reorderLevel) {
+            status = 'Low Stock';
+          }
+          
+          return {
+            ...item,
+            status: status
+          };
+        });
+        
+        setStockItems(groupedStockItems);
       } catch (error) {
         console.error('Error fetching stock items:', error);
         setStockItems([]);
@@ -1194,11 +1617,177 @@ echarts.use([
         {/* User Info and Time Display */}
         <div className="dashboard1-user-info-bar">
           <div className="dashboard1-user-info">
-            <h1 className="dashboard1-title">
-              {isOwner ? 'Owner Dashboard' : 'Admin Dashboard'}
-            </h1>
-            <div className="dashboard1-welcome">
-              Welcome, {getUserDisplayName()}!
+            <div>
+              <h1 className="dashboard1-title">
+                {isOwner ? 'Owner Dashboard' : 'Admin Dashboard'}
+              </h1>
+              <div className="dashboard1-welcome">
+                Welcome, {getUserDisplayName()}!
+              </div>
+            </div>
+            {/* Branch Filter and Notification Bell - Beside Welcome Message */}
+            <div className="dashboard1-header-actions">
+              {/* Notification Bell */}
+              <div className="dashboard1-notification-bell" ref={notificationRef}>
+                <button
+                  className="dashboard1-notification-button"
+                  onClick={() => {
+                    setShowNotificationDropdown(!showNotificationDropdown);
+                    if (!showNotificationDropdown) {
+                      fetchNotifications();
+                    }
+                  }}
+                  title="Notifications"
+                >
+                  <FontAwesomeIcon icon={faBell} className="dashboard1-notification-icon" />
+                  {(recentNotifications.length > 0 || lowStockNotifications.length > 0) && (
+                    <span className="dashboard1-notification-badge">
+                      {recentNotifications.length + lowStockNotifications.length}
+                    </span>
+                  )}
+                </button>
+                
+                {showNotificationDropdown && (
+                  <div className="dashboard1-notification-dropdown">
+                    <div className="dashboard1-notification-dropdown-header">
+                      <h3>Notifications</h3>
+                    </div>
+                    
+                    {/* Notification Tabs */}
+                    <div className="dashboard1-notification-tabs">
+                      <button
+                        className={`dashboard1-notification-tab ${notificationActiveTab === 'orders' ? 'active' : ''}`}
+                        onClick={() => setNotificationActiveTab('orders')}
+                      >
+                        <FontAwesomeIcon icon={faClipboardList} />
+                        <span>Orders</span>
+                        {recentNotifications.length > 0 && (
+                          <span className="dashboard1-notification-tab-badge">{recentNotifications.length}</span>
+                        )}
+                      </button>
+                      <button
+                        className={`dashboard1-notification-tab ${notificationActiveTab === 'stocks' ? 'active' : ''}`}
+                        onClick={() => setNotificationActiveTab('stocks')}
+                      >
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        <span>Stocks</span>
+                        {lowStockNotifications.length > 0 && (
+                          <span className="dashboard1-notification-tab-badge">{lowStockNotifications.length}</span>
+                        )}
+                      </button>
+                    </div>
+                    
+                    <div className="dashboard1-notification-dropdown-content">
+                      {notificationsLoading ? (
+                        <div className="dashboard1-notification-loading">
+                          <p>Loading notifications...</p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Orders Tab Content */}
+                          {notificationActiveTab === 'orders' && (
+                            <>
+                              {recentNotifications.length > 0 ? (
+                                recentNotifications.map((notification) => (
+                                  <div key={`order-${notification.id}`} className="dashboard1-notification-item">
+                                    <div className="dashboard1-notification-item-content">
+                                      <p className="dashboard1-notification-message">{notification.message}</p>
+                                      <p className="dashboard1-notification-product">{notification.product}</p>
+                                      <p className="dashboard1-notification-date">{notification.date}</p>
+                                    </div>
+                                    <span className={`dashboard1-notification-status dashboard1-notification-status-${notification.status.toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-')}`}>
+                                      {notification.status}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="dashboard1-notification-empty">
+                                  <p>No recent orders</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* Stocks Tab Content */}
+                          {notificationActiveTab === 'stocks' && (
+                            <>
+                              {lowStockNotifications.length > 0 ? (
+                                lowStockNotifications.map((notification) => (
+                                  <div key={`stock-${notification.id}`} className="dashboard1-notification-item dashboard1-notification-item-stock">
+                                    <div className="dashboard1-notification-item-content">
+                                      <p className="dashboard1-notification-message">{notification.message}</p>
+                                      <p className="dashboard1-notification-stock-info">
+                                        Stock: {notification.stockQuantity} / Reorder: {notification.reorderLevel}
+                                      </p>
+                                    </div>
+                                    <span className={`dashboard1-notification-status dashboard1-notification-status-${notification.status.toLowerCase().replace(' ', '-')}`}>
+                                      {notification.status}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="dashboard1-notification-empty">
+                                  <p>No low stock items</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Branch Filter for Owners */}
+              {isOwner && branches.length > 0 && (
+                <div className="dashboard1-branch-filter">
+                <div 
+                  className="dashboard1-branch-filter-button"
+                  onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+                >
+                  <FontAwesomeIcon icon={faBuilding} className="branch-filter-icon" />
+                  <span className="branch-filter-selected-name">
+                    {selectedBranchId === 'all' 
+                      ? 'All Branches' 
+                      : branches.find(b => b.id === parseInt(selectedBranchId))?.name || 'All Branches'}
+                  </span>
+                  <FontAwesomeIcon 
+                    icon={showBranchDropdown ? faChevronUp : faChevronDown} 
+                    className="branch-filter-chevron"
+                  />
+                </div>
+                {showBranchDropdown && (
+                  <div className="dashboard1-branch-dropdown">
+                    <div
+                      className={`branch-dropdown-item ${selectedBranchId === 'all' ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSelectedBranchId('all');
+                        setShowBranchDropdown(false);
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faBuilding} className="branch-item-icon" />
+                      <span>All Branches</span>
+                    </div>
+                    {branches.map(branch => (
+                      <div
+                        key={branch.id}
+                        className={`branch-dropdown-item ${selectedBranchId === String(branch.id) ? 'selected' : ''}`}
+                        onClick={() => {
+                          const newBranchId = String(branch.id);
+                          setSelectedBranchId(newBranchId);
+                          setShowBranchDropdown(false);
+                          // Force immediate refresh - fetchMetricsData will be called via useEffect
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faBuilding} className="branch-item-icon" />
+                        <span>{branch.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              )}
             </div>
           </div>
           <div className="dashboard1-separator"></div>
@@ -1207,18 +1796,6 @@ echarts.use([
         {/* Top Cards Section */}
         <div className="dashboard1-top-cards">
           <div className="dashboard1-stat-card dashboard1-sales-card">
-            {/* Show Values Toggle Button - Top Right Corner */}
-            <button
-              className="dashboard1-sales-toggle-btn"
-              onClick={() => setIsAllValuesVisible(!isAllValuesVisible)}
-              title={isAllValuesVisible ? 'Hide values' : 'Show values'}
-              aria-label={isAllValuesVisible ? 'Hide values' : 'Show values'}
-            >
-              <FontAwesomeIcon 
-                icon={isAllValuesVisible ? faEyeSlash : faEye} 
-                className="dashboard1-sales-toggle-icon"
-              />
-            </button>
             <div className="dashboard1-stat-icon">
               <span style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>₱</span>
             </div>
@@ -1227,7 +1804,7 @@ echarts.use([
                 <p className="dashboard1-stat-label">Total Sales</p>
               </div>
               <h3 className="dashboard1-stat-value">
-                {isAllValuesVisible ? formatCurrency(dashboardStats.totalSales) : '••••••'}
+                {formatCurrency(dashboardStats.totalSales)}
               </h3>
               <div className="dashboard1-stat-trend">
                 <FontAwesomeIcon icon={faChevronUp} />
@@ -1285,70 +1862,6 @@ echarts.use([
                 <span>Stock</span>
               </button>
             </div>
-            {/* Global Toggle for All Values */}
-            <div className="dashboard1-global-controls">
-              <button
-                className="dashboard1-chart-toggle-btn"
-                onClick={() => setIsAllValuesVisible(!isAllValuesVisible)}
-                title={isAllValuesVisible ? 'Hide all values' : 'Show all values'}
-                aria-label={isAllValuesVisible ? 'Hide all values' : 'Show all values'}
-              >
-                <FontAwesomeIcon 
-                  icon={isAllValuesVisible ? faEyeSlash : faEye} 
-                  className="dashboard1-chart-toggle-icon"
-                />
-                <span className="toggle-label">{isAllValuesVisible ? 'Hide Values' : 'Show Values'}</span>
-              </button>
-            </div>
-            {/* Branch Filter for Owners - Aligned with Tabs */}
-            {isOwner && branches.length > 0 && (
-              <div className="dashboard1-branch-filter">
-                <div 
-                  className="dashboard1-branch-filter-button"
-                  onClick={() => setShowBranchDropdown(!showBranchDropdown)}
-                >
-                  <FontAwesomeIcon icon={faBuilding} className="branch-filter-icon" />
-                  <span className="branch-filter-selected-name">
-                    {selectedBranchId === 'all' 
-                      ? 'All Branches' 
-                      : branches.find(b => b.id === parseInt(selectedBranchId))?.name || 'All Branches'}
-                  </span>
-                  <FontAwesomeIcon 
-                    icon={showBranchDropdown ? faChevronUp : faChevronDown} 
-                    className="branch-filter-chevron"
-                  />
-                </div>
-                {showBranchDropdown && (
-                  <div className="dashboard1-branch-dropdown">
-                    <div
-                      className={`branch-dropdown-item ${selectedBranchId === 'all' ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSelectedBranchId('all');
-                        setShowBranchDropdown(false);
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faBuilding} className="branch-item-icon" />
-                      <span>All Branches</span>
-                    </div>
-                    {branches.map(branch => (
-                      <div
-                        key={branch.id}
-                        className={`branch-dropdown-item ${selectedBranchId === String(branch.id) ? 'selected' : ''}`}
-                        onClick={() => {
-                          const newBranchId = String(branch.id);
-                          setSelectedBranchId(newBranchId);
-                          setShowBranchDropdown(false);
-                          // Force immediate refresh - fetchMetricsData will be called via useEffect
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faBuilding} className="branch-item-icon" />
-                        <span>{branch.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Chart Content and Quick Actions Layout */}
@@ -1365,7 +1878,7 @@ echarts.use([
                         ? selectedBranchId 
                         : null
                     }
-                    isValuesVisible={isAllValuesVisible}
+                    isValuesVisible={true}
                   />
                 </div>
               )}
@@ -1375,7 +1888,7 @@ echarts.use([
                   <div className="analytics-card geo-distribution-card">
                     <div className="card-header">
                       <FontAwesomeIcon icon={faBox} className="card-icon" />
-                      <h3>Low-Stock Items</h3>
+                      <h3>Item Stocks</h3>
                       <div className="card-controls">
                         <select
                           value={lowStockCategoryFilter}
@@ -1392,8 +1905,11 @@ echarts.use([
                           }}
                         >
                           <option value="all">All Categories</option>
-                          <option value="balls">Balls</option>
-                          <option value="trophies">Trophies</option>
+                          {stockItemCategories.map(category => (
+                            <option key={category} value={category.toLowerCase()}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>

@@ -29,8 +29,36 @@ const MODEL_CONFIGS = [
     tpd: 500000
   },
   {
+    name: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    rpm: 30,
+    rpd: 1000,
+    tpm: 6000,
+    tpd: 500000
+  },
+  {
     name: 'qwen/qwen3-32b',
     rpm: 60,
+    rpd: 1000,
+    tpm: 6000,
+    tpd: 500000
+  },
+  {
+    name: 'meta-llama/llama-prompt-guard-2-86m',
+    rpm: 60,
+    rpd: 1000,
+    tpm: 12000,
+    tpd: 500000
+  },
+  {
+    name: 'meta-llama/llama-prompt-guard-2-22m',
+    rpm: 60,
+    rpd: 1000,
+    tpm: 12000,
+    tpd: 500000
+  },
+  {
+    name: 'meta-llama/llama-guard-4-12b',
+    rpm: 30,
     rpd: 1000,
     tpm: 6000,
     tpd: 500000

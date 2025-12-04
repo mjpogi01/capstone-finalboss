@@ -223,6 +223,22 @@ const Orders = () => {
   });
   const isMetricsFiltered = Boolean(filters.pickupBranch || filters.status || filters.searchTerm);
 
+  // Debounced search term for smoother UI filtering
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  
+  useEffect(() => {
+    if (filters.searchTerm) {
+      setIsSearching(true);
+    }
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(filters.searchTerm);
+      setIsSearching(false);
+    }, 300); // 300ms debounce for smoother search
+
+    return () => clearTimeout(timer);
+  }, [filters.searchTerm]);
+
   // Debounce filter changes to prevent rapid re-fetching
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
   useEffect(() => {
@@ -507,10 +523,10 @@ const Orders = () => {
     // Safety check to ensure orders is always an array
     let filtered = Array.isArray(orders) ? [...orders] : [];
 
-    // Search filter
-    if (filters.searchTerm) {
+    // Search filter (using debounced search term for smoother experience)
+    if (debouncedSearchTerm) {
       filtered = filtered.filter(order => {
-        const searchTerm = filters.searchTerm.toLowerCase();
+        const searchTerm = debouncedSearchTerm.toLowerCase();
         const matchesOrderNumber = order.orderNumber.toLowerCase().includes(searchTerm);
         const matchesCustomerName = order.customerName.toLowerCase().includes(searchTerm);
         // Only search by email if email data is available (order has been expanded)
@@ -563,7 +579,7 @@ const Orders = () => {
     });
 
     setFilteredOrders(filtered);
-  }, [orders, filters, sortConfig]);
+  }, [orders, filters, sortConfig, debouncedSearchTerm]);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -1263,120 +1279,123 @@ const Orders = () => {
       
       {/* Header */}
       <div className="orders-header">
-        <h1>Order Management</h1>
-        <div className="analytics-summary">
-          <div className="summary-card">
-            <div className="summary-icon">
-              <FaClipboardList />
-          </div>
-            <div className="summary-content">
-              <h3>Total Orders</h3>
-              <p className="summary-value">{stats.total ?? pagination.total ?? filteredOrders.length}</p>
+        <div className="orders-header-container">
+          <h1>Order Management</h1>
+          <div className="orders-header-controls">
+            <div className="search-bar">
+              <input
+                type="text"
+                placeholder="Search orders..."
+                value={filters.searchTerm}
+                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                className="search-input"
+              />
+              <FaSearch className="search-icon" />
             </div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-icon completed">
-              <FaCheck />
-            </div>
-            <div className="summary-content">
-              <h3>
-              Delivered
-                {!isMetricsFiltered && isOwner && <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> (All Branches)</span>}
-                {!isMetricsFiltered && isAdmin && <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> (This Branch)</span>}
-              {isMetricsFiltered && filters.pickupBranch && (
-                  <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> ({filters.pickupBranch})</span>
+            
+            <div className="filter-toggle-container">
+              <button 
+                className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <FaFilter className="filter-icon" />
+                Filters
+                {showFilters ? <FaChevronUp /> : <FaChevronDown />}
+              </button>
+              
+              {showFilters && (
+                <div className="filter-dropdown">
+                {!isAdmin && (
+                <div className="filter-group">
+                  <label>Pickup Branch</label>
+                  <select 
+                    value={filters.pickupBranch}
+                    onChange={(e) => handleFilterChange('pickupBranch', e.target.value)}
+                  >
+                    <option value="">All Branches</option>
+                    <option value="Main Branch">Main Branch</option>
+                    <option value="SM City">SM City</option>
+                    <option value="Ayala Mall">Ayala Mall</option>
+                    <option value="Robinson's">Robinson's</option>
+                  </select>
+                </div>
+                )}
+                <div className="filter-group">
+                  <label>Status</label>
+                  <select 
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                  >
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="layout">Layout</option>
+                    <option value="sizing">Sizing</option>
+                    <option value="printing">Printing</option>
+                    <option value="press">Press</option>
+                    <option value="prod">Production</option>
+                    <option value="packing_completing">Packing/Completing</option>
+                    <option value="picked_up_delivered">Delivered</option>
+                  </select>
+                </div>
+                <button className="clear-filters-btn" onClick={clearFilters}>
+                  Clear Filters
+                </button>
+              </div>
               )}
-              </h3>
-              <p className="summary-value">{deliveredStatValue}</p>
-          </div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-icon processing">
-              <FaClock />
-            </div>
-            <div className="summary-content">
-              <h3>In Progress</h3>
-              <p className="summary-value">
-              {stats.inProgress ?? filteredOrders.filter(o => ['layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing'].includes(o.status)).length}
-              </p>
-          </div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-icon pending">
-              <FaTimes />
-            </div>
-            <div className="summary-content">
-              <h3>Pending</h3>
-              <p className="summary-value">
-              {stats.pending ?? filteredOrders.filter(o => o.status === 'pending').length}
-              </p>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Compact Filters */}
-      <div className="compact-filters">
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search orders..."
-            value={filters.searchTerm}
-            onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-            className="search-input"
-          />
-          <FaSearch className="search-icon" />
-        </div>
-        
-        <div className="filter-toggle-container">
-          <button 
-            className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <FaFilter className="filter-icon" />
-            Filters
-            {showFilters ? <FaChevronUp /> : <FaChevronDown />}
-          </button>
-          
-          {showFilters && (
-            <div className="filter-dropdown">
-            {!isAdmin && (
-            <div className="filter-group">
-              <label>Branch</label>
-              <select
-                value={filters.pickupBranch}
-                onChange={(e) => handleFilterChange('pickupBranch', e.target.value)}
-              >
-                <option value="">All Branches</option>
-                {branchOptions.map(branch => (
-                  <option key={branch.value} value={branch.value}>{branch.label}</option>
-                ))}
-              </select>
+        {!debouncedSearchTerm && (
+          <div className="analytics-summary">
+            <div className="summary-card">
+              <div className="summary-icon">
+                <FaClipboardList />
             </div>
-            )}
-            
-            <div className="filter-group">
-              <label>Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                {statuses.map(status => (
-                  <option key={status} value={status}>
-                    {getStatusDisplayName(status)}
-                  </option>
-                ))}
-              </select>
+              <div className="summary-content">
+                <h3>Total Orders</h3>
+                <p className="summary-value">{stats.total ?? pagination.total ?? filteredOrders.length}</p>
+              </div>
             </div>
-            
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              <FaTimes />
-              Clear All
-            </button>
+            <div className="summary-card">
+              <div className="summary-icon completed">
+                <FaCheck />
+              </div>
+              <div className="summary-content">
+                <h3>
+                Delivered
+                  {!isMetricsFiltered && isOwner && <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> (All Branches)</span>}
+                  {!isMetricsFiltered && isAdmin && <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> (This Branch)</span>}
+                {isMetricsFiltered && filters.pickupBranch && (
+                    <span style={{fontSize: '0.7rem', fontWeight: 'normal'}}> ({filters.pickupBranch})</span>
+                )}
+                </h3>
+                <p className="summary-value">{deliveredStatValue}</p>
+            </div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-icon processing">
+                <FaClock />
+              </div>
+              <div className="summary-content">
+                <h3>In Progress</h3>
+                <p className="summary-value">
+                {stats.inProgress ?? filteredOrders.filter(o => ['layout', 'sizing', 'printing', 'press', 'prod', 'packing_completing'].includes(o.status)).length}
+                </p>
+            </div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-icon pending">
+                <FaTimes />
+              </div>
+              <div className="summary-content">
+                <h3>Pending</h3>
+                <p className="summary-value">
+                {stats.pending ?? filteredOrders.filter(o => o.status === 'pending').length}
+                </p>
+              </div>
+            </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Yohann's Orders Table - Redesigned */}

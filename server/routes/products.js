@@ -3,6 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { authenticateSupabaseToken, requireAdminOrOwner } = require('../middleware/supabaseAuth');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const { generateUniqueSKU, isOnStockCategory } = require('../scripts/generate-skus');
 const router = express.Router();
 
 // Initialize Supabase client
@@ -240,7 +241,13 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    const productsWithBranches = await attachBranchNames(data || []);
+    // Filter out archived products for customer-facing endpoints (when all is not true)
+    let filteredData = data || [];
+    if (!includeAllBranches) {
+      filteredData = filteredData.filter(product => !product.archived);
+    }
+
+    const productsWithBranches = await attachBranchNames(filteredData);
 
     // Calculate review stats for all products
     const productIds = (productsWithBranches || []).map(p => p.id).filter(Boolean);
@@ -472,7 +479,8 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       stock_quantity, 
       sold_quantity,
       branch_id,
-      size_stocks
+      size_stocks,
+      brand
     } = req.body;
 
     console.log('📦 [Products API] Creating product with data:', {
@@ -567,6 +575,11 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       finalBranchId = parseInt(req.user.branch_id);
     }
 
+    // Set default brand for apparel products
+    const isApparel = ['jerseys', 'uniforms', 't-shirts', 'long sleeves', 'hoodies', 'jackets', 'accessories', 'hats']
+      .includes(category?.toLowerCase());
+    const finalBrand = brand || (isApparel ? "Yohann's" : null);
+
     // Build insert data object
     const insertData = {
       name,
@@ -580,6 +593,11 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       sold_quantity: sold_quantity ? parseInt(sold_quantity) : 0,
       branch_id: finalBranchId
     };
+
+    // Add brand if provided or if it's an apparel product
+    if (finalBrand) {
+      insertData.brand = finalBrand;
+    }
     
     // Only add jersey_prices if it's not null (Supabase handles null differently)
     if (jerseyPricesValue !== null && jerseyPricesValue !== undefined) {
@@ -621,9 +639,67 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       console.log('📦 [Products API] No size_stocks to save (value is null/undefined)');
     }
 
+    // Generate SKU if not provided
+    // On-stock products (trophies, balls, medals): SKU includes size (different SKU per size)
+    // Apparel products: SKU does NOT include size (one SKU per product)
+    let productSKU = req.body.sku ? req.body.sku.trim() : null;
+    if (!productSKU || productSKU === '') {
+      try {
+        const isOnStock = isOnStockCategory(category);
+        
+        // Determine size for SKU generation (only for on-stock products)
+        let sizeForSKU = null;
+        if (isOnStock) {
+          // On-stock products: Include size in SKU
+          if (sizeStocksValue && typeof sizeStocksValue === 'object' && !Array.isArray(sizeStocksValue)) {
+            // Product has size_stocks - use first size
+            const sizes = Object.keys(sizeStocksValue);
+            if (sizes.length > 0) {
+              sizeForSKU = sizes[0];
+            }
+          } else if (size) {
+            // Try to parse size field
+            try {
+              const parsedSize = typeof size === 'string' ? JSON.parse(size) : size;
+              if (Array.isArray(parsedSize) && parsedSize.length > 0) {
+                sizeForSKU = parsedSize[0];
+              } else if (typeof parsedSize === 'string' && parsedSize.trim() !== '') {
+                sizeForSKU = parsedSize;
+              }
+            } catch (e) {
+              // Not JSON, use as-is if it's a string
+              if (typeof size === 'string' && size.trim() !== '') {
+                sizeForSKU = size;
+              }
+            }
+          }
+        }
+        // For apparel products: sizeForSKU remains null (no size in SKU)
+
+        // Generate SKU (temporary product object for SKU generation)
+        const tempProduct = {
+          id: null, // Will be set after creation
+          name,
+          category
+        };
+        productSKU = await generateUniqueSKU(tempProduct, sizeForSKU);
+        console.log('📦 [Products API] Generated SKU:', productSKU, sizeForSKU ? `(for size: ${sizeForSKU})` : isOnStock ? '(no size)' : '(apparel - no size variation)');
+      } catch (skuError) {
+        console.error('❌ [Products API] Error generating SKU:', skuError);
+        // Continue without SKU - can be set manually later
+        productSKU = null;
+      }
+    }
+
+    // Add SKU to insert data (only for on-stock products)
+    if (productSKU) {
+      insertData.sku = productSKU;
+    }
+
     console.log('📦 [Products API] Final insert data:', JSON.stringify(insertData, null, 2));
     console.log('📦 [Products API] size_stocks in insertData:', insertData.size_stocks);
     console.log('📦 [Products API] jersey_prices in insertData:', insertData.jersey_prices);
+    console.log('📦 [Products API] SKU:', insertData.sku);
 
     // Check if product with same name, category, and branch_id already exists
     // For balls, trophies, and medals, we want to allow multiple branches but prevent duplicates within the same branch
@@ -681,6 +757,42 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
     if (existingProduct) {
       // Update existing product instead of creating duplicate
       console.log('📦 [Products API] Product exists in branch', insertData.branch_id, ', updating:', existingProduct.id);
+      
+      // If existing on-stock product doesn't have SKU, generate one
+      // Generate SKU if missing (all products get SKUs)
+      if (!insertData.sku || insertData.sku.trim() === '') {
+        const { data: existingProductData } = await supabase
+          .from('products')
+          .select('sku')
+          .eq('id', existingProduct.id)
+          .single();
+        
+        if (!existingProductData?.sku || existingProductData.sku.trim() === '') {
+          try {
+            const isOnStock = isOnStockCategory(category);
+            const tempProduct = {
+              id: existingProduct.id,
+              name,
+              category
+            };
+            let sizeForSKU = null;
+            // Only include size for on-stock products
+            if (isOnStock && sizeStocksValue && typeof sizeStocksValue === 'object' && !Array.isArray(sizeStocksValue)) {
+              const sizes = Object.keys(sizeStocksValue);
+              if (sizes.length > 0) sizeForSKU = sizes[0];
+            }
+            productSKU = await generateUniqueSKU(tempProduct, sizeForSKU);
+            insertData.sku = productSKU;
+            console.log('📦 [Products API] Generated SKU for existing product:', productSKU, sizeForSKU ? `(size: ${sizeForSKU})` : isOnStock ? '(no size)' : '(apparel)');
+          } catch (skuError) {
+            console.error('❌ [Products API] Error generating SKU for existing product:', skuError);
+          }
+        } else {
+          // Keep existing SKU
+          insertData.sku = existingProductData.sku;
+        }
+      }
+      
       const { data: updateData, error: updateError } = await supabase
         .from('products')
         .update({
@@ -724,6 +836,41 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
       
       data = insertResult;
       error = insertError;
+      
+      // If SKU was not set or product was created without SKU, generate and update it
+      // All products get SKUs: on-stock (with size) and apparel (without size)
+      if (!error && data && (!data.sku || data.sku.trim() === '')) {
+        try {
+          const isOnStock = isOnStockCategory(category);
+          const tempProduct = {
+            id: data.id,
+            name,
+            category
+          };
+          let sizeForSKU = null;
+          // Only include size for on-stock products
+          if (isOnStock && sizeStocksValue && typeof sizeStocksValue === 'object' && !Array.isArray(sizeStocksValue)) {
+            const sizes = Object.keys(sizeStocksValue);
+            if (sizes.length > 0) sizeForSKU = sizes[0];
+          }
+          const generatedSKU = await generateUniqueSKU(tempProduct, sizeForSKU);
+          
+          // Update product with generated SKU
+          const { data: updatedData } = await supabase
+            .from('products')
+            .update({ sku: generatedSKU })
+            .eq('id', data.id)
+            .select('*')
+            .single();
+          
+          if (updatedData) {
+            data = updatedData;
+            console.log('✅ [Products API] Generated and assigned SKU after creation:', generatedSKU, sizeForSKU ? `(size: ${sizeForSKU})` : isOnStock ? '(no size)' : '(apparel)');
+          }
+        } catch (skuError) {
+          console.error('❌ [Products API] Error generating SKU after creation:', skuError);
+        }
+      }
       
       if (insertError) {
         console.error('❌ Error inserting product:', insertError);
@@ -905,6 +1052,11 @@ router.post('/', authenticateSupabaseToken, requireAdminOrOwner, async (req, res
 router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('🔵 [Backend] PUT /api/products/:id called');
+    console.log('🔵 [Backend] Product ID:', id);
+    console.log('🔵 [Backend] Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔵 [Backend] User:', req.user ? { role: req.user.role, branch_id: req.user.branch_id } : 'NO USER');
+    
     const { 
       name, 
       category, 
@@ -916,8 +1068,12 @@ router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, r
       stock_quantity, 
       sold_quantity,
       branch_id,
-      size_stocks
+      size_stocks,
+      brand,
+      archived
     } = req.body;
+    
+    console.log('🔵 [Backend] Extracted archived value:', archived, 'Type:', typeof archived);
 
     // Check if admin is trying to update a product from another branch
     if (req.user.role === 'admin' && req.user.branch_id) {
@@ -948,15 +1104,47 @@ router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, r
       }
     }
 
-    const soldQuantityValue = sold_quantity === '' || sold_quantity === null || sold_quantity === undefined ? 0 : parseInt(sold_quantity);
+    // Check if this is a partial update (e.g., just archiving)
+    // A partial update is when only specific fields are provided (like archived)
+    const providedFields = Object.keys(req.body).filter(key => req.body[key] !== undefined);
+    const isPartialUpdate = providedFields.length === 1 && req.body.hasOwnProperty('archived');
+    
+    console.log('🔵 [Backend] Provided fields:', providedFields);
+    console.log('🔵 [Backend] Is partial update (archive only):', isPartialUpdate);
+    
+    // If it's just an archive/unarchive operation, fetch existing product first
+    let existingProduct = null;
+    if (isPartialUpdate) {
+      console.log('🔵 [Backend] Fetching existing product for partial update...');
+      const { data: existing, error: fetchError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError || !existing) {
+        console.error('🔴 [Backend] Product not found:', fetchError);
+        return res.status(404).json({ error: 'Product not found' });
+      }
+      existingProduct = existing;
+      console.log('🔵 [Backend] Existing product:', { id: existing.id, name: existing.name, archived: existing.archived });
+    }
+
+    const soldQuantityValue = sold_quantity !== undefined && sold_quantity !== null && sold_quantity !== ''
+      ? parseInt(sold_quantity)
+      : (isPartialUpdate && existingProduct ? (existingProduct.sold_quantity || 0) : 0);
     
     console.log('📦 [Products API] Updating product:', {
       id,
-      size
+      size,
+      isPartialUpdate,
+      providedFields
     });
     
-    // Handle price - parse as float
-    const priceValue = parseFloat(price);
+    // Handle price - parse as float, or use existing if not provided
+    const priceValue = price !== undefined && price !== null && price !== '' 
+      ? parseFloat(price) 
+      : (isPartialUpdate && existingProduct ? existingProduct.price : null);
 
     // Handle jersey_prices - ensure it's properly formatted as JSONB
     let jerseyPricesValue = null;
@@ -1039,90 +1227,146 @@ router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, r
       finalBranchId = parseInt(req.user.branch_id);
     }
     
+    // Set default brand for apparel products if not provided
+    const isApparel = ['jerseys', 'uniforms', 't-shirts', 'long sleeves', 'hoodies', 'jackets', 'accessories', 'hats']
+      .includes(category?.toLowerCase());
+    const finalBrand = brand || (isApparel && req.body.brand === undefined ? "Yohann's" : brand);
+
+    // Build update data - only include fields that are provided (for partial updates)
     const updateData = {
-      name,
-      category,
-      size,
-      price: priceValue,
-      description,
-      main_image,
-      additional_images: additional_images || [],
-      stock_quantity: (stock_quantity !== null && stock_quantity !== undefined && stock_quantity !== '') 
-        ? parseInt(stock_quantity) 
-        : 0,  // Overwrite to 0 if not provided (don't append)
-      sold_quantity: soldQuantityValue,
-      branch_id: finalBranchId,
       updated_at: new Date().toISOString()
     };
-    
-    // Only add jersey_prices if it's not null (Supabase handles null differently)
-    // For updates, we need to explicitly set it even if null to clear it, or omit it to keep existing value
-    if (jerseyPricesValue !== null && jerseyPricesValue !== undefined) {
-      updateData.jersey_prices = jerseyPricesValue;
-    } else if (req.body.hasOwnProperty('jersey_prices') && req.body.jersey_prices === null) {
-      // Explicitly set to null if the request wants to clear it
-      updateData.jersey_prices = null;
-    }
-    
-    // Only add trophy_prices if it's not null
-    if (trophyPricesValue !== null && trophyPricesValue !== undefined) {
-      updateData.trophy_prices = trophyPricesValue;
-    } else if (req.body.hasOwnProperty('trophy_prices') && req.body.trophy_prices === null) {
-      // Explicitly set to null if the request wants to clear it
-      updateData.trophy_prices = null;
+
+    // For partial updates (like just archiving), only update the provided field
+    // For full updates, include all fields
+    if (isPartialUpdate) {
+      console.log('🔵 [Backend] Processing partial update (archive only)');
+      // Only update the archived field and updated_at
+      if (req.body.hasOwnProperty('archived')) {
+        updateData.archived = archived === true || archived === 'true';
+        console.log('🔵 [Backend] Setting archived to:', updateData.archived, '(from value:', archived, ')');
+      }
+    } else {
+      // Full update - include all provided fields
+      if (name !== undefined) updateData.name = name;
+      if (category !== undefined) updateData.category = category;
+      if (size !== undefined) updateData.size = size;
+      if (price !== undefined && price !== null && price !== '') {
+        updateData.price = priceValue;
+      }
+      if (description !== undefined) updateData.description = description;
+      if (main_image !== undefined) updateData.main_image = main_image;
+      if (additional_images !== undefined) {
+        updateData.additional_images = additional_images || [];
+      }
+      if (stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== '') {
+        updateData.stock_quantity = parseInt(stock_quantity);
+      }
+      if (sold_quantity !== undefined) {
+        updateData.sold_quantity = soldQuantityValue;
+      }
+      if (branch_id !== undefined) {
+        updateData.branch_id = finalBranchId;
+      }
     }
 
-    if (sizeSurchargesValue !== null && sizeSurchargesValue !== undefined) {
-      updateData.size_surcharges = sizeSurchargesValue;
-    } else if (req.body.hasOwnProperty('size_surcharges') && req.body.size_surcharges === null) {
-      updateData.size_surcharges = null;
+    // Only add additional fields if NOT a partial update
+    if (!isPartialUpdate) {
+      // Add brand if provided or if it's an apparel product
+      if (finalBrand !== undefined) {
+        if (finalBrand !== null && finalBrand !== '') {
+          updateData.brand = finalBrand;
+        } else if (req.body.hasOwnProperty('brand')) {
+          // Explicitly set to null if brand is being cleared
+          updateData.brand = null;
+        }
+      }
+      
+      // Only add jersey_prices if it's not null (Supabase handles null differently)
+      // For updates, we need to explicitly set it even if null to clear it, or omit it to keep existing value
+      if (jerseyPricesValue !== null && jerseyPricesValue !== undefined) {
+        updateData.jersey_prices = jerseyPricesValue;
+      } else if (req.body.hasOwnProperty('jersey_prices') && req.body.jersey_prices === null) {
+        // Explicitly set to null if the request wants to clear it
+        updateData.jersey_prices = null;
+      }
+      
+      // Only add trophy_prices if it's not null
+      if (trophyPricesValue !== null && trophyPricesValue !== undefined) {
+        updateData.trophy_prices = trophyPricesValue;
+      } else if (req.body.hasOwnProperty('trophy_prices') && req.body.trophy_prices === null) {
+        // Explicitly set to null if the request wants to clear it
+        updateData.trophy_prices = null;
+      }
+
+      if (sizeSurchargesValue !== null && sizeSurchargesValue !== undefined) {
+        updateData.size_surcharges = sizeSurchargesValue;
+      } else if (req.body.hasOwnProperty('size_surcharges') && req.body.size_surcharges === null) {
+        updateData.size_surcharges = null;
+      }
+
+      if (fabricSurchargesValue !== null && fabricSurchargesValue !== undefined) {
+        updateData.fabric_surcharges = fabricSurchargesValue;
+      } else if (req.body.hasOwnProperty('fabric_surcharges') && req.body.fabric_surcharges === null) {
+        updateData.fabric_surcharges = null;
+      }
     }
 
-    if (fabricSurchargesValue !== null && fabricSurchargesValue !== undefined) {
-      updateData.fabric_surcharges = fabricSurchargesValue;
-    } else if (req.body.hasOwnProperty('fabric_surcharges') && req.body.fabric_surcharges === null) {
-      updateData.fabric_surcharges = null;
+    // Handle archived field - allow setting to true or false (for both partial and full updates)
+    if (req.body.hasOwnProperty('archived')) {
+      updateData.archived = archived === true || archived === 'true';
+      console.log('🔵 [Backend] Archived field in updateData:', updateData.archived, '(from:', archived, ')');
+    } else {
+      console.log('🔵 [Backend] No archived field in request body');
     }
 
     // Handle size_stocks - per-size stock quantities (for trophies with sizes)
-    let sizeStocksValue = null;
-    if (size_stocks !== undefined && size_stocks !== null) {
-      if (typeof size_stocks === 'string' && size_stocks.trim() !== '') {
-        try {
-          sizeStocksValue = JSON.parse(size_stocks);
-        } catch (e) {
-          console.error('❌ [Products API] Error parsing size_stocks string:', e);
-          sizeStocksValue = null;
+    // Only process for full updates, not partial updates
+    if (!isPartialUpdate) {
+      let sizeStocksValue = null;
+      if (size_stocks !== undefined && size_stocks !== null) {
+        if (typeof size_stocks === 'string' && size_stocks.trim() !== '') {
+          try {
+            sizeStocksValue = JSON.parse(size_stocks);
+          } catch (e) {
+            console.error('❌ [Products API] Error parsing size_stocks string:', e);
+            sizeStocksValue = null;
+          }
+        } else if (typeof size_stocks === 'object' && size_stocks !== null) {
+          sizeStocksValue = size_stocks;
         }
-      } else if (typeof size_stocks === 'object' && size_stocks !== null) {
-        sizeStocksValue = size_stocks;
       }
-    }
-    if (sizeStocksValue !== null && sizeStocksValue !== undefined) {
-      updateData.size_stocks = sizeStocksValue;
-      console.log('📦 [Products API] size_stocks being updated:', JSON.stringify(sizeStocksValue, null, 2));
-      console.log('📦 [Products API] size_stocks type:', typeof sizeStocksValue, Array.isArray(sizeStocksValue) ? '(array)' : '(object)');
-    } else if (req.body.hasOwnProperty('size_stocks') && req.body.size_stocks === null) {
-      // Explicitly set to null if the request wants to clear it
-      updateData.size_stocks = null;
-      console.log('📦 [Products API] Clearing size_stocks (setting to null)');
-    } else {
-      console.log('📦 [Products API] No size_stocks to update (value is null/undefined)');
+      if (sizeStocksValue !== null && sizeStocksValue !== undefined) {
+        updateData.size_stocks = sizeStocksValue;
+        console.log('📦 [Products API] size_stocks being updated:', JSON.stringify(sizeStocksValue, null, 2));
+        console.log('📦 [Products API] size_stocks type:', typeof sizeStocksValue, Array.isArray(sizeStocksValue) ? '(array)' : '(object)');
+      } else if (req.body.hasOwnProperty('size_stocks') && req.body.size_stocks === null) {
+        // Explicitly set to null if the request wants to clear it
+        updateData.size_stocks = null;
+        console.log('📦 [Products API] Clearing size_stocks (setting to null)');
+      } else {
+        console.log('📦 [Products API] No size_stocks to update (value is null/undefined)');
+      }
     }
 
     console.log('📦 [Products API] Final update data:', JSON.stringify(updateData, null, 2));
     console.log('📦 [Products API] size_stocks in updateData:', updateData.size_stocks);
     console.log('📦 [Products API] jersey_prices in updateData:', updateData.jersey_prices);
     
-    console.log('📦 [Products API] About to update in Supabase with data:', JSON.stringify(updateData, null, 2));
+    console.log('🔵 [Backend] About to update in Supabase with data:', JSON.stringify(updateData, null, 2));
+    console.log('🔵 [Backend] Update data keys:', Object.keys(updateData));
     
     // Update the product using Supabase
+    console.log('🔵 [Backend] Executing Supabase update...');
     const { data, error } = await supabase
       .from('products')
       .update(updateData)
       .eq('id', id)
       .select('*')
       .single();
+    
+    console.log('🔵 [Backend] Supabase update response - Error:', error);
+    console.log('🔵 [Backend] Supabase update response - Data:', data ? { id: data.id, name: data.name, archived: data.archived } : 'NO DATA');
 
     // If error is specifically about missing size_stocks column in schema cache, retry without it
     if (error && error.message?.includes("Could not find the 'size_stocks' column") && error.message?.includes('schema cache')) {
@@ -1146,13 +1390,16 @@ router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, r
     }
 
     if (error) {
-      console.error('❌ Supabase update error:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
-      console.error('❌ Update data that failed:', JSON.stringify(updateData, null, 2));
+      console.error('🔴 [Backend] Supabase update error:', error);
+      console.error('🔴 [Backend] Error code:', error.code);
+      console.error('🔴 [Backend] Error message:', error.message);
+      console.error('🔴 [Backend] Error details:', JSON.stringify(error, null, 2));
+      console.error('🔴 [Backend] Update data that failed:', JSON.stringify(updateData, null, 2));
       return res.status(500).json({ error: error.message });
     }
+    
+    console.log('🟢 [Backend] Product updated successfully');
+    console.log('🟢 [Backend] Updated product archived status:', data?.archived);
 
     if (!data) {
       return res.status(404).json({ error: 'Product not found' });
@@ -1176,6 +1423,7 @@ router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, r
     console.log('✅ [Products API] Product updated successfully');
     console.log('✅ [Products API] Updated product size_surcharges:', data?.size_surcharges);
     console.log('✅ [Products API] Updated product fabric_surcharges:', data?.fabric_surcharges);
+    console.log('🟢 [Backend] Product updated in database - archived:', data?.archived);
 
     // Transform the data to match the expected format
     const [productWithBranch] = await attachBranchNames([data]);
@@ -1184,6 +1432,7 @@ router.put('/:id', authenticateSupabaseToken, requireAdminOrOwner, async (req, r
       available_sizes: parseAvailableSizes(productWithBranch.size)
     };
 
+    console.log('🟢 [Backend] Sending response with transformed data - archived:', transformedData.archived);
     res.json(transformedData);
   } catch (error) {
     console.error('Error updating product:', error);

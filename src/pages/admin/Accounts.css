@@ -23,6 +23,13 @@
   transition: max-width 0.3s ease;
 }
 
+/* Reduce side padding for accounts page */
+.admin-main-content:has(.accounts-container),
+.admin-dashboard:has(.accounts-container) .admin-main-content {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
 /* Responsive when sidebar is collapsed */
 .admin-dashboard.sidebar-collapsed .accounts-container,
 body.sidebar-collapsed .accounts-container {
@@ -47,7 +54,7 @@ body.sidebar-collapsed .accounts-container {
   align-items: center;
   margin-bottom: 1.5rem;
   background: white;
-  padding: 2rem;
+  padding: 1.5rem 1rem;
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(226, 232, 240, 0.8);
@@ -307,6 +314,7 @@ body.sidebar-collapsed .accounts-container {
   background: white;
   position: relative;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -324,12 +332,44 @@ body.sidebar-collapsed .accounts-container {
     max-width: 100% !important;
     width: 100% !important;
   }
+  
+  /* Ensure artist table fits container */
+  .accounts-table-container:has(.artist-table) {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .accounts-table-container .artist-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+  }
 }
 
 /* Ensure admin and artist table containers don't restrict width */
 .accounts-table-container .admin-table,
 .accounts-table-container .artist-table {
   display: table;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure artist table Actions column stays within bounds */
+.accounts-table-container .artist-table td:last-child,
+.accounts-table-container .artist-table th:last-child {
+  max-width: 8%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Compact action buttons in artist table */
+.artist-table .action-buttons {
+  display: inline-flex;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
   width: 100%;
 }
 
@@ -397,6 +437,14 @@ body.sidebar-collapsed .accounts-container {
   table-layout: fixed !important;
   min-width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* Ensure Actions column stays within table */
+.artist-table td:last-child,
+.artist-table th:last-child {
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .customer-table {
@@ -419,87 +467,101 @@ body.sidebar-collapsed .accounts-container {
 /* Distribute column widths for admin table - must total 100% */
 .admin-table th:nth-child(1),
 .admin-table td:nth-child(1) {
-  width: 20% !important;
-  min-width: 20%;
-  max-width: 20%;
-}
-
-.admin-table th:nth-child(2),
-.admin-table td:nth-child(2) {
-  width: 25% !important;
-  min-width: 25%;
-  max-width: 25%;
-}
-
-.admin-table th:nth-child(3),
-.admin-table td:nth-child(3) {
-  width: 15% !important;
-  min-width: 15%;
-  max-width: 15%;
-}
-
-.admin-table th:nth-child(4),
-.admin-table td:nth-child(4) {
-  width: 25% !important;
-  min-width: 25%;
-  max-width: 25%;
-}
-
-.admin-table th:nth-child(5),
-.admin-table td:nth-child(5) {
-  width: 15% !important;
-  min-width: 15%;
-  max-width: 15%;
-}
-
-/* Distribute column widths for artist table - must total 100% (7 columns) */
-.artist-table th:nth-child(1),
-.artist-table td:nth-child(1) {
   width: 18% !important;
   min-width: 18%;
   max-width: 18%;
 }
 
-.artist-table th:nth-child(2),
-.artist-table td:nth-child(2) {
+.admin-table th:nth-child(2),
+.admin-table td:nth-child(2) {
   width: 22% !important;
   min-width: 22%;
   max-width: 22%;
 }
 
+.admin-table th:nth-child(3),
+.admin-table td:nth-child(3) {
+  width: 20% !important;
+  min-width: 20%;
+  max-width: 20%;
+}
+
+.admin-table th:nth-child(4),
+.admin-table td:nth-child(4) {
+  width: 10% !important;
+  min-width: 10%;
+  max-width: 10%;
+}
+
+.admin-table th:nth-child(5),
+.admin-table td:nth-child(5) {
+  width: 20% !important;
+  min-width: 20%;
+  max-width: 20%;
+}
+
+.admin-table th:nth-child(6),
+.admin-table td:nth-child(6) {
+  width: 10% !important;
+  min-width: 10%;
+  max-width: 10%;
+}
+
+/* Distribute column widths for artist table - must total 100% (8 columns) */
+.artist-table th:nth-child(1),
+.artist-table td:nth-child(1) {
+  width: 16% !important;
+  min-width: 16%;
+  max-width: 16%;
+}
+
+.artist-table th:nth-child(2),
+.artist-table td:nth-child(2) {
+  width: 18% !important;
+  min-width: 18%;
+  max-width: 18%;
+}
+
 .artist-table th:nth-child(3),
 .artist-table td:nth-child(3) {
-  width: 12% !important;
-  min-width: 12%;
-  max-width: 12%;
+  width: 14% !important;
+  min-width: 14%;
+  max-width: 14%;
 }
 
 .artist-table th:nth-child(4),
 .artist-table td:nth-child(4) {
-  width: 12% !important;
-  min-width: 12%;
-  max-width: 12%;
+  width: 11% !important;
+  min-width: 11%;
+  max-width: 11%;
 }
 
 .artist-table th:nth-child(5),
 .artist-table td:nth-child(5) {
-  width: 12% !important;
-  min-width: 12%;
-  max-width: 12%;
+  width: 11% !important;
+  min-width: 11%;
+  max-width: 11%;
 }
 
 .artist-table th:nth-child(6),
 .artist-table td:nth-child(6) {
-  width: 12% !important;
-  min-width: 12%;
-  max-width: 12%;
+  width: 11% !important;
+  min-width: 11%;
+  max-width: 11%;
 }
 
 .artist-table th:nth-child(7),
 .artist-table td:nth-child(7) {
-  width: 12% !important;
-  min-width: 12%;
-  max-width: 12%;
+  width: 11% !important;
+  min-width: 11%;
+  max-width: 11%;
+}
+
+.artist-table th:nth-child(8),
+.artist-table td:nth-child(8) {
+  width: 8% !important;
+  min-width: 8%;
+  max-width: 8%;
 }
 
 /* Distribute column widths for customer table - must total 100% (5 columns) */
@@ -591,8 +653,37 @@ body.sidebar-collapsed .accounts-container {
   vertical-align: middle;
 }
 
+/* User ID Cell - Two Line Display */
+.accounts-table td.user-id-cell {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  word-break: break-all;
+  white-space: normal;
+  padding: 0.875rem 0.75rem;
+}
+
+.accounts-table td.user-id-cell > div {
+  display: block;
+  line-height: 1.5;
+}
+
+.accounts-table td.user-id-cell > div:first-child {
+  margin-bottom: 0.125rem;
+}
+
 .accounts-table td:last-child {
   border-right: none;
+}
+
+/* Role Column - Compact Display */
+.admin-table th:nth-child(4),
+.admin-table td:nth-child(4) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.75rem;
 }
 
 /* ===========================================
@@ -603,15 +694,16 @@ body.sidebar-collapsed .accounts-container {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.6875rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 16px;
+  font-size: 0.625rem;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .role-badge.owner {
@@ -934,12 +1026,14 @@ body.sidebar-collapsed .accounts-container {
 
 /* Large Desktop (1400px+) */
 @media (min-width: 1400px) {
-  .admin-main-content {
-    padding: 3rem;
+  .admin-main-content:has(.accounts-container),
+  .admin-dashboard:has(.accounts-container) .admin-main-content {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
   }
   
   .accounts-header {
-    padding: 2.5rem;
+    padding: 1.5rem 1rem;
   }
   
   .accounts-header h1 {
@@ -978,7 +1072,7 @@ body.sidebar-collapsed .accounts-container {
     flex-direction: column;
     gap: 1.5rem;
     align-items: stretch;
-    padding: 1.5rem;
+    padding: 1.25rem 0.75rem;
   }
   
   .accounts-header h1 {
@@ -1033,7 +1127,8 @@ body.sidebar-collapsed .accounts-container {
   
   .artist-table {
     width: 100% !important;
-    min-width: 800px; /* Slightly wider for 7 columns */
+    min-width: 100% !important;
+    max-width: 100% !important;
   }
   
   .customer-table {
@@ -1067,7 +1162,7 @@ body.sidebar-collapsed .accounts-container {
 @media (max-width: 767px) {
   
   .accounts-header {
-    padding: 1.25rem;
+    padding: 1rem 0.75rem;
   }
   
   .accounts-header h1 {
@@ -1123,6 +1218,13 @@ body.sidebar-collapsed .accounts-container {
     max-width: 150px;
   }
   
+  /* User ID cells on mobile - ensure two-line display works */
+  .accounts-table td.user-id-cell {
+    font-size: 0.7rem;
+    padding: 0.75rem 0.5rem;
+    max-width: 140px;
+  }
+  
   /* Artist table: Make email and name wrap on very small screens */
   .artist-table td:nth-child(1),
   .artist-table td:nth-child(2) {
@@ -1153,17 +1255,23 @@ body.sidebar-collapsed .accounts-container {
   
   .admin-table th:nth-child(3),
   .admin-table td:nth-child(3) {
-    min-width: 70px;
+    min-width: 100px;
   }
   
   .admin-table th:nth-child(4),
   .admin-table td:nth-child(4) {
-    min-width: 90px;
+    min-width: 60px;
+    max-width: 80px;
   }
   
   .admin-table th:nth-child(5),
   .admin-table td:nth-child(5) {
-    min-width: 60px;
+    min-width: 90px;
+  }
+  
+  .admin-table th:nth-child(6),
+  .admin-table td:nth-child(6) {
+    min-width: 50px;
   }
   
   /* Artist table: Adjust column widths for mobile */
@@ -1199,7 +1307,13 @@ body.sidebar-collapsed .accounts-container {
   
   .artist-table th:nth-child(7),
   .artist-table td:nth-child(7) {
+    min-width: 70px;
+  }
+  
+  .artist-table th:nth-child(8),
+  .artist-table td:nth-child(8) {
     min-width: 60px;
+    max-width: 80px;
   }
   
   /* Customer table: Adjust column widths for mobile */
@@ -1267,7 +1381,7 @@ body.sidebar-collapsed .accounts-container {
 @media (max-width: 480px) {
   
   .accounts-header {
-    padding: 1rem;
+    padding: 0.875rem 0.5rem;
   }
   
   .accounts-header h1 {
@@ -1329,17 +1443,23 @@ body.sidebar-collapsed .accounts-container {
   
   .admin-table th:nth-child(3),
   .admin-table td:nth-child(3) {
-    min-width: 60px;
+    min-width: 90px;
   }
   
   .admin-table th:nth-child(4),
   .admin-table td:nth-child(4) {
-    min-width: 80px;
+    min-width: 50px;
+    max-width: 70px;
   }
   
   .admin-table th:nth-child(5),
   .admin-table td:nth-child(5) {
-    min-width: 50px;
+    min-width: 80px;
+  }
+  
+  .admin-table th:nth-child(6),
+  .admin-table td:nth-child(6) {
+    min-width: 45px;
   }
   
   /* Artist table: Further optimize for small screens */
@@ -1378,6 +1498,12 @@ body.sidebar-collapsed .accounts-container {
   .artist-table th:nth-child(7),
   .artist-table td:nth-child(7) {
     min-width: 50px;
+  }
+  
+  .artist-table th:nth-child(8),
+  .artist-table td:nth-child(8) {
+    min-width: 50px;
+    max-width: 60px;
   }
   
   /* Customer table: Further optimize for small screens */
@@ -1470,7 +1596,7 @@ body.sidebar-collapsed .accounts-container {
 @media (max-width: 319px) {
   
   .accounts-header {
-    padding: 0.875rem;
+    padding: 0.75rem 0.5rem;
   }
   
   .accounts-header h1 {

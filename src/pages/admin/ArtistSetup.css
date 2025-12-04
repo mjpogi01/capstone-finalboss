@@ -1,7 +1,16 @@
 .artist-setup {
   min-height: 100vh;
   background: #f5f7fa;
-  padding: 20px;
+  padding: 1.5rem;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Reduce padding on admin-main-content when it contains artist-setup */
+.admin-main-content:has(.artist-setup) {
+  padding: 0 1rem 1rem 1rem;
+  padding-top: 0;
 }
 
 .artist-setup-header {
@@ -21,11 +30,11 @@
 }
 
 .artist-setup-instructions {
-  max-width: 800px;
-  margin: 40px auto;
+  max-width: 100%;
+  margin: 2rem 0;
   background: white;
   border-radius: 15px;
-  padding: 30px;
+  padding: 1.5rem;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 

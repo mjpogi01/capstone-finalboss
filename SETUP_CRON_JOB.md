@@ -301,3 +301,27 @@ For questions or issues, check the Supabase documentation on [pg_cron](https://s
 
 
 
+
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+# Email Configuration (Gmail SMTP) 
+# Application Configuration 
+PORT=4000
+#NODE_ENV=production
+#FRONTEND_URL=https://yohannssportswear.com
+#CLIENT_URL=https://yohannssportswear.com
+CLIENT_URL=http://localhost:3000
+DATABASE_URL=postgresql://postgres.YOUR_USER:YOUR_PASSWORD@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+SUPABASE_POOLER_URL=postgresql://postgres.YOUR_USER:YOUR_PASSWORD@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+GROQ_API_KEY=your_groq_api_key_here
+RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key_here
+REACT_APP_RECAPTCHA_SITE_KEY=your_recaptcha_site_key_here
+RESEND_API_KEY=your_resend_api_key_here
+RESEND_FROM_EMAIL='mjmonday01@yohannssportswear.com'
+
+
+

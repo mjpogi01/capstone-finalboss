@@ -775,7 +775,7 @@ async function getChartDataset(chartId, filters = {}, options = {}) {
     case 'salesForecast': {
       const branchContext = await resolveBranchContextAnalytics(options.user || {});
       const forecastData = await computeSalesForecast({
-        requestedRange: options.range || 'restOfYear',
+        requestedRange: options.range || 'nextQuarter',
         branchContext
       });
       const rows = Array.isArray(forecastData.forecast) ? forecastData.forecast : [];
@@ -787,7 +787,7 @@ async function getChartDataset(chartId, filters = {}, options = {}) {
           summary: forecastData.summary || null,
           model: forecastData.model || null,
           trainingWindow: forecastData.trainingWindow || null,
-          range: forecastData.range || options.range || 'restOfYear',
+          range: forecastData.range || options.range || 'nextQuarter',
           rangeLabel: forecastData.rangeLabel || null
         }
       };

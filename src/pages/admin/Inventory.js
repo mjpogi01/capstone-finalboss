@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import './Inventory.css';
 import './admin-shared.css';
 import Sidebar from '../../components/admin/Sidebar';
 import AddProductModal from '../../components/admin/AddProductModal';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 import { supabase } from '../../lib/supabase';
 import { getAPI_URL } from '../../config/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faPlus, faImage, faChevronDown, faChevronUp, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faBoxArchive, faBoxOpen, faPlus, faImage, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { FaChevronDown, FaChevronUp, FaSearch as FaSearchIcon } from 'react-icons/fa';
 
 const Inventory = () => {
   const [activePage, setActivePage] = useState('inventory');
@@ -18,21 +19,54 @@ const Inventory = () => {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [expandedSizes, setExpandedSizes] = useState({});
-  const [openStockDropdown, setOpenStockDropdown] = useState(null); // Track which product's stock dropdown is open
-  const [openSizesDropdown, setOpenSizesDropdown] = useState(null); // Track which product's sizes dropdown is open
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, productId: null });
-  const [sizesDropdownPosition, setSizesDropdownPosition] = useState({ top: 0, left: 0, productId: null });
-  const triggerRefs = useRef({}); // Store refs to trigger buttons
-  const sizesTriggerRefs = useRef({}); // Store refs to sizes dropdown trigger buttons
   const [filters, setFilters] = useState({
     branch: 'all',
     category: 'all',
     stockSort: 'none',
     priceSort: 'none',
-    soldSort: 'none'
+    soldSort: 'none',
+    showArchived: false // New filter to show/hide archived products
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef(null);
+  const [archiveModal, setArchiveModal] = useState({
+    isOpen: false,
+    productId: null,
+    productName: ''
+  });
+  const [unarchiveModal, setUnarchiveModal] = useState({
+    isOpen: false,
+    productId: null,
+    productName: ''
+  });
+  
+  // Default column visibility - load from localStorage or use defaults
+  const defaultColumns = {
+    image: true,
+    sku: true,
+    brand: true,
+    name: true,
+    price: true,
+    stock: true,
+    sold: true,
+    category: true,
+    description: true,
+    actions: true // Always show actions
+  };
+  
+  const [columnVisibility, setColumnVisibility] = useState(() => {
+    try {
+      const saved = localStorage.getItem('inventoryColumnVisibility');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...defaultColumns, ...parsed, actions: true }; // Always show actions
+      }
+    } catch (e) {
+      console.error('Error loading column visibility:', e);
+    }
+    return defaultColumns;
+  });
 
   useEffect(() => {
     fetchProducts();
@@ -40,9 +74,29 @@ const Inventory = () => {
   }, []);
 
   useEffect(() => {
+    console.log('🟡 [useEffect] applyFilters triggered by dependencies change');
+    console.log('🟡 [useEffect] Products count:', products.length);
+    console.log('🟡 [useEffect] Filters:', filters);
+    console.log('🟡 [useEffect] Search term:', searchTerm);
     applyFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, filters, searchTerm]);
+
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFilters && filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilters(false);
+      }
+    };
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showFilters]);
 
   const fetchProducts = async () => {
     try {
@@ -67,24 +121,62 @@ const Inventory = () => {
   };
 
   const applyFilters = () => {
+    console.log('🟡 [Filters] applyFilters called');
+    console.log('🟡 [Filters] Products count:', products.length);
+    console.log('🟡 [Filters] Current filters:', filters);
+    
     if (!Array.isArray(products) || products.length === 0) {
+      console.log('🟡 [Filters] No products, setting empty filtered list');
       setFilteredProducts([]);
       return;
     }
 
     let filtered = [...products];
+    console.log('🟡 [Filters] Starting with', filtered.length, 'products');
 
-    // Filter by product name search (before grouping)
+    // Filter by archived status
+    if (!filters.showArchived) {
+      const beforeArchiveFilter = filtered.length;
+      // When showArchived is false (default), hide archived products (show only active products)
+      filtered = filtered.filter(product => {
+        const isArchived = product.archived === true;
+        if (isArchived) {
+          console.log('🟡 [Filters] Filtering out archived product:', { id: product.id, name: product.name, archived: product.archived });
+        }
+        return !isArchived;
+      });
+      console.log('🟡 [Filters] After archive filter:', beforeArchiveFilter, '->', filtered.length, 'products (showArchived:', filters.showArchived, ')');
+    } else {
+      console.log('🟡 [Filters] showArchived is true - showing all products including archived');
+    }
+    // When showArchived is true, show all products (including archived ones) - no filtering needed
+
+    // Filter by product search (searches name, SKU, brand, and description)
     if (searchTerm.trim() !== '') {
-      filtered = filtered.filter(product => 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
-      );
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(product => {
+        const name = (product.name || '').toLowerCase();
+        const sku = (product.sku || '').toLowerCase();
+        const brand = (product.brand || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        return name.includes(searchLower) || 
+               sku.includes(searchLower) || 
+               brand.includes(searchLower) || 
+               description.includes(searchLower);
+      });
     }
 
     // Filter by branch (before grouping if specific branch is selected)
     if (filters.branch !== 'all') {
       const selectedBranchId = parseInt(filters.branch);
-      filtered = filtered.filter(product => product.branch_id === selectedBranchId);
+      if (!isNaN(selectedBranchId)) {
+        filtered = filtered.filter(product => {
+          const productBranchId = product.branch_id !== null && product.branch_id !== undefined 
+            ? parseInt(product.branch_id) 
+            : null;
+          return productBranchId === selectedBranchId;
+        });
+      }
       
       // When filtering by specific branch, deduplicate products by name and category
       // This prevents duplicates if the same product exists multiple times in the same branch
@@ -277,39 +369,63 @@ const Inventory = () => {
       console.log(`📦 [Inventory] Grouped ${filtered.length} products from ${filtered.reduce((sum, p) => sum + (p.branch_ids?.length || 1), 0)} total product records`);
     }
 
-    // Filter by category
+    // Filter by category (case-insensitive)
     if (filters.category !== 'all') {
-      filtered = filtered.filter(product => product.category === filters.category);
+      filtered = filtered.filter(product => 
+        (product.category || '').toLowerCase() === filters.category.toLowerCase()
+      );
     }
 
-    // Sort by stock
+    // Expand products with sizes into separate rows (one row per size)
+    // This must happen BEFORE sorting so we can sort individual size rows
+    const expandedProducts = expandProductsBySize(filtered);
+
+    // Apply sorting - combine multiple sorts so they work together
+    // Priority: Stock > Price > Sold (if multiple are selected)
+    // Sort AFTER expansion so individual size rows are sorted correctly
+    const activeSorts = [];
     if (filters.stockSort !== 'none') {
-      filtered.sort((a, b) => {
-        const aStock = a.stock_quantity || 0;
-        const bStock = b.stock_quantity || 0;
-        return filters.stockSort === 'asc' ? aStock - bStock : bStock - aStock;
-      });
+      activeSorts.push({ type: 'stock', direction: filters.stockSort });
     }
-
-    // Sort by price
     if (filters.priceSort !== 'none') {
-      filtered.sort((a, b) => {
-        const aPrice = parseFloat(a.price) || 0;
-        const bPrice = parseFloat(b.price) || 0;
-        return filters.priceSort === 'asc' ? aPrice - bPrice : bPrice - aPrice;
-      });
+      activeSorts.push({ type: 'price', direction: filters.priceSort });
     }
-
-    // Sort by sold (assuming we'll add a sold field to products)
     if (filters.soldSort !== 'none') {
-      filtered.sort((a, b) => {
-        const aSold = a.sold_quantity || 0;
-        const bSold = b.sold_quantity || 0;
-        return filters.soldSort === 'asc' ? aSold - bSold : bSold - aSold;
-      });
+      activeSorts.push({ type: 'sold', direction: filters.soldSort });
     }
 
-    setFilteredProducts(Array.isArray(filtered) ? filtered : []);
+    if (activeSorts.length > 0 && Array.isArray(expandedProducts)) {
+      expandedProducts.sort((a, b) => {
+        for (const sort of activeSorts) {
+          let comparison = 0;
+          
+          if (sort.type === 'stock') {
+            // Use stock_quantity which is now set correctly for each size row
+            const aStock = a.stock_quantity || 0;
+            const bStock = b.stock_quantity || 0;
+            comparison = sort.direction === 'asc' ? aStock - bStock : bStock - aStock;
+          } else if (sort.type === 'price') {
+            const aPrice = parseFloat(a.price) || 0;
+            const bPrice = parseFloat(b.price) || 0;
+            comparison = sort.direction === 'asc' ? aPrice - bPrice : bPrice - aPrice;
+          } else if (sort.type === 'sold') {
+            const aSold = a.sold_quantity || 0;
+            const bSold = b.sold_quantity || 0;
+            comparison = sort.direction === 'asc' ? aSold - bSold : bSold - aSold;
+          }
+          
+          // If values are different, return the comparison
+          // If values are equal, continue to next sort criteria
+          if (comparison !== 0) {
+            return comparison;
+          }
+        }
+        // If all sort criteria are equal, maintain original order
+        return 0;
+      });
+    }
+    
+    setFilteredProducts(Array.isArray(expandedProducts) ? expandedProducts : []);
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -317,6 +433,28 @@ const Inventory = () => {
       ...prev,
       [filterType]: value
     }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      branch: 'all',
+      category: 'all',
+      stockSort: 'none',
+      priceSort: 'none',
+      soldSort: 'none',
+      showArchived: false
+    });
+    setSearchTerm('');
+  };
+
+  const hasActiveFilters = () => {
+    return filters.branch !== 'all' || 
+           filters.category !== 'all' || 
+           filters.stockSort !== 'none' ||
+           filters.priceSort !== 'none' ||
+           filters.soldSort !== 'none' ||
+           filters.showArchived ||
+           searchTerm.trim() !== '';
   };
 
   const getUniqueBranches = () => {
@@ -372,7 +510,14 @@ const Inventory = () => {
   };
 
   const handleEditProduct = (product) => {
-    setEditingProduct(product);
+    // If product is expanded (has _originalId), we need to find the original product
+    // For now, we'll pass the product as-is but note that editing size variants
+    // will edit the entire product (all sizes)
+    const originalProduct = product._originalId 
+      ? products.find(p => p.id === product._originalId)
+      : products.find(p => p.id === product.id);
+    
+    setEditingProduct(originalProduct || product);
     setShowAddModal(true);
   };
 
@@ -390,134 +535,208 @@ const Inventory = () => {
     setEditingProduct(null);
   };
 
-  const toggleSizesDropdown = (productId, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    
-    if (openSizesDropdown === productId) {
-      // Closing dropdown
-      setOpenSizesDropdown(null);
-      setSizesDropdownPosition({ top: 0, left: 0, productId: null });
-    } else {
-      // Opening dropdown - calculate position for portal
-      const trigger = sizesTriggerRefs.current[productId];
-      if (trigger) {
-        const rect = trigger.getBoundingClientRect();
-        const dropdownWidth = 320;
-        const dropdownHeight = 300;
-        
-        // Position below the button, centered
-        let left = rect.left + (rect.width / 2) - (dropdownWidth / 2);
-        let top = rect.bottom + 8;
-        
-        // Adjust if would go off right edge
-        if (left + dropdownWidth > window.innerWidth - 20) {
-          left = window.innerWidth - dropdownWidth - 20;
-        }
-        
-        // Adjust if would go off left edge
-        if (left < 20) {
-          left = 20;
-        }
-        
-        // Adjust if would go off bottom
-        if (top + dropdownHeight > window.innerHeight - 20) {
-          top = rect.top - dropdownHeight - 8;
-        }
-        
-        // Adjust if would go off top
-        if (top < 20) {
-          top = 20;
-        }
-        
-        setSizesDropdownPosition({ top, left, productId });
-        setOpenSizesDropdown(productId);
-      }
-    }
-  };
-
-  const toggleStockDropdown = (productId, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    
-    if (openStockDropdown === productId) {
-      // Closing dropdown
-      setOpenStockDropdown(null);
-      setDropdownPosition({ top: 0, left: 0, productId: null });
-    } else {
-      // Opening dropdown - calculate position for portal
-      const trigger = triggerRefs.current[productId];
-      if (trigger) {
-        const rect = trigger.getBoundingClientRect();
-        const dropdownWidth = 320;
-        const dropdownHeight = 300;
-        
-        // Position below the button, centered
-        let left = rect.left + (rect.width / 2) - (dropdownWidth / 2);
-        let top = rect.bottom + 8;
-        
-        // Adjust if would go off right edge
-        if (left + dropdownWidth > window.innerWidth - 20) {
-          left = window.innerWidth - dropdownWidth - 20;
-        }
-        
-        // Adjust if would go off left edge
-        if (left < 20) {
-          left = 20;
-        }
-        
-        // Adjust if would go off bottom
-        if (top + dropdownHeight > window.innerHeight - 20) {
-          top = rect.top - dropdownHeight - 8;
-        }
-        
-        // Adjust if would go off top
-        if (top < 20) {
-          top = 20;
-        }
-        
-        setDropdownPosition({ top, left, productId });
-        setOpenStockDropdown(productId);
-      }
-    }
-  };
-
-  // Close stock dropdown when clicking outside or scrolling
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (openStockDropdown && !event.target.closest('.stock-dropdown-container') && !event.target.closest('.stock-dropdown-overlay')) {
-        setOpenStockDropdown(null);
-      }
-      if (openSizesDropdown && !event.target.closest('.sizes-dropdown-container') && !event.target.closest('.sizes-dropdown-overlay')) {
-        setOpenSizesDropdown(null);
-      }
-    };
-
-    const handleScroll = () => {
-      if (openStockDropdown) {
-        setOpenStockDropdown(null);
-      }
-      if (openSizesDropdown) {
-        setOpenSizesDropdown(null);
-      }
-    };
-
-    if (openStockDropdown || openSizesDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScroll, true); // Use capture phase to catch all scrolls
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        window.removeEventListener('scroll', handleScroll, true);
-      };
-    }
-  }, [openStockDropdown, openSizesDropdown]);
 
   const isTrophyOrBall = (category) => {
     if (!category) return false;
     const normalizedCategory = category.toLowerCase();
     return normalizedCategory === 'trophies' || normalizedCategory === 'balls';
+  };
+
+  // Helper function to normalize SKU format (ensure dashes and uppercase)
+  const normalizeSKU = (sku) => {
+    if (!sku) return null;
+    const upperSKU = sku.toUpperCase().trim();
+    
+    // If already has dashes, just return uppercase
+    if (upperSKU.includes('-')) {
+      return upperSKU;
+    }
+    
+    // Convert old format to new format (XXX-XXXX-XXX)
+    if (upperSKU.length >= 10) {
+      const prefix = upperSKU.slice(0, 3);
+      const productId = upperSKU.slice(3, 7);
+      const sizePart = upperSKU.slice(7, 10);
+      return `${prefix}-${productId}-${sizePart}`;
+    } else if (upperSKU.length >= 7) {
+      const prefix = upperSKU.slice(0, 3);
+      const productId = upperSKU.slice(3).padEnd(4, '0');
+      return `${prefix}-${productId}-000`;
+    }
+    
+    return upperSKU;
+  };
+
+  // Helper function to generate size suffix (3 characters, zero-padded for numeric sizes)
+  const generateSizeSuffix = (sizeValue) => {
+    if (!sizeValue || sizeValue === '' || sizeValue === 'N/A') {
+      return '000';
+    }
+    
+    // Remove special characters and spaces, keep alphanumeric
+    const cleanSize = String(sizeValue).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
+    // Check if size is purely numeric
+    const isNumeric = /^\d+$/.test(cleanSize);
+    
+    if (isNumeric) {
+      // For numeric sizes, pad with leading zeros to 3 digits (e.g., 8 → 008, 10 → 010, 18 → 018)
+      const numSize = parseInt(cleanSize, 10);
+      return String(numSize).padStart(3, '0');
+    } else {
+      // For non-numeric sizes (S, SMALL, M, MEDIUM, XL, 3XL, 4XL, etc.)
+      // Use first 3 alphanumeric characters, pad with zeros if needed
+      if (cleanSize.length >= 3) {
+        // Take first 3 characters (e.g., "SMALL" → "SMA", "MEDIUM" → "MED", "3XL" → "3XL")
+        return cleanSize.slice(0, 3);
+      } else {
+        // Pad short sizes with zeros (e.g., "S" → "S00", "M" → "M00", "XL" → "XL0")
+        return cleanSize.padEnd(3, '0');
+      }
+    }
+  };
+
+  // Generate SKU for a size variant (matches backend SKU generation logic - format: XXX-XXXX-XXX)
+  const generateSizeVariantSKU = (product, size) => {
+    // If product already has a SKU, use it as base
+    if (product.sku) {
+      // Normalize SKU - ensure uppercase
+      const normalizedSKU = product.sku.toUpperCase();
+      
+      // If SKU has dashes (new format), use it
+      if (normalizedSKU.includes('-')) {
+        const parts = normalizedSKU.split('-');
+        const category = (product.category || '').toLowerCase().trim();
+        const isOnStock = ['trophies', 'balls', 'medals'].includes(category);
+        
+        if (isOnStock && size && parts.length === 3) {
+          // For on-stock products, replace last part with size suffix
+          const sizeSuffix = generateSizeSuffix(size);
+          return `${parts[0]}-${parts[1]}-${sizeSuffix}`.toUpperCase();
+        } else {
+          // Use existing SKU as-is for apparel or if no size
+          return normalizedSKU;
+        }
+      } else {
+        // Old format without dashes - convert to new format
+        // Extract parts from old format (assuming format like "BAL5aea000" or "BAL5aea")
+        if (normalizedSKU.length >= 7) {
+          const prefix = normalizedSKU.slice(0, 3);
+          const productId = normalizedSKU.length >= 7 ? normalizedSKU.slice(3, 7) : normalizedSKU.slice(3).padEnd(4, '0');
+          const sizePart = normalizedSKU.length >= 10 ? normalizedSKU.slice(7, 10) : '000';
+          const category = (product.category || '').toLowerCase().trim();
+          const isOnStock = ['trophies', 'balls', 'medals'].includes(category);
+          
+          if (isOnStock && size) {
+            const sizeSuffix = generateSizeSuffix(size);
+            return `${prefix}-${productId}-${sizeSuffix}`.toUpperCase();
+          } else {
+            return `${prefix}-${productId}-${sizePart}`.toUpperCase();
+          }
+        }
+      }
+    }
+    
+    // Fallback: Generate new SKU if product doesn't have one
+    const CATEGORY_PREFIXES = {
+      'trophies': 'TRP',
+      'balls': 'BAL',
+      'medals': 'MED',
+      'jerseys': 'JRS',
+      'uniforms': 'UNF',
+      't-shirts': 'TSH',
+      'long sleeves': 'LGS',
+      'hoodies': 'HOD',
+      'jackets': 'JKT',
+      'accessories': 'ACC',
+      'hats': 'HAT'
+    };
+    
+    const category = (product.category || '').toLowerCase().trim();
+    const prefix = (CATEGORY_PREFIXES[category] || category.slice(0, 3).padEnd(3, 'X')).toUpperCase();
+    
+    // Generate product ID from product name + category (NOT product.id or branch_id)
+    // Same product across branches should have the same SKU
+    const productName = (product?.name || '').trim();
+    const categoryForHash = category.toUpperCase().trim();
+    
+    // Create hash from category and product name (same as backend logic)
+    let hash = 0;
+    const str = categoryForHash + productName;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    const productId = Math.abs(hash).toString(36).toUpperCase().slice(-4).padStart(4, '0');
+    
+    const sizeSuffix = size ? generateSizeSuffix(size) : '000';
+    
+    // Check if this is on-stock (trophies, balls, medals) - include size in SKU
+    const isOnStock = ['trophies', 'balls', 'medals'].includes(category);
+    
+    if (isOnStock) {
+      // On-stock: XXX-XXXX-XXX format
+      return `${prefix}-${productId}-${sizeSuffix}`.toUpperCase();
+    } else {
+      // Apparel: XXX-XXXX-000 format
+      return `${prefix}-${productId}-000`.toUpperCase();
+    }
+  };
+
+  // Expand products with sizes into separate rows (one row per size)
+  const expandProductsBySize = (productsList) => {
+    const expandedProducts = [];
+    
+    productsList.forEach(product => {
+      // Check if product has size_stocks (on-stock products with sizes)
+      let sizeStocks = product.size_stocks;
+      if (typeof sizeStocks === 'string') {
+        try {
+          sizeStocks = JSON.parse(sizeStocks);
+        } catch (e) {
+          sizeStocks = null;
+        }
+      }
+      
+      // If product has size_stocks, expand into separate rows per size
+      if (sizeStocks && typeof sizeStocks === 'object' && !Array.isArray(sizeStocks) && Object.keys(sizeStocks).length > 0) {
+        // Expand: create one row per size
+        Object.entries(sizeStocks).forEach(([size, stockQty]) => {
+          // Generate size-specific SKU for this variant
+          const sizeSKU = generateSizeVariantSKU(product, size);
+          
+          expandedProducts.push({
+            ...product,
+            // Create unique ID for this size variant (for React keys and editing)
+            id: `${product.id}-${size}`,
+            _originalId: product.id,
+            _size: size,
+            stock_quantity: parseInt(stockQty) || 0,
+            size_stocks: null, // Remove size_stocks since we're showing one row per size
+            size: `["${size}"]`, // Single size array for display
+            sku: normalizeSKU(sizeSKU) || sizeSKU, // Size-specific SKU (normalized)
+            // Product name with size suffix for display
+            displayName: `${product.name} (${size})`
+          });
+        });
+      } else {
+        // Product doesn't have size_stocks or has no sizes - keep as single row
+        expandedProducts.push({
+          ...product,
+          displayName: product.name,
+          // Ensure stock_quantity is set
+          stock_quantity: product.stock_quantity !== null && product.stock_quantity !== undefined 
+            ? product.stock_quantity 
+            : 0,
+          // Use existing SKU from database, normalize to ensure correct format
+          sku: product.sku ? normalizeSKU(product.sku) || normalizeSKU(generateSizeVariantSKU(product, null)) : normalizeSKU(generateSizeVariantSKU(product, null))
+        });
+      }
+    });
+    
+    return expandedProducts;
   };
 
   const getProductSizes = (product) => {
@@ -573,37 +792,188 @@ const Inventory = () => {
     return { sizes, jerseySizes, hasSizes };
   };
 
-  const handleDeleteProduct = async (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        // Get current session for authentication
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError || !session) {
-          alert('Please log in to delete products');
-          return;
-        }
+  const handleArchiveProduct = (productId) => {
+    console.log('🔵 [Archive] Archive button clicked for productId:', productId);
+    // If productId is from an expanded product (contains '-'), extract original ID
+    const originalProductId = productId.includes('-') && filteredProducts.find(p => p.id === productId)?._originalId
+      ? filteredProducts.find(p => p.id === productId)._originalId
+      : productId;
+    
+    console.log('🔵 [Archive] Original productId:', originalProductId);
+    
+    // Find the product to get its name for confirmation
+    const product = products.find(p => p.id === originalProductId);
+    const productName = product?.displayName || product?.name || 'this product';
+    
+    console.log('🔵 [Archive] Product found:', product ? { id: product.id, name: product.name, archived: product.archived } : 'NOT FOUND');
+    
+    // Show confirmation modal
+    setArchiveModal({
+      isOpen: true,
+      productId: originalProductId,
+      productName: productName
+    });
+    console.log('🔵 [Archive] Confirmation modal opened');
+  };
 
-        const response = await fetch(`${getAPI_URL()}/api/products/${productId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          setProducts(products.filter(p => p.id !== productId));
-          console.log('Product deleted successfully');
-        } else {
-          const errorData = await response.json();
-          console.error('Delete failed:', errorData.error);
-          alert(`Failed to delete product: ${errorData.error}`);
-        }
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Failed to delete product. Please try again.');
+  const confirmArchiveProduct = async () => {
+    const { productId } = archiveModal;
+    console.log('🟢 [Archive] Confirm archive - Starting archive process for productId:', productId);
+    
+    try {
+      // Get current session for authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('🔴 [Archive] No session found:', sessionError);
+        alert('Please log in to archive products');
+        setArchiveModal({ isOpen: false, productId: null, productName: '' });
+        return;
       }
+
+      console.log('🟢 [Archive] Session found, making API call...');
+      console.log('🟢 [Archive] API URL:', `${getAPI_URL()}/api/products/${productId}`);
+      console.log('🟢 [Archive] Request body:', { archived: true });
+
+      const response = await fetch(`${getAPI_URL()}/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ archived: true })
+      });
+
+      console.log('🟢 [Archive] Response status:', response.status, response.statusText);
+      console.log('🟢 [Archive] Response ok:', response.ok);
+
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log('🟢 [Archive] API response data:', responseData);
+        
+        // Update the product in the products array instead of removing it
+        const currentProduct = products.find(p => p.id === productId);
+        console.log('🟢 [Archive] Current product before update:', currentProduct ? { id: currentProduct.id, name: currentProduct.name, archived: currentProduct.archived } : 'NOT FOUND');
+        
+        const updatedProducts = products.map(p => 
+          p.id === productId ? { ...p, archived: true } : p
+        );
+        
+        const updatedProduct = updatedProducts.find(p => p.id === productId);
+        console.log('🟢 [Archive] Updated product:', updatedProduct ? { id: updatedProduct.id, name: updatedProduct.name, archived: updatedProduct.archived } : 'NOT FOUND');
+        console.log('🟢 [Archive] Total products before update:', products.length);
+        console.log('🟢 [Archive] Total products after update:', updatedProducts.length);
+        
+        setProducts(updatedProducts);
+        console.log('🟢 [Archive] State updated with archived product');
+        console.log('🟢 [Archive] Current filters.showArchived:', filters.showArchived);
+        
+        setArchiveModal({ isOpen: false, productId: null, productName: '' });
+        console.log('🟢 [Archive] Product archived successfully - modal closed');
+      } else {
+        const errorData = await response.json();
+        console.error('🔴 [Archive] Archive failed - Response:', response.status, errorData);
+        alert(`Failed to archive product: ${errorData.error || 'Unknown error'}`);
+        setArchiveModal({ isOpen: false, productId: null, productName: '' });
+      }
+    } catch (error) {
+      console.error('🔴 [Archive] Error archiving product:', error);
+      console.error('🔴 [Archive] Error stack:', error.stack);
+      alert('Failed to archive product. Please try again.');
+      setArchiveModal({ isOpen: false, productId: null, productName: '' });
+    }
+  };
+
+  const closeArchiveModal = () => {
+    setArchiveModal({ isOpen: false, productId: null, productName: '' });
+  };
+
+  const handleUnarchiveProduct = (productId) => {
+    // If productId is from an expanded product (contains '-'), extract original ID
+    const originalProductId = productId.includes('-') && filteredProducts.find(p => p.id === productId)?._originalId
+      ? filteredProducts.find(p => p.id === productId)._originalId
+      : productId;
+    
+    // Find the product to get its name for confirmation
+    const product = products.find(p => p.id === originalProductId);
+    const productName = product?.displayName || product?.name || 'this product';
+    
+    // Show confirmation modal
+    setUnarchiveModal({
+      isOpen: true,
+      productId: originalProductId,
+      productName: productName
+    });
+  };
+
+  const confirmUnarchiveProduct = async () => {
+    const { productId } = unarchiveModal;
+    
+    try {
+      // Get current session for authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        alert('Please log in to unarchive products');
+        setUnarchiveModal({ isOpen: false, productId: null, productName: '' });
+        return;
+      }
+
+      const response = await fetch(`${getAPI_URL()}/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ archived: false })
+      });
+
+      if (response.ok) {
+        // Update the product in the products array instead of removing it
+        setProducts(products.map(p => 
+          p.id === productId ? { ...p, archived: false } : p
+        ));
+        console.log('Product unarchived successfully');
+        setUnarchiveModal({ isOpen: false, productId: null, productName: '' });
+      } else {
+        const errorData = await response.json();
+        console.error('Unarchive failed:', errorData.error);
+        alert(`Failed to unarchive product: ${errorData.error}`);
+        setUnarchiveModal({ isOpen: false, productId: null, productName: '' });
+      }
+    } catch (error) {
+      console.error('Error unarchiving product:', error);
+      alert('Failed to unarchive product. Please try again.');
+      setUnarchiveModal({ isOpen: false, productId: null, productName: '' });
+    }
+  };
+
+  const closeUnarchiveModal = () => {
+    setUnarchiveModal({ isOpen: false, productId: null, productName: '' });
+  };
+
+  // Handle column visibility changes
+  const handleColumnVisibilityChange = (column, visible) => {
+    const newVisibility = {
+      ...columnVisibility,
+      [column]: visible
+    };
+    setColumnVisibility(newVisibility);
+    // Save to localStorage
+    try {
+      localStorage.setItem('inventoryColumnVisibility', JSON.stringify(newVisibility));
+    } catch (e) {
+      console.error('Error saving column visibility:', e);
+    }
+  };
+
+  // Reset to default columns
+  const resetColumnVisibility = () => {
+    setColumnVisibility(defaultColumns);
+    try {
+      localStorage.setItem('inventoryColumnVisibility', JSON.stringify(defaultColumns));
+    } catch (e) {
+      console.error('Error saving column visibility:', e);
     }
   };
 
@@ -616,13 +986,155 @@ const Inventory = () => {
       <div className="admin-main-content">
         <div className="inventory-main-content">
           <div className="inventory-header">
-            <h1>Inventory Management</h1>
-            <p>
-              {filters.branch !== 'all' 
-                ? `Viewing products from: ${getUniqueBranches().find(b => b.id === parseInt(filters.branch))?.name || `Branch ${filters.branch}`}`
-                : 'Manage your product inventory (all branches)'
-              }
-            </p>
+            <div className="inventory-header-container">
+              <h1>Inventory Management</h1>
+              <div className="inventory-header-controls">
+                <div className="search-bar">
+                  <input
+                    type="text"
+                    placeholder="Search by name, SKU, brand, or description..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                  />
+                  <FaSearchIcon className="search-icon" />
+                </div>
+                
+                <div className="filter-toggle-container" ref={filterRef}>
+                  <button 
+                    className={`filter-toggle-btn ${showFilters ? 'active' : ''} ${hasActiveFilters() ? 'has-filters' : ''}`}
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <FontAwesomeIcon icon={faFilter} className="filter-icon" />
+                    Filters
+                    {showFilters ? <FaChevronUp /> : <FaChevronDown />}
+                  </button>
+                  
+                  {showFilters && (
+                    <div className="filter-dropdown">
+                      <div className="filter-group">
+                        <label>Branch</label>
+                        <select 
+                          value={filters.branch} 
+                          onChange={(e) => handleFilterChange('branch', e.target.value)}
+                        >
+                          <option value="all">All Branches</option>
+                          {getUniqueBranches().map(branch => (
+                            <option key={branch.id} value={branch.id}>{branch.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="filter-group">
+                        <label>Category</label>
+                        <select 
+                          value={filters.category} 
+                          onChange={(e) => handleFilterChange('category', e.target.value)}
+                        >
+                          <option value="all">All Categories</option>
+                          {getUniqueCategories().map(category => (
+                            <option key={category} value={category}>{category}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="filter-group">
+                        <label>Stock Sort</label>
+                        <select 
+                          value={filters.stockSort} 
+                          onChange={(e) => handleFilterChange('stockSort', e.target.value)}
+                        >
+                          <option value="none">No Sort</option>
+                          <option value="asc">Low to High</option>
+                          <option value="desc">High to Low</option>
+                        </select>
+                      </div>
+                      
+                      <div className="filter-group">
+                        <label>Price Sort</label>
+                        <select 
+                          value={filters.priceSort} 
+                          onChange={(e) => handleFilterChange('priceSort', e.target.value)}
+                        >
+                          <option value="none">No Sort</option>
+                          <option value="asc">Low to High</option>
+                          <option value="desc">High to Low</option>
+                        </select>
+                      </div>
+                      
+                      <div className="filter-group">
+                        <label>Sold Sort</label>
+                        <select 
+                          value={filters.soldSort} 
+                          onChange={(e) => handleFilterChange('soldSort', e.target.value)}
+                        >
+                          <option value="none">No Sort</option>
+                          <option value="asc">Low to High</option>
+                          <option value="desc">High to Low</option>
+                        </select>
+                      </div>
+
+                      {/* Customize Table Section */}
+                      <div className="filter-group-divider"></div>
+                      <div className="filter-group">
+                        <label>Show Archived Products</label>
+                        <div className="filter-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={filters.showArchived}
+                            onChange={(e) => handleFilterChange('showArchived', e.target.checked)}
+                          />
+                          <span>Show archived products</span>
+                        </div>
+                      </div>
+                      <div className="filter-group-divider"></div>
+                      <div className="filter-group">
+                        <label>Customize Table</label>
+                        <div className="column-selector-options">
+                          {Object.entries(columnVisibility)
+                            .filter(([key]) => key !== 'actions')
+                            .map(([key, visible]) => (
+                              <label key={key} className="column-selector-option">
+                                <input
+                                  type="checkbox"
+                                  checked={visible}
+                                  onChange={(e) => {
+                                    const newVisibility = {
+                                      ...columnVisibility,
+                                      [key]: e.target.checked
+                                    };
+                                    setColumnVisibility(newVisibility);
+                                    localStorage.setItem('inventoryColumnVisibility', JSON.stringify(newVisibility));
+                                  }}
+                                />
+                                <span className="column-selector-label">
+                                  {key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}
+                                </span>
+                              </label>
+                            ))}
+                        </div>
+                        <button
+                          className="column-selector-reset"
+                          onClick={() => {
+                            setColumnVisibility(defaultColumns);
+                            localStorage.setItem('inventoryColumnVisibility', JSON.stringify(defaultColumns));
+                          }}
+                          style={{ marginTop: '0.5rem', width: '100%' }}
+                        >
+                          Reset to Default
+                        </button>
+                      </div>
+
+                      {hasActiveFilters() && (
+                        <button className="clear-filters-btn" onClick={clearFilters}>
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="inventory-content">
@@ -637,227 +1149,87 @@ const Inventory = () => {
                 </div>
               ) : (
                 <>
-                  {/* Filter Controls */}
-                  <div className="filter-controls">
-                    <div className="filter-group">
-                      <label>Branch:</label>
-                      <select 
-                        value={filters.branch} 
-                        onChange={(e) => handleFilterChange('branch', e.target.value)}
-                      >
-                        <option value="all">All Branches</option>
-                        {getUniqueBranches().map(branch => (
-                          <option key={branch.id} value={branch.id}>{branch.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="filter-group">
-                      <label>Category:</label>
-                      <select 
-                        value={filters.category} 
-                        onChange={(e) => handleFilterChange('category', e.target.value)}
-                      >
-                        <option value="all">All Categories</option>
-                        {getUniqueCategories().map(category => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="filter-group">
-                      <label>Stock:</label>
-                      <select 
-                        value={filters.stockSort} 
-                        onChange={(e) => handleFilterChange('stockSort', e.target.value)}
-                      >
-                        <option value="none">No Sort</option>
-                        <option value="asc">Low to High</option>
-                        <option value="desc">High to Low</option>
-                      </select>
-                    </div>
-                    
-                    <div className="filter-group">
-                      <label>Price:</label>
-                      <select 
-                        value={filters.priceSort} 
-                        onChange={(e) => handleFilterChange('priceSort', e.target.value)}
-                      >
-                        <option value="none">No Sort</option>
-                        <option value="asc">Low to High</option>
-                        <option value="desc">High to Low</option>
-                      </select>
-                    </div>
-                    
-                    <div className="filter-group">
-                      <label>Sold:</label>
-                      <select 
-                        value={filters.soldSort} 
-                        onChange={(e) => handleFilterChange('soldSort', e.target.value)}
-                      >
-                        <option value="none">No Sort</option>
-                        <option value="asc">Low to High</option>
-                        <option value="desc">High to Low</option>
-                      </select>
-                    </div>
-                    
-                    {/* Search Button - Right side of Filter Controls */}
-                    <div className="filter-group search-group">
-                      {showSearchInput ? (
-                        <div className="search-input-wrapper">
-                          <input
-                            type="text"
-                            className="search-input"
-                            placeholder="Search by product name..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                applyFilters();
-                              }
-                            }}
-                            onBlur={() => {
-                              if (searchTerm.trim() === '') {
-                                setShowSearchInput(false);
-                              }
-                            }}
-                            autoFocus
-                          />
-                          <button 
-                            className="search-button"
-                            onClick={() => {
-                              if (searchTerm.trim() === '') {
-                                setShowSearchInput(false);
-                              } else {
-                                applyFilters();
-                              }
-                            }}
-                            type="button"
-                            aria-label="Search products"
-                          >
-                            <FontAwesomeIcon icon={faSearch} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          className="search-icon-button"
-                          onClick={() => {
-                            setShowSearchInput(true);
-                            setSearchTerm('');
-                          }}
-                          type="button"
-                          aria-label="Search products"
-                        >
-                          <FontAwesomeIcon icon={faSearch} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Desktop Table */}
                   <div className="desktop-table">
                     <table key={refreshKey} className="inventory-table">
                       <thead>
                         <tr>
-                          <th>Image</th>
-                          <th>Product Name</th>
-                          <th>Price</th>
-                          <th>Stock</th>
-                          <th>Sold</th>
-                          <th>Available Sizes</th>
-                          <th>Category</th>
-                          <th>Description</th>
-                          <th>Actions</th>
+                          {columnVisibility.image && <th>Image</th>}
+                          {columnVisibility.sku && <th>SKU</th>}
+                          {columnVisibility.brand && <th>Brand</th>}
+                          {columnVisibility.name && <th>Product Name</th>}
+                          {columnVisibility.price && <th>Price</th>}
+                          {columnVisibility.stock && <th>Stock</th>}
+                          {columnVisibility.sold && <th>Sold</th>}
+                          {columnVisibility.category && <th>Category</th>}
+                          {columnVisibility.description && <th>Description</th>}
+                          {columnVisibility.actions && <th>Actions</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredProducts.map((product) => (
                         <tr key={`${product.id}-${product.updated_at || Date.now()}`} className="product-row">
+                          {columnVisibility.image && (
                           <td className="product-image-cell">
                             <div className="product-image">
                               {product.main_image ? (
-                                <img src={product.main_image} alt={product.name} />
-                              ) : (
-                                <div className="no-image">
+                                  <img 
+                                    src={product.main_image} 
+                                    alt={product.name || 'Product'}
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : null}
+                                <div className="no-image" style={{ display: product.main_image ? 'none' : 'flex' }}>
                                   <FontAwesomeIcon icon={faImage} />
                                 </div>
+                              </div>
+                            </td>
+                          )}
+                          {columnVisibility.sku && (
+                            <td className="product-sku-cell">
+                              <div className="product-sku">
+                                {product.sku ? (
+                                  <span className="sku-code">{normalizeSKU(product.sku) || product.sku}</span>
+                                ) : (
+                                  <span className="no-sku">No SKU</span>
                               )}
                             </div>
                           </td>
+                          )}
+                          {columnVisibility.brand && (
+                            <td className="product-brand-cell">
+                              <div className="product-brand">
+                                {product.brand || '-'}
+                              </div>
+                            </td>
+                          )}
+                          {columnVisibility.name && (
                           <td className="inventory-product-name-cell">
-                            <div className="inventory-product-name">
-                              {product.name}
+                            <div 
+                              className="inventory-product-name"
+                              title={product.displayName || product.name}
+                            >
+                                {product.displayName || product.name}
                             </div>
                           </td>
+                          )}
+                          {columnVisibility.price && (
                           <td className="inventory-product-price-cell">
                             <div className="inventory-product-price">₱{product.price}</div>
                           </td>
+                          )}
+                          {columnVisibility.stock && (
                           <td className="product-stock-cell">
                             {(() => {
-                              // Check if product has size_stocks (for trophies with sizes)
-                              let sizeStocks = product.size_stocks;
-                              if (typeof sizeStocks === 'string') {
-                                try {
-                                  sizeStocks = JSON.parse(sizeStocks);
-                                } catch (e) {
-                                  sizeStocks = null;
-                                }
-                              }
-                              
-                              // When filtering by specific branch, show branch-specific stocks
-                              // When showing all branches, show aggregated stocks
-                              const isBranchFiltered = filters.branch !== 'all';
-                              const isTrophyBall = isTrophyOrBall(product.category);
-                              
-                              if (sizeStocks && typeof sizeStocks === 'object' && Object.keys(sizeStocks).length > 0) {
-                                // Display size_stocks for trophies/balls with dropdown
-                                const totalStock = Object.values(sizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
-                                const stockClass = totalStock > 10 ? 'in-stock' : totalStock > 0 ? 'low-stock' : 'out-of-stock';
-                                const isOpen = openStockDropdown === product.id;
-                                
-                                if (isTrophyBall) {
-                                  return (
-                                    <div className="stock-dropdown-container">
-                                      <button
-                                        ref={(el) => { triggerRefs.current[product.id] = el; }}
-                                        className={`stock-badge stock-dropdown-trigger ${stockClass} ${isOpen ? 'active' : ''}`}
-                                        onClick={(e) => toggleStockDropdown(product.id, e)}
-                                        type="button"
-                                      >
-                                        {totalStock}
-                                        <FontAwesomeIcon 
-                                          icon={isOpen ? faChevronUp : faChevronDown} 
-                                          className="stock-chevron"
-                                        />
-                                      </button>
-                                    </div>
-                                  );
-                                } else {
-                                  // Non-trophy/ball products with size_stocks - show preview
-                                  const stockTitle = isBranchFiltered 
-                                    ? `Branch ${product.branch_name || product.branch_id} stocks: ${Object.entries(sizeStocks).map(([size, qty]) => `${size}: ${qty}`).join(', ')}`
-                                    : Object.entries(sizeStocks).map(([size, qty]) => `${size}: ${qty}`).join(', ');
-                                  return (
-                                    <div className="stock-info">
-                                      <div className={`stock-badge ${stockClass}`} title={stockTitle}>
-                                        {totalStock}
-                                      </div>
-                                      <div className="size-stocks-preview">
-                                        {Object.entries(sizeStocks).slice(0, 3).map(([size, qty]) => (
-                                          <span key={size} className="size-stock-item">{size}: {qty}</span>
-                                        ))}
-                                        {Object.keys(sizeStocks).length > 3 && <span className="size-stock-more">+{Object.keys(sizeStocks).length - 3} more</span>}
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                              } else {
-                                // Display regular stock_quantity
+                                // Display single stock quantity (products are already expanded by size)
                                 const stockQty = (product.stock_quantity !== null && product.stock_quantity !== undefined) 
                                   ? product.stock_quantity 
                                   : 0;
                                 const stockClass = stockQty > 10 ? 'in-stock' : stockQty > 0 ? 'low-stock' : 'out-of-stock';
+                                const isBranchFiltered = filters.branch !== 'all';
                                 const stockTitle = isBranchFiltered 
                                   ? `Branch ${product.branch_name || product.branch_id} stock: ${stockQty}`
                                   : `Total stock: ${stockQty}`;
@@ -866,49 +1238,22 @@ const Inventory = () => {
                                     {stockQty}
                                   </div>
                                 );
-                              }
                             })()}
                           </td>
+                          )}
+                          {columnVisibility.sold && (
                           <td className="product-sold-cell">
                             <div className="sold-badge">
                               {product.sold_quantity || 0}
                             </div>
                           </td>
-                          <td className="product-available-sizes-cell">
-                            <div className="product-available-sizes">
-                              {(() => {
-                                const { sizes, jerseySizes, hasSizes } = getProductSizes(product);
-
-                                if (!hasSizes) {
-                                  return <span className="no-sizes">No sizes</span>;
-                                }
-
-                                const isOpen = openSizesDropdown === product.id;
-
-                                return (
-                                  <div className="sizes-dropdown-container">
-                                    <button
-                                      ref={(el) => { sizesTriggerRefs.current[product.id] = el; }}
-                                      className={`sizes-dropdown-toggle ${isOpen ? 'active' : ''}`}
-                                      onClick={(e) => toggleSizesDropdown(product.id, e)}
-                                      type="button"
-                                    >
-                                      <span className="sizes-preview">
-                                        {jerseySizes ? 'View Sizes' : `${sizes.length} size${sizes.length > 1 ? 's' : ''}`}
-                                      </span>
-                                      <FontAwesomeIcon
-                                        icon={isOpen ? faChevronUp : faChevronDown}
-                                        className="sizes-chevron"
-                                      />
-                                    </button>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </td>
+                          )}
+                          {columnVisibility.category && (
                           <td className="product-category-cell">
                             <div className="product-category">{product.category}</div>
                           </td>
+                          )}
+                          {columnVisibility.description && (
                           <td className="product-description-cell">
                             <div className="product-description">
                               {product.description ? (
@@ -920,6 +1265,8 @@ const Inventory = () => {
                               )}
                             </div>
                           </td>
+                          )}
+                          {columnVisibility.actions && (
                           <td className="product-actions-cell">
                             <div className="product-actions">
                               <button 
@@ -930,16 +1277,28 @@ const Inventory = () => {
                               >
                                 <FontAwesomeIcon icon={faEdit} />
                               </button>
-                              <button 
-                                className="delete-btn"
-                                onClick={() => handleDeleteProduct(product.id)}
-                                title="Delete Product"
-                                aria-label="Delete Product"
-                              >
-                                <FontAwesomeIcon icon={faTrash} />
-                              </button>
+                              {filters.showArchived ? (
+                                <button 
+                                  className="unarchive-btn"
+                                  onClick={() => handleUnarchiveProduct(product.id)}
+                                  title="Unarchive Product"
+                                  aria-label="Unarchive Product"
+                                >
+                                  <FontAwesomeIcon icon={faBoxOpen} />
+                                </button>
+                              ) : (
+                                <button 
+                                  className="archive-btn"
+                                  onClick={() => handleArchiveProduct(product.id)}
+                                  title="Archive Product"
+                                  aria-label="Archive Product"
+                                >
+                                  <FontAwesomeIcon icon={faBoxArchive} />
+                                </button>
+                              )}
                             </div>
                           </td>
+                          )}
                         </tr>
                         ))}
                     </tbody>
@@ -950,26 +1309,56 @@ const Inventory = () => {
                   <div className="mobile-cards">
                     {filteredProducts.map((product) => (
                       <div key={`mobile-${product.id}-${product.updated_at || Date.now()}`} className="product-card">
-                        <div className="inventory-card-header">
-                          <div className="product-image">
+                        {columnVisibility.image && (
+                          <div className="product-card-image">
                             {product.main_image ? (
-                              <img src={product.main_image} alt={product.name} />
-                            ) : (
-                              <div className="no-image">
+                              <img 
+                                src={product.main_image} 
+                                alt={product.name || 'Product'}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="no-image" style={{ display: product.main_image ? 'none' : 'flex' }}>
                                 <FontAwesomeIcon icon={faImage} />
+                            </div>
                               </div>
+                        )}
+                        <div className="inventory-card-header">
+                          {columnVisibility.sku && (
+                            <div className="product-sku">
+                              {product.sku ? (
+                                <span className="sku-code">{normalizeSKU(product.sku) || product.sku}</span>
+                              ) : (
+                                <span className="no-sku">No SKU</span>
                             )}
                           </div>
+                          )}
                           <div className="product-info">
-                            <h3 className="inventory-product-name">
-                              {product.name}
+                            {columnVisibility.name && (
+                            <h3 
+                              className="inventory-product-name"
+                              title={product.displayName || product.name}
+                            >
+                                {product.displayName || product.name}
                             </h3>
+                            )}
+                            {columnVisibility.category && (
                             <div className="product-category">{product.category}</div>
+                            )}
+                            {columnVisibility.brand && product.brand && (
+                              <div className="product-brand">Brand: {product.brand}</div>
+                            )}
                           </div>
+                          {columnVisibility.price && (
                           <div className="inventory-product-price">₱{product.price}</div>
+                          )}
                         </div>
                         
                         <div className="card-body">
+                          {columnVisibility.description && (
                           <div className="product-description">
                             {product.description ? (
                               product.description.length > 100 
@@ -979,65 +1368,14 @@ const Inventory = () => {
                               <span className="no-description">No description</span>
                             )}
                           </div>
+                          )}
                           
                           <div className="card-stats">
+                            {columnVisibility.stock && (
                             <div className="stat-item">
                               <span className="stat-label">Stock</span>
                               {(() => {
-                                // Check if product has size_stocks (for trophies with sizes)
-                                let sizeStocks = product.size_stocks;
-                                if (typeof sizeStocks === 'string') {
-                                  try {
-                                    sizeStocks = JSON.parse(sizeStocks);
-                                  } catch (e) {
-                                    sizeStocks = null;
-                                  }
-                                }
-                                
-                                // When filtering by specific branch, show branch-specific stocks
-                                const isBranchFiltered = filters.branch !== 'all';
-                                const isTrophyBall = isTrophyOrBall(product.category);
-                                
-                                if (sizeStocks && typeof sizeStocks === 'object' && Object.keys(sizeStocks).length > 0) {
-                                  // Display size_stocks for trophies/balls with dropdown
-                                  const totalStock = Object.values(sizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
-                                  const stockClass = totalStock > 10 ? 'in-stock' : totalStock > 0 ? 'low-stock' : 'out-of-stock';
-                                  const isOpen = openStockDropdown === `${product.id}-mobile`;
-                                  
-                                  if (isTrophyBall) {
-                                    return (
-                                      <div className="stock-dropdown-container">
-                                        <button
-                                          ref={(el) => { triggerRefs.current[`${product.id}-mobile`] = el; }}
-                                          className={`stock-badge stock-dropdown-trigger ${stockClass} ${isOpen ? 'active' : ''}`}
-                                          onClick={(e) => toggleStockDropdown(`${product.id}-mobile`, e)}
-                                          type="button"
-                                        >
-                                          {totalStock}
-                                          <FontAwesomeIcon 
-                                            icon={isOpen ? faChevronUp : faChevronDown} 
-                                            className="stock-chevron"
-                                          />
-                                        </button>
-                                      </div>
-                                    );
-                                  } else {
-                                    // Non-trophy/ball products with size_stocks - show preview
-                                    return (
-                                      <div className="stock-info">
-                                        <div className={`stock-badge ${stockClass}`}>
-                                          {totalStock}
-                                        </div>
-                                        <div className="size-stocks-preview">
-                                          {Object.entries(sizeStocks).map(([size, qty]) => (
-                                            <span key={size} className="size-stock-item">{size}: {qty}</span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                } else {
-                                  // Display regular stock_quantity
+                                  // Display single stock quantity (products are already expanded by size)
                                   const stockQty = (product.stock_quantity !== null && product.stock_quantity !== undefined) 
                                     ? product.stock_quantity 
                                     : 0;
@@ -1047,49 +1385,17 @@ const Inventory = () => {
                                       {stockQty}
                                     </div>
                                   );
-                                }
                               })()}
                             </div>
+                            )}
+                            {columnVisibility.sold && (
                             <div className="stat-item">
                               <span className="stat-label">Sold</span>
                               <div className="sold-badge">
                                 {product.sold_quantity || 0}
                               </div>
                             </div>
-                            <div className="stat-item">
-                              <span className="stat-label">Available Sizes</span>
-                              <div className="product-available-sizes">
-                                {(() => {
-                                  const { sizes, jerseySizes, hasSizes } = getProductSizes(product);
-
-                                  if (!hasSizes) {
-                                    return <span className="no-sizes">No sizes</span>;
-                                  }
-
-                                  const dropdownKey = `${product.id}-mobile`;
-                                  const isOpen = openSizesDropdown === dropdownKey;
-                                  
-                                  return (
-                                    <div className="sizes-dropdown-container">
-                                      <button 
-                                        ref={(el) => { sizesTriggerRefs.current[dropdownKey] = el; }}
-                                        className={`sizes-dropdown-toggle ${isOpen ? 'active' : ''}`}
-                                        onClick={(e) => toggleSizesDropdown(dropdownKey, e)}
-                                        type="button"
-                                      >
-                                        <span className="sizes-preview">
-                                          {jerseySizes ? 'View Sizes' : `${sizes.length} size${sizes.length > 1 ? 's' : ''}`}
-                                        </span>
-                                        <FontAwesomeIcon 
-                                          icon={isOpen ? faChevronUp : faChevronDown} 
-                                          className="sizes-chevron"
-                                        />
-                                      </button>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                         
@@ -1103,15 +1409,27 @@ const Inventory = () => {
                             <FontAwesomeIcon icon={faEdit} />
                             <span>Edit</span>
                           </button>
-                          <button 
-                            className="delete-btn"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            title="Delete Product"
-                            aria-label="Delete Product"
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                            <span>Delete</span>
-                          </button>
+                          {filters.showArchived ? (
+                            <button 
+                              className="unarchive-btn"
+                              onClick={() => handleUnarchiveProduct(product.id)}
+                              title="Unarchive Product"
+                              aria-label="Unarchive Product"
+                            >
+                              <FontAwesomeIcon icon={faBoxOpen} />
+                              <span>Unarchive</span>
+                            </button>
+                          ) : (
+                            <button 
+                              className="archive-btn"
+                              onClick={() => handleArchiveProduct(product.id)}
+                              title="Archive Product"
+                              aria-label="Archive Product"
+                            >
+                              <FontAwesomeIcon icon={faBoxArchive} />
+                              <span>Archive</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1123,6 +1441,30 @@ const Inventory = () => {
         </div>
         </div>
       </div>
+
+      {/* Archive Confirmation Modal */}
+      <ConfirmModal
+        isOpen={archiveModal.isOpen}
+        onClose={closeArchiveModal}
+        onConfirm={confirmArchiveProduct}
+        title="Archive Product"
+        message={`Are you sure you want to archive "${archiveModal.productName}"? This will archive the product and hide it from the inventory. You can restore it later if needed.`}
+        confirmText="Archive"
+        cancelText="Cancel"
+        type="warning"
+      />
+
+      {/* Unarchive Confirmation Modal */}
+      <ConfirmModal
+        isOpen={unarchiveModal.isOpen}
+        onClose={closeUnarchiveModal}
+        onConfirm={confirmUnarchiveProduct}
+        title="Unarchive Product"
+        message={`Are you sure you want to unarchive "${unarchiveModal.productName}"? This will restore the product and make it visible in the inventory again.`}
+        confirmText="Unarchive"
+        cancelText="Cancel"
+        type="success"
+      />
 
       {/* Floating Add Product Button */}
       <button 
@@ -1143,159 +1485,6 @@ const Inventory = () => {
         />
       )}
 
-      {/* Stock Dropdown Portal - Renders outside table to appear above everything */}
-      {openStockDropdown && dropdownPosition.productId === openStockDropdown && (() => {
-        // Handle both desktop and mobile product IDs
-        const productId = openStockDropdown.toString().replace('-mobile', '');
-        const product = filteredProducts.find(p => p.id.toString() === productId);
-        if (!product) return null;
-        
-        let sizeStocks = product.size_stocks;
-        if (typeof sizeStocks === 'string') {
-          try {
-            sizeStocks = JSON.parse(sizeStocks);
-          } catch (e) {
-            sizeStocks = null;
-          }
-        }
-        
-        if (!sizeStocks || typeof sizeStocks !== 'object' || Object.keys(sizeStocks).length === 0) {
-          return null;
-        }
-        
-        const totalStock = Object.values(sizeStocks).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
-        
-        return createPortal(
-          <div 
-            className="stock-dropdown-overlay stock-dropdown-portal"
-            style={{
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
-              position: 'fixed'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="stock-dropdown-header">
-              <span className="stock-dropdown-title">Stock by Size</span>
-              <button
-                className="stock-dropdown-close"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenStockDropdown(null);
-                  setDropdownPosition({ top: 0, left: 0, productId: null });
-                }}
-                type="button"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="stock-dropdown-content">
-              {Object.entries(sizeStocks)
-                .sort(([sizeA], [sizeB]) => {
-                  const numA = parseFloat(sizeA);
-                  const numB = parseFloat(sizeB);
-                  if (!isNaN(numA) && !isNaN(numB)) {
-                    return numA - numB;
-                  }
-                  return sizeA.localeCompare(sizeB);
-                })
-                .map(([size, qty]) => {
-                  const quantity = parseInt(qty) || 0;
-                  const itemStockClass = quantity > 10 ? 'in-stock' : quantity > 0 ? 'low-stock' : 'out-of-stock';
-                  return (
-                    <div key={size} className="stock-dropdown-item">
-                      <span className="stock-size-label">{size}</span>
-                      <span className={`stock-size-quantity ${itemStockClass}`}>{quantity}</span>
-                    </div>
-                  );
-                })}
-              <div className="stock-dropdown-footer">
-                <span className="stock-total-label">Total:</span>
-                <span className="stock-total-value">{totalStock}</span>
-              </div>
-            </div>
-          </div>,
-          document.body
-        );
-      })()}
-
-      {/* Sizes Dropdown Portal - Renders outside table to appear above everything */}
-      {openSizesDropdown && sizesDropdownPosition.productId === openSizesDropdown && (() => {
-        // Handle both desktop and mobile product IDs
-        const productId = openSizesDropdown.toString().replace('-mobile', '');
-        const product = filteredProducts.find(p => p.id.toString() === productId);
-        if (!product) return null;
-        
-        const { sizes, jerseySizes, hasSizes } = getProductSizes(product);
-        
-        if (!hasSizes) {
-          return null;
-        }
-        
-        return createPortal(
-          <div 
-            className="sizes-dropdown-overlay sizes-dropdown-portal"
-            style={{
-              top: `${sizesDropdownPosition.top}px`,
-              left: `${sizesDropdownPosition.left}px`,
-              position: 'fixed'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sizes-dropdown-header">
-              <span className="sizes-dropdown-title">Available Sizes</span>
-              <button
-                className="sizes-dropdown-close"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenSizesDropdown(null);
-                  setSizesDropdownPosition({ top: 0, left: 0, productId: null });
-                }}
-                type="button"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="sizes-dropdown-content">
-              {jerseySizes ? (
-                <div className="jersey-sizes-dropdown">
-                  {jerseySizes.shirts?.adults?.length > 0 && (
-                    <div className="size-group-item">
-                      <strong>Shirts - Adults:</strong> {jerseySizes.shirts.adults.join(', ')}
-                    </div>
-                  )}
-                  {jerseySizes.shirts?.kids?.length > 0 && (
-                    <div className="size-group-item">
-                      <strong>Shirts - Kids:</strong> {jerseySizes.shirts.kids.join(', ')}
-                    </div>
-                  )}
-                  {jerseySizes.shorts?.adults?.length > 0 && (
-                    <div className="size-group-item">
-                      <strong>Shorts - Adults:</strong> {jerseySizes.shorts.adults.join(', ')}
-                    </div>
-                  )}
-                  {jerseySizes.shorts?.kids?.length > 0 && (
-                    <div className="size-group-item">
-                      <strong>Shorts - Kids:</strong> {jerseySizes.shorts.kids.join(', ')}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="sizes-list">
-                  {sizes.map((size, index) => (
-                    <div key={index} className="sizes-dropdown-item">
-                      <span className="size-item">{size}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>,
-          document.body
-        );
-      })()}
     </div>
   );
 };

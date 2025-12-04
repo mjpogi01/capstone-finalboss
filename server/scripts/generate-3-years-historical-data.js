@@ -2828,6 +2828,7 @@ async function generateAndInsertData() {
   const allOrders = [];
   const branchOrderCounts = new Map();
   const customersWithAddresses = new Set(); // Track which customers have addresses saved
+  const customerBranchMap = new Map(); // Track which branch each customer is assigned to
   
   const currentDate = new Date(startDate);
   let yearIndex = 0;
@@ -2854,6 +2855,20 @@ async function generateAndInsertData() {
     for (const order of ordersForDate) {
       const selectedCustomerId = customerSelector.select(order.orderDate);
       const userId = selectedCustomerId || getRandomElement(allCustomerIds);
+      
+      // Normalize: Ensure customer always uses the same branch
+      let assignedBranch = customerBranchMap.get(userId);
+      if (!assignedBranch) {
+        // First order for this customer - assign them to the order's branch
+        assignedBranch = order.pickupLocation;
+        customerBranchMap.set(userId, assignedBranch);
+      } else {
+        // Customer already has a branch - use that branch for this order
+        // Update the order's pickup location and delivery address to match customer's branch
+        order.pickupLocation = assignedBranch;
+        order.deliveryAddress = generateAddress(assignedBranch);
+      }
+      
       // Generate unique order number with counter and random string
       const orderNumber = `ORD-${currentDate.getTime()}-${orderCounter++}-${Math.random().toString(36).substring(7)}`;
       
@@ -2983,6 +2998,20 @@ async function generateAndInsertData() {
       console.log(`     • ${name}: ${count} orders`);
     });
   }
+  
+  // Data normalization summary
+  console.log(`\n📊 Data Normalization Summary:`);
+  console.log(`   ✅ All customers assigned to single branch: ${customerBranchMap.size} customers`);
+  const branchCustomerCounts = new Map();
+  customerBranchMap.forEach((branch) => {
+    branchCustomerCounts.set(branch, (branchCustomerCounts.get(branch) || 0) + 1);
+  });
+  const sortedBranchCustomerCounts = Array.from(branchCustomerCounts.entries()).sort((a, b) => b[1] - a[1]);
+  console.log(`   - Customers per Branch:`);
+  sortedBranchCustomerCounts.forEach(([branch, count]) => {
+    console.log(`     • ${branch}: ${count} customers`);
+  });
+  
   const usedCustomerIds = new Set(allOrders.map(order => order.user_id));
   
   // Ensure ALL customers have at least one order (not just newly created ones)
@@ -3008,6 +3037,18 @@ async function generateAndInsertData() {
       // Generate a simple order for this customer
       const generatedOrder = generateSingleOrder(new Date(orderDate));
       
+      // Normalize: Ensure customer always uses the same branch
+      let assignedBranch = customerBranchMap.get(customerId);
+      if (!assignedBranch) {
+        // First order for this customer - assign them to the order's branch
+        assignedBranch = generatedOrder.pickupLocation;
+        customerBranchMap.set(customerId, assignedBranch);
+      } else {
+        // Customer already has a branch - use that branch for this order
+        generatedOrder.pickupLocation = assignedBranch;
+        generatedOrder.deliveryAddress = generateAddress(assignedBranch);
+      }
+      
       // Find customer info for address
       const customer = customers.find(c => c.id === customerId);
       const customerFullName = customer?.fullName || 'Customer';
@@ -3015,7 +3056,7 @@ async function generateAndInsertData() {
       // Get or create delivery address
       let deliveryAddress = generatedOrder.deliveryAddress;
       if (!deliveryAddress || !deliveryAddress.city) {
-        const branchName = generatedOrder.pickupLocation || availableBranches[0];
+        const branchName = assignedBranch || availableBranches[0];
         const cityData = selectCityForBranch(branchName);
         deliveryAddress = {
           receiver: customerFullName,
@@ -3061,6 +3102,12 @@ async function generateAndInsertData() {
       };
       
       ordersToAdd.push(orderToInsert);
+      
+      // Update branch order counts
+      branchOrderCounts.set(
+        generatedOrder.pickupLocation,
+        (branchOrderCounts.get(generatedOrder.pickupLocation) || 0) + 1
+      );
     }
     
     console.log(`   ✅ Generated ${ordersToAdd.length} orders for customers without orders`);

@@ -137,6 +137,24 @@ async function ensureUsersTable() {
     END $$;
   `);
 
+  // Add archived column if it doesn't exist (for archiving products)
+  await query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'archived'
+      ) THEN
+        ALTER TABLE products ADD COLUMN archived BOOLEAN DEFAULT FALSE;
+      END IF;
+    END $$;
+  `);
+
+  // Create index for archived column if it doesn't exist
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_products_archived ON products(archived);
+  `);
+
   // Create user_addresses table
   await query(`
     CREATE TABLE IF NOT EXISTS user_addresses (

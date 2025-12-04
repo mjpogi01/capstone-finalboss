@@ -19,8 +19,9 @@ import './admin-shared.css';
 import { API_URL } from '../../config/api';
 import { authFetch, authJsonFetch } from '../../services/apiClient';
 import branchService from '../../services/branchService';
+import productService from '../../services/productService';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaSearch, FaFilter, FaStore, FaClipboardList, FaTshirt, FaMap, FaChartLine, FaChartArea, FaUsers, FaUserPlus, FaShoppingCart, FaMoneyBillWave, FaRobot, FaBox } from 'react-icons/fa';
+import { FaFilter, FaStore, FaClipboardList, FaTshirt, FaMap, FaChartLine, FaChartArea, FaUsers, FaUserPlus, FaShoppingCart, FaMoneyBillWave, FaRobot, FaBox } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import './Analytics.css';
@@ -55,8 +56,8 @@ const CHART_LABELS = {
 
 const SALES_FORECAST_RANGE_LABELS = {
   nextMonth: 'Next Month',
-  restOfYear: 'Rest of Year',
-  nextYear: 'Next 12 Months'
+  nextQuarter: 'Next Quarter',
+  nextYear: 'Next Year'
 };
 
 const QUESTION_KEYWORDS = [
@@ -142,7 +143,7 @@ const Analytics = () => {
   const [topCustomers, setTopCustomers] = useState([]);
   const [productStocks, setProductStocks] = useState([]);
   const [productStocksLoading, setProductStocksLoading] = useState(true);
-  const [salesForecastRange, setSalesForecastRange] = useState('restOfYear');
+  const [salesForecastRange, setSalesForecastRange] = useState('nextQuarter');
   const [customerLocationsData, setCustomerLocationsData] = useState({
     points: [],
     cityStats: [],
@@ -152,18 +153,12 @@ const Analytics = () => {
   const [forecastLoading, setForecastLoading] = useState(true);
   const [salesTrendsLoading, setSalesTrendsLoading] = useState(true);
   const [customerLoading, setCustomerLoading] = useState(false); // Start as false - lazy load only when needed
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    timeRange: 'all',
-    branch: 'all',
-    orderStatus: 'all',
-    yearStart: '',
-    yearEnd: ''
+    timeRange: 'all', // Used by chart time-range buttons, not in filter dropdown
+    branch: 'all'
   });
   const [branches, setBranches] = useState([]);
   const [totalSalesLoading, setTotalSalesLoading] = useState(true);
-  const filterRef = useRef(null);
   const [isNexusOpen, setIsNexusOpen] = useState(false);
   const [nexusMessages, setNexusMessages] = useState([]);
   const [nexusLoading, setNexusLoading] = useState(false);
@@ -185,6 +180,35 @@ const Analytics = () => {
   const dataLoadedRef = useRef(false);
   // Ref to track the user ID to prevent unnecessary re-fetches
   const lastUserIdRef = useRef(null);
+  
+  // Refs for chart containers to enable auto-scroll
+  const chartContainerRefs = useRef({
+    totalSales: null,
+    dailySales: null,
+    salesByBranch: null,
+    orderStatus: null,
+    topProducts: null,
+    productStocks: null,
+    customerInsights: null,
+    customerLocations: null,
+    salesForecast: null
+  });
+  
+  // Function to scroll to and center a chart
+  const scrollToChart = (chartId) => {
+    const container = chartContainerRefs.current[chartId];
+    if (container) {
+      setTimeout(() => {
+        const containerRect = container.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const scrollY = window.scrollY + containerRect.top - (windowHeight / 2) + (containerRect.height / 2);
+        window.scrollTo({
+          top: Math.max(0, scrollY),
+          behavior: 'smooth'
+        });
+      }, 100); // Small delay to ensure chart is rendered
+    }
+  };
   
   // Chart values visibility for Sales & Revenue tab
   // Load from localStorage on mount, default to true (shared with Dashboard)
@@ -245,7 +269,8 @@ const Analytics = () => {
       base: `${pickHeight({ xl: 340, lg: 320, md: 300, sm: 260, xs: 220 })}px`,
       tall: `${pickHeight({ xl: 420, lg: 380, md: 340, sm: 300, xs: 260 })}px`,
       wide: `${pickHeight({ xl: 380, lg: 360, md: 320, sm: 280, xs: 240 })}px`,
-      map: `${pickHeight({ xl: 500, lg: 460, md: 420, sm: 360, xs: 300 })}px`
+      map: `${pickHeight({ xl: 500, lg: 460, md: 420, sm: 360, xs: 300 })}px`,
+      productStocks: `${pickHeight({ xl: 800, lg: 700, md: 600, sm: 550, xs: 500 })}px`
     };
   }, [viewportWidth]);
 
@@ -305,6 +330,7 @@ const Analytics = () => {
     }
   }, [filters, rawData]);
 
+
   // Lazy load customer analytics only when customers tab is active
   useEffect(() => {
     if (activeTab === 'customers' && activeCustomersChartTab === 'customerInsights') {
@@ -340,22 +366,6 @@ const Analytics = () => {
     loadBranches();
   }, [isOwner, user?.id]); // Use user?.id instead of user to prevent unnecessary re-renders
 
-  // Close filter dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        setShowFilters(false);
-      }
-    };
-
-    if (showFilters) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showFilters]);
 
   // Resize charts when tabs change or window resizes
   useEffect(() => {
@@ -380,6 +390,21 @@ const Analytics = () => {
     window.addEventListener('resize', resizeCharts);
     return () => window.removeEventListener('resize', resizeCharts);
   }, [activeTab, activeSalesChartTab, activeCustomersChartTab, activeProductsChartTab]);
+
+  // Auto-scroll to chart when tab changes
+  useEffect(() => {
+    if (activeTab === 'sales') {
+      scrollToChart(activeSalesChartTab);
+    } else if (activeTab === 'orders') {
+      scrollToChart('orderStatus');
+    } else if (activeTab === 'products') {
+      scrollToChart(activeProductsChartTab);
+    } else if (activeTab === 'customers') {
+      scrollToChart(activeCustomersChartTab);
+    } else if (activeTab === 'forecast') {
+      scrollToChart('salesForecast');
+    }
+  }, [activeTab, activeSalesChartTab, activeProductsChartTab, activeCustomersChartTab]);
 
   // Helper function to create chart ready callback
   const onChartReady = (chartId) => (chartInstance) => {
@@ -687,56 +712,436 @@ const Analytics = () => {
     }
   };
 
-  const fetchProductStocks = async () => {
+  const fetchProductStocks = useCallback(async () => {
     try {
       setProductStocksLoading(true);
-      const response = await authFetch(`${API_URL}/api/products`);
-      const products = await response.json();
       
-      if (Array.isArray(products)) {
-        // Filter products with stock_quantity and group by product name
-        const onHandCategories = ['balls', 'trophies', 'medals'];
-        const stockData = products
-          .filter(product => {
-            const hasStockQuantity = product.stock_quantity !== null && product.stock_quantity !== undefined;
-            const category = product.category?.toLowerCase();
-            return hasStockQuantity && onHandCategories.includes(category);
-          })
-          .reduce((acc, product) => {
-            const key = product.name?.toLowerCase() || 'unknown';
-            if (!acc[key]) {
-              acc[key] = {
-                name: product.name,
-                category: product.category,
-                totalStock: 0,
-                branches: []
-              };
-            }
-            acc[key].totalStock += product.stock_quantity || 0;
-            if (product.branch_name) {
-              acc[key].branches.push({
-                branch: product.branch_name,
-                stock: product.stock_quantity || 0
-              });
-            }
-            return acc;
-          }, {});
-        
-        const stockArray = Object.values(stockData)
-          .sort((a, b) => b.totalStock - a.totalStock)
-          .slice(0, 20); // Top 20 products by stock
-        
-        setProductStocks(stockArray);
+      // Determine which products to fetch based on user role and branch filter
+      let products = [];
+      const adminBranchId = isAdmin ? user?.user_metadata?.branch_id : null;
+      
+      if (isAdmin && adminBranchId) {
+        // Admin: only fetch products from their branch
+        products = await productService.getProductsByBranch(adminBranchId);
+      } else if (isOwner && filters.branch && filters.branch !== 'all') {
+        // Owner: fetch products from selected branch
+        products = await productService.getProductsByBranch(parseInt(filters.branch));
       } else {
-        setProductStocks([]);
+        // Owner with 'all' selected or no branch filter: fetch all products with all=true to include 0 stock items
+        // Use the same fetch pattern as Inventory page to ensure all products are fetched
+        try {
+          const response = await authFetch(`${API_URL}/api/products?all=true`);
+          if (response.ok) {
+            const data = await response.json();
+            // Normalize response like Inventory page does
+            if (Array.isArray(data)) {
+              products = data;
+            } else if (Array.isArray(data?.data)) {
+              products = data.data;
+            } else if (Array.isArray(data?.products)) {
+              products = data.products;
+            } else {
+              products = [];
+            }
+          } else {
+            // Fallback to regular getAllProducts if API call fails
+            products = await productService.getAllProducts();
+          }
+        } catch (error) {
+          console.error('Error fetching all products with all=true:', error);
+          // Fallback to regular getAllProducts
+          products = await productService.getAllProducts();
+        }
       }
+      
+      // Define on-hand categories (products that can be prepared and bought on-branch)
+      const onHandCategories = ['balls', 'trophies', 'medals'];
+      
+      // Debug: Log raw products before transformation
+      console.log(`📦 [Product Stocks] Fetched ${products.length} raw products`);
+      const onHandProducts = products.filter(p => {
+        const category = p.category?.toLowerCase();
+        return ['balls', 'trophies', 'medals'].includes(category);
+      });
+      console.log(`📦 [Product Stocks] ${onHandProducts.length} products in on-hand categories (balls, trophies, medals)`);
+      const zeroStockProducts = onHandProducts.filter(p => {
+        const stock = p.stock_quantity !== null && p.stock_quantity !== undefined ? Number(p.stock_quantity) : 0;
+        return stock === 0;
+      });
+      console.log(`📦 [Product Stocks] ${zeroStockProducts.length} products with 0 stock (or null/undefined)`);
+      if (products.length > 0) {
+        const sampleProducts = products.slice(0, 5);
+        sampleProducts.forEach((p, i) => {
+          console.log(`  Product ${i + 1}: name="${p.name}", category="${p.category}", branch_id=${p.branch_id}, stock=${p.stock_quantity}`);
+        });
+      }
+      
+      // Transform products to stock items format
+      // Only include products in on-hand categories (balls, trophies, medals)
+      // Include items with 0 stock, null stock, or undefined stock (all treated as 0 stock)
+      const transformedStockItems = products
+        .filter(product => {
+          // Only include products that:
+          // 1. Belong to on-hand categories (balls, trophies, medals)
+          // 2. Include all products in these categories, regardless of stock_quantity value
+          //    (null/undefined will be treated as 0 stock)
+          const category = product.category?.toLowerCase();
+          const isOnHandCategory = onHandCategories.includes(category);
+          
+          return isOnHandCategory;
+        })
+        .map(product => {
+          // Explicitly handle 0 stock - preserve 0 values, only default null/undefined to 0
+          const stockQuantity = product.stock_quantity !== null && product.stock_quantity !== undefined 
+            ? Number(product.stock_quantity) 
+            : 0;
+          
+          // For trophies, include size in the name for better identification
+          let displayName = product.name || 'Unknown Product';
+          if (product.category?.toLowerCase() === 'trophies') {
+            // Parse available sizes - check both size and available_sizes fields
+            let sizes = [];
+            
+            // First, try available_sizes (parsed by productService)
+            if (product.available_sizes && Array.isArray(product.available_sizes) && product.available_sizes.length > 0) {
+              sizes = product.available_sizes;
+            } else if (product.size) {
+              // Parse size field if it's a string
+              if (typeof product.size === 'string') {
+                try {
+                  const parsed = JSON.parse(product.size);
+                  if (Array.isArray(parsed)) {
+                    sizes = parsed;
+                  } else if (typeof parsed === 'string') {
+                    sizes = [parsed];
+                  }
+                } catch (e) {
+                  // If not JSON, treat as single size string
+                  sizes = [product.size];
+                }
+              } else if (Array.isArray(product.size)) {
+                sizes = product.size;
+              } else if (product.size) {
+                sizes = [product.size];
+              }
+            }
+            
+            // If we have sizes, append the first one to the name
+            if (sizes.length > 0) {
+              if (sizes.length === 1) {
+                displayName = `${displayName} (${sizes[0]})`;
+              } else {
+                // For multiple sizes, show the first one (most common case)
+                displayName = `${displayName} (${sizes[0]})`;
+              }
+            }
+          }
+          
+          // Get reorder level thresholds (with defaults)
+          const lowStockThreshold = product.low_stock_threshold ?? 10;
+          const sufficientStockThreshold = product.sufficient_stock_threshold ?? 30;
+          const highStockThreshold = product.high_stock_threshold ?? 50;
+          const overstockThreshold = product.overstock_threshold ?? 100;
+          
+          // Determine stock status based on thresholds
+          let stockStatus = 'overstock';
+          if (stockQuantity === 0) {
+            stockStatus = 'out_of_stock';
+          } else if (stockQuantity <= lowStockThreshold) {
+            stockStatus = 'low_stock';
+          } else if (stockQuantity <= sufficientStockThreshold) {
+            stockStatus = 'sufficient_stock';
+          } else if (stockQuantity <= highStockThreshold) {
+            stockStatus = 'high_stock';
+          }
+          
+          return {
+            id: product.id,
+            name: displayName, // For balls/medals: same as originalName. For trophies: includes size
+            originalName: product.name || 'Unknown Product', // Keep original name for reference (no modifications)
+            category: product.category?.toLowerCase() || '',
+            stockQuantity: stockQuantity,
+            branchId: product.branch_id || null,
+            branchName: product.branch_name || null,
+            lowStockThreshold,
+            sufficientStockThreshold,
+            highStockThreshold,
+            overstockThreshold,
+            stockStatus
+          };
+        });
+      
+      // Group by product name (and size for trophies) and aggregate stock across branches
+      // For trophies, the name already includes size, so we use the full name as the key
+      // This ensures different sizes of the same trophy are treated as separate products
+      // For balls and other single-size products, group by original name + category to avoid duplicates
+      const stockData = transformedStockItems.reduce((acc, item) => {
+        // Normalize names: trim, lowercase, remove extra spaces, handle null/undefined
+        // Also normalize special characters and remove punctuation variations
+        const normalizeName = (name) => {
+          if (!name) return '';
+          return String(name)
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, ' ')  // Multiple spaces to single space
+            .replace(/["'"]/g, '"')  // Normalize quotes
+            .replace(/["'"]/g, "'")  // Normalize apostrophes
+            .trim();
+        };
+        
+        // Normalize size strings (for trophies) - remove common variations
+        const normalizeSize = (sizeStr) => {
+          if (!sizeStr) return '';
+          return String(sizeStr)
+            .toLowerCase()
+            .trim()
+            .replace(/\s*inch(es)?/gi, 'in')  // "10 inch" -> "10in"
+            .replace(/\s*"/g, 'in')  // '10"' -> "10in"
+            .replace(/\s+/g, '')  // Remove all spaces
+            .trim();
+        };
+        
+        const normalizedOriginalName = normalizeName(item.originalName);
+        const normalizedDisplayName = normalizeName(item.name);
+        const normalizedCategory = normalizeName(item.category);
+        
+        // For products with size in name (trophies), extract and normalize the size for consistent grouping
+        // For products without size (balls, medals), use original name + category to ensure proper grouping
+        let key;
+        // Use normalized category for comparison to handle case variations
+        if (normalizedCategory === 'trophies') {
+          // For trophies, always try to extract size from display name
+          // Extract size from display name (format: "Product Name (Size)")
+          const sizeMatch = normalizedDisplayName.match(/\(([^)]+)\)$/);
+          if (sizeMatch && sizeMatch[1]) {
+            const extractedSize = sizeMatch[1].trim();
+            const normalizedSize = normalizeSize(extractedSize);
+            // Use original name + normalized size as key to ensure same trophy+size from different branches group together
+            // This ensures different sizes of the same trophy are treated as separate products
+            key = `${normalizedOriginalName}_${normalizedSize}_${normalizedCategory}`;
+          } else {
+            // No size found in display name - use original name + category
+            // This handles trophies that don't have sizes or where size extraction failed
+            key = `${normalizedOriginalName}_${normalizedCategory}`;
+          }
+        } else {
+          // Ball, medal, or other product - use original name + category to group properly
+          // This ensures products with the same name but different categories are separate
+          // Also ensures products from different branches with the same name are grouped together
+          key = `${normalizedOriginalName}_${normalizedCategory}`;
+        }
+        
+        // Skip if key is invalid (empty after normalization)
+        if (!key || key === '_' || key === '__') {
+          console.warn('⚠️ [Product Stocks] Skipping item with invalid key:', item);
+          return acc;
+        }
+        
+        if (!acc[key]) {
+          // For balls/medals (no size), use originalName as display name
+          // For trophies (with size), use the name with size suffix
+          const displayName = (normalizedCategory === 'trophies' && normalizedDisplayName !== normalizedOriginalName)
+            ? item.name  // Trophy with size - keep the size suffix
+            : item.originalName;  // Ball/medal - use original name without any modifications
+          
+          acc[key] = {
+            name: displayName, // Display name (original name for balls/medals, name with size for trophies)
+            originalName: item.originalName, // Original name without size
+            category: item.category,
+            totalStock: 0,
+            branches: [],
+            // Store thresholds from first item (they should be the same for grouped items)
+            lowStockThreshold: item.lowStockThreshold,
+            sufficientStockThreshold: item.sufficientStockThreshold,
+            highStockThreshold: item.highStockThreshold,
+            overstockThreshold: item.overstockThreshold
+          };
+        }
+        
+        // Sum stock quantities across all branches
+        acc[key].totalStock += item.stockQuantity;
+        
+        // Track stock by branch (avoid duplicates)
+        if (item.branchName) {
+          const existingBranch = acc[key].branches.find(b => b.branch === item.branchName);
+          if (existingBranch) {
+            // If branch already exists, add to its stock (shouldn't happen, but handle it)
+            existingBranch.stock += item.stockQuantity;
+          } else {
+            // Add new branch entry
+            acc[key].branches.push({
+              branch: item.branchName,
+              stock: item.stockQuantity
+            });
+          }
+        }
+        
+        return acc;
+      }, {});
+      
+      // Debug: Log grouping results to help identify duplicates
+      const uniqueKeys = Object.keys(stockData);
+      const totalItems = transformedStockItems.length;
+      console.log(`📊 [Product Stocks] Grouped ${totalItems} items into ${uniqueKeys.length} unique products`);
+      
+      // Count zero stock items
+      const zeroStockGrouped = Object.values(stockData).filter(item => item.totalStock === 0);
+      console.log(`📊 [Product Stocks] ${zeroStockGrouped.length} grouped products with 0 total stock`);
+      
+      // Log sample of grouped products to verify grouping is working
+      if (uniqueKeys.length > 0) {
+        const sampleKeys = uniqueKeys.slice(0, 10);
+        sampleKeys.forEach(key => {
+          const grouped = stockData[key];
+          console.log(`📊 [Product Stocks] Key: "${key}" -> Name: "${grouped.name}", Total Stock: ${grouped.totalStock}, Branches: ${grouped.branches.length}`);
+        });
+      }
+      
+      // Log all zero stock items
+      if (zeroStockGrouped.length > 0) {
+        console.log(`📊 [Product Stocks] Zero stock products:`);
+        zeroStockGrouped.forEach((item, idx) => {
+          console.log(`  ${idx + 1}. "${item.name}" (${item.category}) - Key would be based on: originalName="${item.originalName}"`);
+        });
+      }
+      
+      // Check for any items that should have been grouped but weren't
+      const keyCounts = {};
+      transformedStockItems.forEach(item => {
+        // Use the same normalization logic as the grouping
+        const normalizeName = (name) => {
+          if (!name) return '';
+          return String(name)
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, ' ')
+            .replace(/["'"]/g, '"')
+            .replace(/["'"]/g, "'")
+            .trim();
+        };
+        
+        const normalizeSize = (sizeStr) => {
+          if (!sizeStr) return '';
+          return String(sizeStr)
+            .toLowerCase()
+            .trim()
+            .replace(/\s*inch(es)?/gi, 'in')
+            .replace(/\s*"/g, 'in')
+            .replace(/\s+/g, '')
+            .trim();
+        };
+        
+        const normalizedOriginalName = normalizeName(item.originalName);
+        const normalizedDisplayName = normalizeName(item.name);
+        const normalizedCategory = normalizeName(item.category);
+        let key;
+        if (normalizedCategory === 'trophies' && normalizedDisplayName !== normalizedOriginalName) {
+          // Extract and normalize size for consistent grouping
+          const sizeMatch = normalizedDisplayName.match(/\(([^)]+)\)$/);
+          if (sizeMatch && sizeMatch[1]) {
+            const normalizedSize = normalizeSize(sizeMatch[1]);
+            key = `${normalizedOriginalName}_${normalizedSize}_${normalizedCategory}`;
+          } else {
+            key = normalizedDisplayName;
+          }
+        } else {
+          key = `${normalizedOriginalName}_${normalizedCategory}`;
+        }
+        keyCounts[key] = (keyCounts[key] || 0) + 1;
+      });
+      const duplicateKeys = Object.entries(keyCounts).filter(([key, count]) => count > 1);
+      if (duplicateKeys.length > 0) {
+        console.log(`📊 [Product Stocks] Found ${duplicateKeys.length} product groups with multiple items:`, duplicateKeys.map(([key, count]) => `${key} (${count} items)`));
+      } else {
+        console.log('📊 [Product Stocks] No duplicates found - each product appears only once per branch');
+      }
+      
+      // Calculate stock status for each grouped item
+      const stockArrayWithStatus = Object.values(stockData).map(item => {
+        let stockStatus = 'overstock';
+        if (item.totalStock === 0) {
+          stockStatus = 'out_of_stock';
+        } else if (item.totalStock <= item.lowStockThreshold) {
+          stockStatus = 'low_stock';
+        } else if (item.totalStock <= item.sufficientStockThreshold) {
+          stockStatus = 'sufficient_stock';
+        } else if (item.totalStock <= item.highStockThreshold) {
+          stockStatus = 'high_stock';
+        }
+        return { ...item, stockStatus };
+      });
+      
+      // Sort by stock quantity (lowest first to show 0 stock items first), then by name
+      // Show ALL items - prioritize 0 stock items first, then show others sorted by stock quantity
+      const stockArray = stockArrayWithStatus
+        .sort((a, b) => {
+          // First, prioritize 0 stock items
+          if (a.totalStock === 0 && b.totalStock !== 0) return -1;
+          if (a.totalStock !== 0 && b.totalStock === 0) return 1;
+          
+          // Then sort by stock quantity (lowest first)
+          if (a.totalStock !== b.totalStock) {
+            return a.totalStock - b.totalStock;
+          }
+          
+          // Then by name
+          return (a.name || '').localeCompare(b.name || '');
+        });
+      // No limit - show all items, especially all 0-stock items
+      
+      // Final verification: Check for duplicate names in the final array
+      const nameCounts = {};
+      stockArray.forEach(item => {
+        const name = (item.name || '').toLowerCase().trim();
+        if (!nameCounts[name]) {
+          nameCounts[name] = [];
+        }
+        nameCounts[name].push({
+          name: item.name,
+          originalName: item.originalName,
+          category: item.category,
+          totalStock: item.totalStock,
+          branches: item.branches.length
+        });
+      });
+      
+      const duplicates = Object.entries(nameCounts).filter(([name, items]) => items.length > 1);
+      if (duplicates.length > 0) {
+        console.error('❌ [Product Stocks] DUPLICATES FOUND IN FINAL ARRAY:', duplicates);
+        duplicates.forEach(([name, items]) => {
+          console.error(`  - "${name}": ${items.length} entries`, items);
+        });
+      } else {
+        console.log('✅ [Product Stocks] No duplicates in final array - all products are unique');
+      }
+      
+      const zeroStockInFinal = stockArray.filter(item => item.totalStock === 0);
+      console.log(`📊 [Product Stocks] Final array has ${stockArray.length} items (${zeroStockInFinal.length} with 0 stock)`);
+      if (zeroStockInFinal.length > 0) {
+        console.log(`📊 [Product Stocks] Zero stock items in final array:`);
+        zeroStockInFinal.forEach((item, index) => {
+          console.log(`  ${index + 1}. "${item.name}" (${item.category}) - Stock: ${item.totalStock}`);
+        });
+      }
+      stockArray.forEach((item, index) => {
+        console.log(`  ${index + 1}. "${item.name}" (${item.category}) - Stock: ${item.totalStock}, Branches: ${item.branches.length}`);
+      });
+      
+      setProductStocks(stockArray);
     } catch (error) {
       console.error('Error fetching product stocks:', error);
       setProductStocks([]);
     } finally {
       setProductStocksLoading(false);
     }
-  };
+  }, [isAdmin, isOwner, filters.branch, user]);
+
+  // Refetch product stocks when branch filter changes
+  useEffect(() => {
+    if (!authLoading && user) {
+      fetchProductStocks();
+    }
+  }, [fetchProductStocks, authLoading, user]);
 
   const fetchSalesForecast = useCallback(async (rangeOverride) => {
     const activeRange = rangeOverride || salesForecastRange;
@@ -785,13 +1190,10 @@ const Analytics = () => {
   };
 
   const clearFilters = () => {
-    setFilters({
-      timeRange: 'all',
-      branch: 'all',
-      orderStatus: 'all',
-      yearStart: '',
-      yearEnd: ''
-    });
+    setFilters(prev => ({
+      ...prev,
+      branch: 'all'
+    }));
   };
 
   const fetchNexusResponse = async (
@@ -941,11 +1343,7 @@ const Analytics = () => {
   };
 
   const hasActiveFilters = () => {
-    return filters.timeRange !== 'all' || 
-           filters.branch !== 'all' || 
-           filters.orderStatus !== 'all' ||
-           filters.yearStart !== '' ||
-           filters.yearEnd !== '';
+    return filters.branch !== 'all';
   };
 
   const applyFilters = () => {
@@ -982,47 +1380,8 @@ const Analytics = () => {
       return dateA - dateB;
     });
 
-    const now = new Date();
-    if (baseGranularity === 'monthly') {
-      switch (filters.timeRange) {
-        case 'today': {
-          const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          selectedSales = selectedSales.filter(item => item.date && new Date(item.date) >= startDate);
-          break;
-        }
-        case 'week': {
-          const startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          selectedSales = selectedSales.filter(item => item.date && new Date(item.date) >= startDate);
-          break;
-        }
-        case 'month': {
-          selectedSales = selectedSales.slice(-12);
-          break;
-        }
-        case 'quarter': {
-          const quarter = Math.floor(now.getMonth() / 3);
-          const startDate = new Date(now.getFullYear(), quarter * 3, 1);
-          selectedSales = selectedSales.filter(item => item.date && new Date(item.date) >= startDate);
-          break;
-        }
-        case 'all':
-        default:
-          // Keep full series
-          break;
-      }
-    }
-
-    if (filters.yearStart || filters.yearEnd) {
-      const startYear = filters.yearStart ? parseInt(filters.yearStart, 10) : 2000;
-      const endYear = filters.yearEnd ? parseInt(filters.yearEnd, 10) : 2100;
-      selectedSales = selectedSales.filter(item => {
-        const itemYear = item.year ?? (item.date ? new Date(item.date).getFullYear() : undefined);
-        if (itemYear === undefined) {
-          return true;
-        }
-        return itemYear >= startYear && itemYear <= endYear;
-      });
-    }
+    // Time range filtering is handled by chart-specific buttons, not main filter
+    // Keep all data for display
 
     // Handle branch filter - can be 'all' or a branch name
     let salesByBranch = rawData.salesByBranch ? [...rawData.salesByBranch] : [];
@@ -1051,17 +1410,6 @@ const Analytics = () => {
           return acc;
         }, {})
       : {};
-
-    if (filters.orderStatus !== 'all' && orderStatus) {
-      const selectedStatus = filters.orderStatus;
-      const statusData = orderStatus[selectedStatus];
-      if (statusData) {
-        orderStatus = {
-          [selectedStatus]: { ...statusData },
-          total: statusData.count
-        };
-      }
-    }
 
     let topProducts = rawData.topProducts ? rawData.topProducts.map(product => ({ ...product })) : [];
     if (topProducts.length > 0) {
@@ -1124,10 +1472,22 @@ const Analytics = () => {
       animationDuration: hasData ? 600 : 0,
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'line' },
+        axisPointer: { 
+          type: 'line',
+          lineStyle: {
+            color: '#3b82f6',
+            width: 1
+          }
+        },
         backgroundColor: '#111827',
         borderColor: '#1f2937',
+        borderWidth: 1,
         textStyle: { color: '#f9fafb' },
+        confine: true,
+        appendToBody: false,
+        enterable: false,
+        hideDelay: 100,
+        showDelay: 0,
         formatter: (params) => {
           try {
           if (!isSalesChartValuesVisible) return '';
@@ -1189,10 +1549,21 @@ const Analytics = () => {
       animationDuration: hasData ? 600 : 0,
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'shadow' },
+        axisPointer: { 
+          type: 'shadow',
+          shadowStyle: {
+            color: 'rgba(59, 130, 246, 0.1)'
+          }
+        },
         backgroundColor: '#111827',
         borderColor: '#1f2937',
+        borderWidth: 1,
         textStyle: { color: '#f9fafb' },
+        confine: true,
+        appendToBody: false,
+        enterable: false,
+        hideDelay: 100,
+        showDelay: 0,
         formatter: (params) => {
           try {
           if (!isSalesChartValuesVisible) return '';
@@ -1316,7 +1687,13 @@ const Analytics = () => {
         trigger: 'item',
         backgroundColor: '#111827',
         borderColor: '#1f2937',
+        borderWidth: 1,
         textStyle: { color: '#f9fafb' },
+        confine: true,
+        appendToBody: false,
+        enterable: false,
+        hideDelay: 100,
+        showDelay: 0,
         formatter: (params) => {
           try {
             if (!params) return '';
@@ -1390,10 +1767,22 @@ const Analytics = () => {
       animationDuration: hasData ? 600 : 0,
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'cross' },
+        axisPointer: { 
+          type: 'cross',
+          crossStyle: {
+            color: '#3b82f6',
+            width: 1
+          }
+        },
         backgroundColor: '#111827',
         borderColor: '#1f2937',
+        borderWidth: 1,
         textStyle: { color: '#f9fafb' },
+        confine: true,
+        appendToBody: false,
+        enterable: false,
+        hideDelay: 100,
+        showDelay: 0,
         formatter: (params) => {
           try {
           if (!isSalesChartValuesVisible) return '';
@@ -1678,9 +2067,14 @@ const Analytics = () => {
   }, [topCustomers]);
 
   const productStocksChart = useMemo(() => {
-    const stocks = Array.isArray(productStocks) ? productStocks.slice(0, 15) : [];
-    const values = stocks.map(item => Number(item.totalStock || 0));
-    const hasData = stocks.length > 0 && values.some(value => value > 0);
+    const stocks = Array.isArray(productStocks) ? productStocks : [];
+    // Preserve 0 values - explicitly handle 0 stock items
+    const values = stocks.map(item => {
+      const stock = item.totalStock;
+      return stock !== null && stock !== undefined ? Number(stock) : 0;
+    });
+    // Include 0 stock items in the data check
+    const hasData = stocks.length > 0;
     const maxValue = Math.max(0, ...values);
     const paddedMax = maxValue <= 0 ? 10 : Math.ceil(maxValue * 1.1);
     const gradientStops = [
@@ -1694,10 +2088,24 @@ const Analytics = () => {
       animationDuration: hasData ? 650 : 0,
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'shadow' },
+        axisPointer: { 
+          type: 'shadow',
+          shadowStyle: {
+            color: 'rgba(59, 130, 246, 0.1)'
+          }
+        },
         backgroundColor: '#111827',
         borderColor: '#1f2937',
-        textStyle: { color: '#f9fafb' },
+        borderWidth: 1,
+        textStyle: { 
+          color: '#f9fafb',
+          fontSize: 12
+        },
+        confine: true,
+        appendToBody: false,
+        enterable: false,
+        hideDelay: 100,
+        showDelay: 0,
         formatter: (params) => {
           try {
             if (!Array.isArray(params) || !params.length) return '';
@@ -1707,9 +2115,10 @@ const Analytics = () => {
             if (isNaN(dataIndex) || dataIndex < 0 || dataIndex >= stocks.length) return '';
             const stock = stocks[dataIndex];
             if (!stock) return '';
-            const axisLabel = bar.axisValueLabel || bar.axisValue || '';
+            // Use the full name from stock object, not the truncated axis label
+            const fullName = stock.name || stock.originalName || bar.axisValueLabel || 'Unknown';
             const lines = [
-              `${axisLabel}`,
+              `<strong>${fullName}</strong>`,
               `Total Stock: <strong>${formatNumber(stock.totalStock || 0)}</strong>`,
               `Category: ${stock.category || 'N/A'}`
             ];
@@ -1726,7 +2135,7 @@ const Analytics = () => {
           }
         }
       },
-      grid: { left: '6%', right: '6%', bottom: '6%', top: '6%', containLabel: true },
+      grid: { left: '40%', right: '5%', bottom: '5%', top: '5%', containLabel: false },
       xAxis: {
         type: 'value',
         min: 0,
@@ -1740,14 +2149,17 @@ const Analytics = () => {
       yAxis: {
         type: 'category',
         data: stocks.map(item => {
-          const name = item.name || 'Unknown';
-          return name.length > 30 ? name.substring(0, 30) + '...' : name;
+          // With maximized chart size and increased left margin, show full names
+          // ECharts will handle truncation with ellipsis if needed based on width setting
+          return item.name || 'Unknown';
         }),
         inverse: true,
         axisLabel: {
           color: '#059669',
           fontWeight: 600,
-          fontSize: 13
+          fontSize: 13,
+          width: null, // Let labels use available space in the 40% left area
+          overflow: 'break' // Break long names into multiple lines if needed
         },
         axisTick: { show: false },
         axisLine: { show: false }
@@ -1761,23 +2173,95 @@ const Analytics = () => {
             color: 'rgba(16, 185, 129, 0.08)',
             borderRadius: [0, 12, 12, 0]
           },
-          data: values.map((value) => ({
-            value,
-            itemStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 1, 0, gradientStops),
-              shadowBlur: 6,
-              shadowOffsetX: 2,
-              shadowColor: 'rgba(16, 185, 129, 0.35)'
-            },
-            emphasis: {
-              itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          data: values.map((value, index) => {
+            const stock = stocks[index];
+            const status = stock?.stockStatus || 'high_stock';
+            
+            // Define colors based on stock status
+            let colorStops = [];
+            let shadowColor = '';
+            let emphasisColor = [];
+            
+            switch (status) {
+              case 'out_of_stock':
+                colorStops = [
+                  { offset: 0, color: '#ef4444' },
+                  { offset: 1, color: '#dc2626' }
+                ];
+                shadowColor = 'rgba(239, 68, 68, 0.35)';
+                emphasisColor = [
+                  { offset: 0, color: '#f87171' },
+                  { offset: 1, color: '#dc2626' }
+                ];
+                break;
+              case 'low_stock':
+                colorStops = [
+                  { offset: 0, color: '#f59e0b' },
+                  { offset: 1, color: '#d97706' }
+                ];
+                shadowColor = 'rgba(245, 158, 11, 0.35)';
+                emphasisColor = [
+                  { offset: 0, color: '#fbbf24' },
+                  { offset: 1, color: '#d97706' }
+                ];
+                break;
+              case 'sufficient_stock':
+                colorStops = [
+                  { offset: 0, color: '#eab308' },
+                  { offset: 1, color: '#ca8a04' }
+                ];
+                shadowColor = 'rgba(234, 179, 8, 0.35)';
+                emphasisColor = [
+                  { offset: 0, color: '#facc15' },
+                  { offset: 1, color: '#ca8a04' }
+                ];
+                break;
+              case 'high_stock':
+                colorStops = [
+                  { offset: 0, color: '#10b981' },
+                  { offset: 1, color: '#059669' }
+                ];
+                shadowColor = 'rgba(16, 185, 129, 0.35)';
+                emphasisColor = [
                   { offset: 0, color: '#34d399' },
                   { offset: 1, color: '#047857' }
-                ])
-              }
+                ];
+                break;
+              case 'overstock':
+                colorStops = [
+                  { offset: 0, color: '#3b82f6' },
+                  { offset: 1, color: '#2563eb' }
+                ];
+                shadowColor = 'rgba(59, 130, 246, 0.35)';
+                emphasisColor = [
+                  { offset: 0, color: '#60a5fa' },
+                  { offset: 1, color: '#2563eb' }
+                ];
+                break;
+              default:
+                colorStops = gradientStops;
+                shadowColor = 'rgba(16, 185, 129, 0.35)';
+                emphasisColor = [
+                  { offset: 0, color: '#34d399' },
+                  { offset: 1, color: '#047857' }
+                ];
             }
-          })),
+            
+            return {
+              value,
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 1, 0, colorStops),
+                shadowBlur: 6,
+                shadowOffsetX: 2,
+                shadowColor: shadowColor
+              },
+              emphasis: {
+                itemStyle: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 1, 0, emphasisColor)
+                }
+              }
+            };
+          }),
           itemStyle: { borderRadius: [0, 12, 12, 0] },
           animation: hasData,
           animationDuration: hasData ? 650 : 0,
@@ -1809,6 +2293,69 @@ const Analytics = () => {
       forecastData.some(value => value !== null && value !== undefined && value !== 0)
     );
 
+    // Format month labels as "Jan 2022" (always include full 4-digit year)
+    const formatMonthLabel = (label) => {
+      if (!label) return '';
+      try {
+        const date = new Date(label);
+        if (!Number.isNaN(date.getTime())) {
+          // Always format as "Jan 2022" with full 4-digit year
+          const month = date.toLocaleDateString('en-US', { month: 'short' });
+          const year = date.getFullYear();
+          return `${month} ${year}`;
+        }
+      } catch (e) {
+        // If parsing fails, try to extract month and year from string
+        const monthYearMatch = label.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*(\d{4})/i);
+        if (monthYearMatch) {
+          return `${monthYearMatch[1]} ${monthYearMatch[2]}`;
+        }
+        const monthMatch = label.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+        if (monthMatch) {
+          // Try to extract year from original label or use current year as fallback
+          const yearMatch = label.match(/(\d{4})/);
+          const year = yearMatch ? yearMatch[1] : new Date().getFullYear();
+          return `${monthMatch[1]} ${year}`;
+        }
+      }
+      // Fallback: return as is if we can't parse
+      return label;
+    };
+
+    const formattedCategories = categories.map(formatMonthLabel);
+    const totalMonths = categories.length;
+    
+    // Create mapping from formatted label to original label for tooltip
+    const labelToOriginalMap = new Map();
+    categories.forEach((original, index) => {
+      labelToOriginalMap.set(formattedCategories[index], original);
+    });
+    
+    // Determine which months to show - only first month of each quarter (Jan, Apr, Jul, Oct)
+    // Also show the first and last month for context
+    const shouldShowLabel = (index) => {
+      if (index === 0 || index === totalMonths - 1) {
+        return true; // Always show first and last month
+      }
+      
+      try {
+        const originalLabel = categories[index];
+        const date = new Date(originalLabel);
+        if (!Number.isNaN(date.getTime())) {
+          const month = date.getMonth(); // 0 = Jan, 1 = Feb, ..., 11 = Dec
+          // Show if it's the first month of a quarter (Jan=0, Apr=3, Jul=6, Oct=9)
+          return month % 3 === 0;
+        }
+      } catch (e) {
+        // If we can't parse, show every 3rd month as fallback
+        return index % 3 === 0;
+      }
+      return false;
+    };
+    
+    // Determine if rotation is needed
+    const needsRotation = totalMonths > 8;
+
     const option = {
       animation: hasData,
       animationDuration: hasData ? 600 : 0,
@@ -1822,21 +2369,25 @@ const Analytics = () => {
           if (!Array.isArray(params) || !params.length) return '';
             const firstParam = params[0];
             if (!firstParam) return '';
-            const axisLabel = firstParam.axisValueLabel || firstParam.axisValue || '';
+            const formattedLabel = firstParam.axisValueLabel || firstParam.axisValue || '';
+            // Get original label for confidence lookup
+            const originalLabel = labelToOriginalMap.get(formattedLabel) || formattedLabel;
+            // Format the display label nicely
+            const displayLabel = originalLabel ? formatMonthLabel(originalLabel) : formattedLabel;
           const lines = params
               .filter(point => point && point.seriesName && point.value !== null && point.value !== undefined)
             .map(point => {
                 let line = `${point.marker || ''}${point.seriesName}: ₱${formatNumber(point.value || 0)}`;
               if (point.seriesName === 'Forecast') {
-                  const label = point.axisValueLabel || point.axisValue || '';
-                  const confidence = confidenceMap.get(String(label));
+                  // Use original label for confidence lookup
+                  const confidence = confidenceMap.get(String(originalLabel));
                 if (confidence !== undefined) {
                   line += `<br/>Confidence: ${confidence}%`;
                 }
               }
               return line;
             });
-            return [axisLabel, ...lines].join('<br/>');
+            return [displayLabel, ...lines].join('<br/>');
           } catch (error) {
             console.warn('Tooltip formatter error:', error);
             return '';
@@ -1848,13 +2399,32 @@ const Analytics = () => {
         top: 0,
         textStyle: { color: '#4b5563' }
       },
-      grid: { left: '4%', right: '4%', bottom: '8%', top: '12%', containLabel: true },
+      grid: { 
+        left: '4%', 
+        right: '4%', 
+        bottom: needsRotation ? '12%' : '8%', 
+        top: '12%', 
+        containLabel: true 
+      },
       xAxis: {
         type: 'category',
-        data: categories,
-        axisLabel: { color: '#6b7280', interval: 0, rotate: categories.length > 8 ? 30 : 0 },
+        data: formattedCategories,
+        axisLabel: { 
+          color: '#6b7280', 
+          interval: 0, // Show all positions
+          formatter: (value, index) => {
+            // Only show label if it's the first month of a quarter, or first/last month
+            return shouldShowLabel(index) ? value : '';
+          },
+          rotate: needsRotation ? 30 : 0,
+          fontSize: 11,
+          margin: needsRotation ? 10 : 8
+        },
         axisLine: { lineStyle: { color: '#d1d5db' } },
-        axisTick: { alignWithLabel: true }
+        axisTick: { 
+          alignWithLabel: true,
+          interval: 0
+        }
       },
       yAxis: {
         type: 'value',
@@ -1974,125 +2544,9 @@ const Analytics = () => {
           <h1>Analytics</h1>
           {hasActiveFilters() && (
             <div className="active-filters-info">
-              <span className="filter-count">{
-                [
-                  filters.timeRange !== 'all',
-                  filters.branch !== 'all',
-                  filters.orderStatus !== 'all',
-                  filters.yearStart !== '' || filters.yearEnd !== ''
-                ].filter(Boolean).length
-              } filter{[
-                filters.timeRange !== 'all',
-                filters.branch !== 'all',
-                filters.orderStatus !== 'all',
-                filters.yearStart !== '' || filters.yearEnd !== ''
-              ].filter(Boolean).length !== 1 ? 's' : ''} active</span>
+              <span className="filter-count">Branch filter active</span>
             </div>
           )}
-        </div>
-        <div className="header-right">
-          <div className="search-container">
-            <FaSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          <div className="filter-wrapper" ref={filterRef}>
-            <button 
-              className={`filter-btn ${showFilters ? 'active' : ''} ${hasActiveFilters() ? 'has-filters' : ''}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <FaFilter className="btn-icon" />
-            </button>
-            {showFilters && (
-              <div className="analytics-filter-dropdown">
-                <div className="filter-group">
-                  <label>Time Range</label>
-                  <select 
-                    value={filters.timeRange}
-                    onChange={(e) => handleFilterChange('timeRange', e.target.value)}
-                  >
-                    <option value="all">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="quarter">This Quarter</option>
-                    <option value="year">This Year</option>
-                  </select>
-                </div>
-                <div className="filter-group">
-                  <label>Branch</label>
-                  <select 
-                    value={filters.branch}
-                    onChange={(e) => handleFilterChange('branch', e.target.value)}
-                  >
-                    <option value="all">All Branches</option>
-                    {branches.length > 0 ? (
-                      branches.map(branch => (
-                        <option key={branch.id} value={branch.name}>
-                          {branch.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        {/* Fallback options if branches haven't loaded yet */}
-                        <option value="main">Main Branch</option>
-                        <option value="sm_city">SM City</option>
-                        <option value="ayala">Ayala Mall</option>
-                        <option value="robinson">Robinson's</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                <div className="filter-group">
-                  <label>Order Status</label>
-                  <select 
-                    value={filters.orderStatus}
-                    onChange={(e) => handleFilterChange('orderStatus', e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="completed">Completed</option>
-                    <option value="processing">Processing</option>
-                    <option value="pending">Pending</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div className="filter-group">
-                  <label>Custom Year Range</label>
-                  <div className="year-range-inputs">
-                    <input
-                      type="number"
-                      placeholder="Start Year"
-                      value={filters.yearStart}
-                      onChange={(e) => handleFilterChange('yearStart', e.target.value)}
-                      min="2000"
-                      max="2100"
-                      className="year-input"
-                    />
-                    <span className="year-separator">to</span>
-                    <input
-                      type="number"
-                      placeholder="End Year"
-                      value={filters.yearEnd}
-                      onChange={(e) => handleFilterChange('yearEnd', e.target.value)}
-                      min="2000"
-                      max="2100"
-                      className="year-input"
-                    />
-                  </div>
-                </div>
-                {hasActiveFilters() && (
-                  <button className="clear-filters-btn" onClick={clearFilters}>
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -2185,19 +2639,28 @@ const Analytics = () => {
               <div className="sales-chart-tabs">
                 <button
                   className={`sales-chart-tab ${activeSalesChartTab === 'totalSales' ? 'active' : ''}`}
-                  onClick={() => setActiveSalesChartTab('totalSales')}
+                  onClick={() => {
+                    setActiveSalesChartTab('totalSales');
+                    setTimeout(() => scrollToChart('totalSales'), 150);
+                  }}
                 >
                   <span>Total Sales Over Time</span>
                 </button>
                 <button
                   className={`sales-chart-tab ${activeSalesChartTab === 'dailySales' ? 'active' : ''}`}
-                  onClick={() => setActiveSalesChartTab('dailySales')}
+                  onClick={() => {
+                    setActiveSalesChartTab('dailySales');
+                    setTimeout(() => scrollToChart('dailySales'), 150);
+                  }}
                 >
                   <span>Daily Sales & Orders</span>
                 </button>
                 <button
                   className={`sales-chart-tab ${activeSalesChartTab === 'salesByBranch' ? 'active' : ''}`}
-                  onClick={() => setActiveSalesChartTab('salesByBranch')}
+                  onClick={() => {
+                    setActiveSalesChartTab('salesByBranch');
+                    setTimeout(() => scrollToChart('salesByBranch'), 150);
+                  }}
                 >
                   <span>Sales By Branch</span>
                 </button>
@@ -2221,7 +2684,10 @@ const Analytics = () => {
 
             {/* Total Sales Over Time */}
             {activeSalesChartTab === 'totalSales' && (
-            <div className="analytics-card geo-distribution-card sales-chart-card">
+            <div 
+              ref={el => chartContainerRefs.current.totalSales = el}
+              className="analytics-card geo-distribution-card sales-chart-card"
+            >
           <div className="card-header">
             <FaChartLine className="card-icon" />
             <h3>Total Sales Over Time</h3>
@@ -2289,7 +2755,10 @@ const Analytics = () => {
 
         {/* Daily Sales & Orders */}
         {activeSalesChartTab === 'dailySales' && (
-        <div className="analytics-card geo-distribution-card sales-chart-card">
+        <div 
+          ref={el => chartContainerRefs.current.dailySales = el}
+          className="analytics-card geo-distribution-card sales-chart-card"
+        >
           <div className="card-header">
             <FaChartArea className="card-icon" />
             <h3>Daily Sales & Orders (Trailing 30 Days)</h3>
@@ -2333,7 +2802,10 @@ const Analytics = () => {
 
         {/* Sales By Branch */}
         {activeSalesChartTab === 'salesByBranch' && (
-        <div className="analytics-card geo-distribution-card sales-chart-card">
+        <div 
+          ref={el => chartContainerRefs.current.salesByBranch = el}
+          className="analytics-card geo-distribution-card sales-chart-card"
+        >
           <div className="card-header">
             <FaStore className="card-icon" />
             <h3>Sales By Branch</h3>
@@ -2374,7 +2846,10 @@ const Analytics = () => {
         {activeTab === 'orders' && (
           <>
             {/* Pending vs Completed Orders */}
-            <div className="analytics-card geo-distribution-card">
+            <div 
+              ref={el => chartContainerRefs.current.orderStatus = el}
+              className="analytics-card geo-distribution-card"
+            >
           <div className="card-header">
             <FaClipboardList className="card-icon" />
             <h3>Pending vs. Completed Orders</h3>
@@ -2454,13 +2929,19 @@ const Analytics = () => {
               <div className="sales-chart-tabs">
                 <button
                   className={`sales-chart-tab ${activeProductsChartTab === 'topProducts' ? 'active' : ''}`}
-                  onClick={() => setActiveProductsChartTab('topProducts')}
+                  onClick={() => {
+                    setActiveProductsChartTab('topProducts');
+                    setTimeout(() => scrollToChart('topProducts'), 150);
+                  }}
                 >
                   <span>Top Selling Products</span>
                 </button>
                 <button
                   className={`sales-chart-tab ${activeProductsChartTab === 'productStocks' ? 'active' : ''}`}
-                  onClick={() => setActiveProductsChartTab('productStocks')}
+                  onClick={() => {
+                    setActiveProductsChartTab('productStocks');
+                    setTimeout(() => scrollToChart('productStocks'), 150);
+                  }}
                 >
                   <span>Products Stocks</span>
                 </button>
@@ -2469,7 +2950,10 @@ const Analytics = () => {
 
             {/* Top Selling Products */}
             {activeProductsChartTab === 'topProducts' && (
-              <div className="analytics-card geo-distribution-card sales-chart-card">
+              <div 
+                ref={el => chartContainerRefs.current.topProducts = el}
+                className="analytics-card geo-distribution-card sales-chart-card"
+              >
           <div className="card-header">
             <FaTshirt className="card-icon" />
             <h3>Top Selling Products</h3>
@@ -2504,7 +2988,10 @@ const Analytics = () => {
 
             {/* Products Stocks */}
             {activeProductsChartTab === 'productStocks' && (
-              <div className="analytics-card geo-distribution-card sales-chart-card">
+              <div 
+                ref={el => chartContainerRefs.current.productStocks = el}
+                className="analytics-card geo-distribution-card sales-chart-card"
+              >
                 <div className="card-header">
                   <FaBox className="card-icon" />
                   <h3>Products Stocks</h3>
@@ -2530,7 +3017,7 @@ const Analytics = () => {
                         notMerge
                         lazyUpdate
                         opts={{ renderer: 'svg' }}
-                        style={{ height: chartHeights.tall, width: '100%', minHeight: '200px' }}
+                        style={{ height: chartHeights.productStocks, width: '100%', minHeight: '500px' }}
                         onChartReady={onChartReady('productStocks')}
                       />
                       {!hasProductStocksData && (
@@ -2554,13 +3041,19 @@ const Analytics = () => {
               <div className="sales-chart-tabs">
                 <button
                   className={`sales-chart-tab ${activeCustomersChartTab === 'customerInsights' ? 'active' : ''}`}
-                  onClick={() => setActiveCustomersChartTab('customerInsights')}
+                  onClick={() => {
+                    setActiveCustomersChartTab('customerInsights');
+                    setTimeout(() => scrollToChart('customerInsights'), 150);
+                  }}
                 >
                   <span>Customer Insights</span>
                 </button>
                 <button
                   className={`sales-chart-tab ${activeCustomersChartTab === 'customerLocations' ? 'active' : ''}`}
-                  onClick={() => setActiveCustomersChartTab('customerLocations')}
+                  onClick={() => {
+                    setActiveCustomersChartTab('customerLocations');
+                    setTimeout(() => scrollToChart('customerLocations'), 150);
+                  }}
                 >
                   <span>Customer Locations</span>
                 </button>
@@ -2569,7 +3062,10 @@ const Analytics = () => {
 
             {/* Customer Insights */}
             {activeCustomersChartTab === 'customerInsights' && (
-            <div className="analytics-card geo-distribution-card sales-chart-card">
+            <div 
+              ref={el => chartContainerRefs.current.customerInsights = el}
+              className="analytics-card geo-distribution-card sales-chart-card"
+            >
           <div className="card-header">
             <FaUsers className="card-icon" />
             <h3>Customer Insights</h3>
@@ -2653,7 +3149,10 @@ const Analytics = () => {
 
             {/* Customer Locations */}
             {activeCustomersChartTab === 'customerLocations' && (
-            <div className="analytics-card geo-distribution-card sales-chart-card">
+            <div 
+              ref={el => chartContainerRefs.current.customerLocations = el}
+              className="analytics-card geo-distribution-card sales-chart-card"
+            >
           <div className="card-header">
             <FaMap className="card-icon" />
             <h3>Customer Locations</h3>
@@ -2687,7 +3186,10 @@ const Analytics = () => {
         {activeTab === 'forecast' && (
           <>
             {/* Sales Forecast */}
-            <div className="analytics-card geo-distribution-card">
+            <div 
+              ref={el => chartContainerRefs.current.salesForecast = el}
+              className="analytics-card geo-distribution-card"
+            >
           <div className="card-header">
             <FaChartArea className="card-icon" />
             <h3>Sales Forecast — {SALES_FORECAST_RANGE_LABELS[salesForecastRange]}</h3>
@@ -2701,17 +3203,17 @@ const Analytics = () => {
               </button>
               <button
                 type="button"
-                className={`time-range-btn ${salesForecastRange === 'restOfYear' ? 'active' : ''}`}
-                onClick={() => setSalesForecastRange('restOfYear')}
+                className={`time-range-btn ${salesForecastRange === 'nextQuarter' ? 'active' : ''}`}
+                onClick={() => setSalesForecastRange('nextQuarter')}
               >
-                Rest of Year
+                Next Quarter
               </button>
               <button
                 type="button"
                 className={`time-range-btn ${salesForecastRange === 'nextYear' ? 'active' : ''}`}
                 onClick={() => setSalesForecastRange('nextYear')}
               >
-                Next 12 Months
+                Next Year
               </button>
             </div>
               <button

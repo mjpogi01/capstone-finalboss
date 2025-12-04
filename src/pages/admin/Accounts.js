@@ -12,6 +12,45 @@ import { getAPI_URL } from '../../config/api';
 import './Accounts.css';
 import './admin-shared.css';
 
+// Helper function to format user ID into two lines
+const formatUserIdTwoLines = (userId) => {
+  if (!userId || userId === 'N/A') {
+    return <span>{userId || 'N/A'}</span>;
+  }
+  
+  // UUIDs are typically 36 characters long with dashes
+  // Split roughly in half - find a good break point
+  const length = userId.length;
+  const midpoint = Math.floor(length / 2);
+  
+  // Try to find a dash or hyphen near the midpoint for cleaner split
+  let splitPoint = midpoint;
+  const searchRange = 4; // Search 4 characters before and after midpoint
+  
+  for (let i = 0; i <= searchRange; i++) {
+    // Check after midpoint
+    if (userId[midpoint + i] === '-' || userId[midpoint + i] === '_') {
+      splitPoint = midpoint + i + 1;
+      break;
+    }
+    // Check before midpoint
+    if (userId[midpoint - i] === '-' || userId[midpoint - i] === '_') {
+      splitPoint = midpoint - i + 1;
+      break;
+    }
+  }
+  
+  const firstLine = userId.substring(0, splitPoint);
+  const secondLine = userId.substring(splitPoint);
+  
+  return (
+    <>
+      <div>{firstLine}</div>
+      <div>{secondLine}</div>
+    </>
+  );
+};
+
 const Accounts = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -735,6 +774,7 @@ const Accounts = () => {
             <table className="accounts-table admin-table">
               <thead>
                 <tr>
+                  <th>User ID</th>
                   <th>Name</th>
                   <th>Email Address</th>
                   <th>Role</th>
@@ -745,20 +785,17 @@ const Accounts = () => {
               <tbody>
                 {filteredAdminAccounts.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="no-data">
+                    <td colSpan="6" className="no-data">
                       {adminSearchTerm ? 'No admin accounts match your search.' : 'No admin accounts found.'}
                     </td>
                   </tr>
                 ) : (
                   filteredAdminAccounts.map((admin) => (
                     <tr key={`admin-${admin.id}-${forceUpdate}`}>
+                      <td className="user-id-cell">{formatUserIdTwoLines(admin.id || 'N/A')}</td>
                       <td>{admin.name || 'N/A'}</td>
                       <td>{admin.email || 'N/A'}</td>
-                      <td>
-                        <span className={`role-badge ${admin.role}`}>
-                          {admin.role || 'customer'}
-                        </span>
-                      </td>
+                      <td>{admin.role || 'customer'}</td>
                       <td>{admin.branch_name || 'N/A'}</td>
                       <td>
                         <button
@@ -803,9 +840,10 @@ const Accounts = () => {
         </div>
 
         <div className="accounts-table-container">
-          <table className="accounts-table artist-table">
+            <table className="accounts-table artist-table">
             <thead>
               <tr>
+                <th>User ID</th>
                 <th>Artist Name</th>
                 <th>Email</th>
                 <th>Tasks Assigned</th>
@@ -818,13 +856,14 @@ const Accounts = () => {
             <tbody>
               {filteredArtistAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="no-data">
+                  <td colSpan="8" className="no-data">
                     {artistSearchTerm ? 'No artist accounts match your search.' : 'No artist accounts found.'}
                   </td>
                 </tr>
               ) : (
                 filteredArtistAccounts.map((artist) => (
                   <tr key={`artist-${artist.id}-${forceUpdate}`}>
+                    <td className="user-id-cell">{formatUserIdTwoLines(artist.id || 'N/A')}</td>
                     <td>
                       {editingArtist?.id === artist.id ? (
                         <input
@@ -855,24 +894,18 @@ const Accounts = () => {
                     <td>{artist.total_tasks_completed || 0}</td>
                     <td>
                       {isOwner ? (
-                        <button
+                        <span
                           onClick={() => handleToggleArtistStatus(artist)}
-                          className={`status-toggle-btn ${artist.is_active ? 'active' : 'inactive'}`}
+                          className="status-text-clickable"
                           title={artist.is_active ? 'Click to set inactive' : 'Click to activate'}
-                          aria-label={artist.is_active ? 'Set artist inactive' : 'Activate artist'}
+                          style={{ cursor: 'pointer' }}
                         >
-                          <FontAwesomeIcon 
-                            icon={artist.is_active ? faToggleOn : faToggleOff} 
-                            className="toggle-icon"
-                          />
-                          <span className="toggle-label">
-                            {artist.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </button>
+                          {artist.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       ) : (
-                      <span className={`status-badge ${artist.is_active ? 'active' : 'inactive'}`}>
-                        {artist.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                        <span className="status-text">
+                          {artist.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       )}
                     </td>
                     <td>
@@ -958,6 +991,7 @@ const Accounts = () => {
           <table className="accounts-table customer-table">
             <thead>
               <tr>
+                <th>User ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Contact Number</th>
@@ -968,13 +1002,14 @@ const Accounts = () => {
             <tbody>
               {filteredCustomerAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="no-data">
+                  <td colSpan="6" className="no-data">
                     {customerSearchTerm ? 'No customer accounts match your search.' : 'No customer accounts found.'}
                   </td>
                 </tr>
               ) : (
                 filteredCustomerAccounts.map((customer) => (
                   <tr key={`customer-${customer.id}-${forceUpdate}`}>
+                    <td className="user-id-cell">{formatUserIdTwoLines(customer.id || 'N/A')}</td>
                     <td>{getCustomerDisplayName(customer)}</td>
                     <td>{customer.email || 'N/A'}</td>
                     <td>{customer.contact_number || 'N/A'}</td>
